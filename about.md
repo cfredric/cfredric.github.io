@@ -4,12 +4,6 @@ title: About
 permalink: /about/
 ---
 
-Some information about you!
+I'm a software engineer and a mathematician by training, currently working as a software engineer. I've always been interested in the intersections between math, programming, and linguistics; over time this has led me to explore different programming paradigms, learn the basics of Haskell, and dip my feet in Category Theory, as well as other things.
 
-### More Information
-
-A place to include any other types of information that you'd like to include about yourself.
-
-### Contact me
-
-[email@domain.com](mailto:email@domain.com)
+Aside from academic pursuits, I enjoy rock climbing, competitive swimming, and road cycling.
