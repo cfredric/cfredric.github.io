@@ -3,6 +3,11 @@ layout: post
 title: The Nature of Callbacks
 ---
 
+I want to take you down the journey I went down, when I initially learned about
+JavaScript `Promise`s for work. I happened to be teaching myself Haskell at the
+time, for fun, and I was determined to not be intimidated by these infamous
+"monad" things. Without further ado...
+
 # The Problem: callbacks are terrible
 
 As in any language, some things are just slow - like writing to a file, or
@@ -150,7 +155,7 @@ failed. The type's definition looks like this:
 data Maybe a = Just a | Nothing
 {% endhighlight %}
 
-(In this definition, `a` is a type parameter; you can think of it like the `E`
+(In this definition, `a` is a type parameter; you can think of it like the `<E>`
 in Java's generic collections, or in C++'s templated classes.) The definition
 could be read aloud like this: "a `Maybe a` is a data type that may either be a
 `Just a` or a `Nothing`". Some example values (and their types) are:
@@ -177,7 +182,7 @@ Haskell looks a bit different from the JavaScript - it has different syntax for
 function application, and it supports pattern matching and case analysis. But
 overall that looks very familiar: we see the same problems of manual
 error-forwarding and rightward drift as we did in the first JS callbacks
-example. Let's find a way to fix those, one step at a time.
+example. Let's find ways to fix those, one step at a time.
 
 ### The Solution - part 1
 
@@ -219,8 +224,8 @@ support to solve the nesting problem.
 
 Ideally, the solution to this problem would let us express the same pipeline as
 above, without needing to explicitly create the anonymous functions and funnel
-them through `>>=`. Haskell provides this through something called "do
-notation". Do notation takes code written with `do`, and rewrites it using
+them through `>>=`. Haskell provides this through something called "`do`
+notation". `do` notation takes code written with `do`, and rewrites it using
 `>>=` and anonymous functions for us. I'll show what I mean - here's our
 familiar code, in its (almost) final form:
 
@@ -242,7 +247,7 @@ how to rewrite our code? Is `Maybe` special? Was it because it used `>>=`?  Is
 that a special symbol?" Great questions, and you're right, this doesn't make
 sense yet, because I've omitted some details so far.
 
-In reality, "do notation" only knows how to rewrite things called "monads". A
+In reality, "`do` notation" only knows how to rewrite things called "monads". A
 "monad" is something that implements two functions (`>>=` and `return`) such
 that they satisfy certain equations, and that declares itself as an instance of
 the `Monad` class. As we saw, `>>=` takes a value out of a data type (which
@@ -267,25 +272,26 @@ getFooAndBar param = do
 {% endhighlight %}
 
 That's it! The compiler now knows that `Maybe` is a monad, so it knows we're
-allowed to use "do notation" with it. (Of course, since `Maybe` is provided in
+allowed to use "`do` notation" with it. (Of course, since `Maybe` is provided in
 Haskell's Prelude, in practice its `Monad` instance is already [written for
 us](http://hackage.haskell.org/package/base-4.10.1.0/docs/src/GHC.Base.html#line-729).)
 
 
+# What's the point?
 ![But Why?]({{ "/images/but_why.gif" | absolute_url }})
 
 We've come a long way from writing callbacks in JavaScript. We've seen that
 `Promises` and `async`/`await` provide a really nice way to solve the pain
-points of promises. We've seen that "do notation" and monads lead us to a
+points of callbacks. We've seen that "`do` notation" and monads lead us to a
 similar solution to a similar problem in Haskell. But now it's clear that
-`Promise`s and `async`/`await` are the same thing as `Maybe`s and "do
-notation"; `Promise`s are just a different monad\*.
+`Promise`s and `async`/`await` are the same thing as `Maybe`s and "`do`
+notation"! `Promise`s are just a different monad[^1] - one that combines "this
+might fail for some reason" with "this may happen in the future".
 
 Monads are extremely useful. There are a lot of them: `Maybe`, `Promise`,
 lists, `Either`, the world as we know it (`IO`), and countless more. Hopefully
 I've demystified them somewhat here, and illustrated that they're a really
-useful way of composing functions into a pipeline, without drowning in
+useful way of composing functions into pipelines, without drowning in
 boilerplate!
 
-
-\*Promises *technically* aren't a monad, because `.then` (the equivalent of `>>=`) doesn't quite satisfy the equations I mentioned earlier. But it's close enough to still be really nice to use.
+[^1]: Promises *technically* aren't a monad, because `.then` (the equivalent of `>>=`) doesn't quite satisfy the equations I mentioned earlier. But it's close enough to still be really nice to use.
