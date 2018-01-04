@@ -21,3 +21,5 @@ Russian.
 
 Aside from academic pursuits, I enjoy rock climbing, competitive swimming, and
 road cycling.
+
+Disclaimer: any opinions expressed here are my own, not those of my employer.
