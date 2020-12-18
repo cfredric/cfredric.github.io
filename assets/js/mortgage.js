@@ -1,3 +1,5 @@
+'use strict';
+
 (function() {
     const fmt = new Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD'});
     const orZero = (num) => Number.isNaN(num) ? 0 : num;
@@ -34,6 +36,14 @@
         "homeowners_insurance",
         "pmi",
     ];
+    const display_keys = {
+        "principal": "Principal",
+        "interest": "Interest",
+        "hoa": "HOA",
+        "property_tax": "Property Tax",
+        "homeowners_insurance": "Homeowners Insurance",
+        "pmi": "PMI",
+    };
 
     const attachListeners = () => {
         const onChange = () => {
@@ -151,7 +161,7 @@
 
     const buildPaymentScheduleChart = (schedule) => {
         // set the dimensions and margins of the graph
-        const margin = {top: 10, right: 30, bottom: 30, left: 50};
+        const margin = {top: 50, right: 30, bottom: 30, left: 50};
         const width = 860 - margin.left - margin.right;
         const height = 400 - margin.top - margin.bottom;
 
@@ -177,7 +187,9 @@
             .range([0, width]);
         svg.append("g")
             .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x));
+            .call(d3.axisBottom(x)
+                .tickValues(d3.range(0, 360, 12))
+            );
 
         const y = d3.scaleLinear()
             .domain([0, d3.max(schedule, (d) => d3.sum(keys.map((k) => d[k])))*1.2])
@@ -204,14 +216,37 @@
             const datum = bisect_month(schedule, x, pointer[0]);
             const payment_type_idx = identify_payment_type(y, pointer[1], datum);
 
-            const value = keys.map((k) => `${k}: ${fmt.format(datum[k])}` + '\n').join('') +
-                `month: ${formatMonthNum(datum.month)}`;
+            const value = keys.map((k) => `${display_keys[k]}: ${fmt.format(datum[k])}` + '\n').join('') +
+                `Month: ${formatMonthNum(datum.month)}`;
             tooltip
                 .attr("transform", `translate(${x(datum.month)},${pointer[1]})`)
                 .call(callout, value, payment_type_idx);
         });
 
         svg.on("touchend mouseleave", () => tooltip.call(callout, null, null));
+
+        const legend = svg.append('g')
+            .attr('class', 'legend')
+            .attr('transform', `translate(${width - 200}, -50)`);
+        legend.selectAll('rect')
+            .data(keys)
+            .enter()
+            .append('rect')
+            .attr('x', 0)
+            .attr('y', (_, i) => i * 18)
+            .attr('width', 12)
+            .attr('height', 12)
+            .attr('fill', (d, i) => colors[d]);
+
+        legend.selectAll('text')
+            .data(keys)
+            .enter()
+            .append('text')
+            .text((d) => display_keys[d])
+            .attr('x', 18)
+            .attr('y', (d, i) => i * 18)
+            .attr('text-anchor', 'start')
+            .attr('alignment-baseline', 'hanging');
     };
 
     const callout = (g, value, payment_type_idx) => {
