@@ -161,7 +161,7 @@
 
     const buildPaymentScheduleChart = (schedule) => {
         // set the dimensions and margins of the graph
-        const margin = {top: 50, right: 30, bottom: 30, left: 50};
+        const margin = {top: 50, right: 30, bottom: 70, left: 70};
         const width = 860 - margin.left - margin.right;
         const height = 400 - margin.top - margin.bottom;
 
@@ -173,7 +173,7 @@
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
         const stack = d3.stack()
             .keys(keys)
@@ -188,14 +188,29 @@
         svg.append("g")
             .attr("transform", "translate(0," + height + ")")
             .call(d3.axisBottom(x)
-                .tickValues(d3.range(0, 360, 12))
+                .tickValues(d3.range(0, schedule.length, 12))
             );
 
+        // text label for the x axis
+        svg.append("text")
+            .attr("transform", `translate(${width / 2}, ${height + margin.top})`)
+            .style("text-anchor", "middle")
+            .text("Month");
+
         const y = d3.scaleLinear()
-            .domain([0, d3.max(schedule, (d) => d3.sum(keys.map((k) => d[k])))*1.2])
+            .domain([0, d3.max(schedule, (d) => d3.sum(keys.map((k) => d[k])))*1.25])
             .range([height, 0]);
         svg.append("g")
             .call(d3.axisLeft(y));
+
+        // text label for the y axis
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("Monthly Payment");
 
         // Add the area
         svg.append("g")
