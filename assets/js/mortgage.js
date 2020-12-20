@@ -35,14 +35,6 @@ const purchasePaymentOutput = document.getElementById(
     'purchase-payment-output',
 );
 
-const colors = {
-  principal: '#1f77b4',
-  interest: '#ff7f0e',
-  hoa: '#bcbd22',
-  property_tax: '#17becf',
-  homeowners_insurance: '#9467bd',
-  pmi: '#7f7f7f',
-};
 const keys = [
   'principal',
   'interest',
@@ -51,13 +43,31 @@ const keys = [
   'homeowners_insurance',
   'pmi',
 ];
-const displayKeys = {
-  principal: 'Principal',
-  interest: 'Interest',
-  hoa: 'HOA',
-  property_tax: 'Property Tax',
-  homeowners_insurance: 'Homeowner\'s Insurance',
-  pmi: 'PMI',
+const fields = {
+  principal: {
+    display: 'Principal',
+    color: '#1f77b4',
+  },
+  interest: {
+    display: 'Interest',
+    color: '#ff7f0e',
+  },
+  hoa: {
+    display: 'HOA',
+    color: '#bcbd22',
+  },
+  property_tax: {
+    display: 'Property Tax',
+    color: '#17becf',
+  },
+  homeowners_insurance: {
+    display: 'Homeowner\'s Insurance',
+    color: '#9467bd',
+  },
+  pmi: {
+    display: 'PMI',
+    color: '#7f7f7f',
+  },
 };
 
 const attachListeners = () => {
@@ -76,8 +86,8 @@ const attachListeners = () => {
                homeownersInsuranceInput,
                closingCostInput,
   ]) {
-    elt.addEventListener('change', (event) => onChange());
-    elt.addEventListener('input', (event) => onChange());
+    elt.addEventListener('change', () => onChange());
+    elt.addEventListener('input', () => onChange());
   }
 };
 
@@ -143,14 +153,12 @@ const monthlyFormula = (P, r, n) => {
 };
 
 const calculatePaymentSchedule = (monthlyPayment) => {
-  let sum = 0;
   let equity = downPayment();
   const schedule = [];
   for (const month of d3.range(n)) {
     const principal = price() - equity;
     const interestPayment = (interestRate() / 12) * principal;
     const pmiPayment = equity < 0.2 * price() ? pmi() : 0;
-    sum += monthlyPayment + pmiPayment;
     equity += monthlyPayment - interestPayment;
     schedule.push({
       month: month + 1,
@@ -164,7 +172,7 @@ const calculatePaymentSchedule = (monthlyPayment) => {
     });
   }
   return {
-    sum,
+    sum: n * monthlyPayment + d3.sum(schedule, (d) => d.pmi),
     schedule,
     cumulative: cumulativeSumByFields(schedule, new Set(keys)),
   };
@@ -209,7 +217,7 @@ const buildPaymentScheduleChart = (schedule) => {
                 .order(d3.stackOrderNone)
                 .offset(d3.stackOffsetNone)(schedule))
       .join('path')
-      .style('fill', (d) => colors[d.key])
+      .style('fill', (d) => fields[d.key].color)
       .attr(
           'd',
           d3.area()
@@ -230,7 +238,7 @@ const buildPaymentScheduleChart = (schedule) => {
     return keys.length - 1;
   });
 
-  makeLegend(svg, width, (d) => colors[d]);
+  makeLegend(svg, width, (d) => fields[d].color);
 };
 
 const buildCumulativeChart = (data) => {
@@ -269,28 +277,27 @@ const buildCumulativeChart = (data) => {
       .attr('class', (d) => `area ${d.key}`)
       .append('path')
       .attr('d', (d) => area(d.values))
-      .style('fill', (d) => transparent(colors[d.key]));
+      .style('fill', (d) => transparent(fields[d.key].color));
 
   makeTooltip(svg, data, x, (mouseY, datum) => {
     const yTarget = y.invert(mouseY);
     const sorted = keys.map((key) => ({key, value: datum[key]}))
                        .sort((a, b) => a.value - b.value);
-    const elt = sorted.find(
+    const idx = sorted.findIndex(
         (elt, idx, arr) => yTarget <= elt.value &&
             (idx === arr.length - 1 || arr[idx + 1].value >= yTarget),
         ) ??
-        sorted[sorted.length - 1];
-    return keys.indexOf(elt.key);
+        sorted.length - 1;
+    return keys.indexOf(sorted[idx].key);
   });
 
-  makeLegend(svg, width, (d) => transparent(colors[d]));
+  makeLegend(svg, width, (d) => transparent(fields[d].color));
 };
 
 const transparent = (color) => `${color}aa`;
 
-const formatMonthNum = (m) => {
-  return (m >= 12 ? `${Math.floor(m / 12)}y ` : '') + `${m % 12}mo`;
-};
+const formatMonthNum = (m) =>
+    (m >= 12 ? `${Math.floor(m / 12)}y ` : '') + `${m % 12}mo`;
 
 const makeSvg = (divId, width, height, margin) => {
   d3.select(`#${divId}`).select('svg').remove();
@@ -347,10 +354,11 @@ const makeTooltip = (svg, data, x, identifyPaymentType) => {
     const datum = bisectMonth(data, x, pointer[0]);
     const paymentTypeIdx = identifyPaymentType(pointer[1], datum);
 
-    const value = keys.map(
-                          (k) => `${displayKeys[k]}: ${fmt.format(datum[k])}` +
-                              '\n')
-                      .join('') +
+    const value =
+        keys.map(
+                (k) => `${fields[k].display}: ${fmt.format(datum[k])}` +
+                    '\n')
+            .join('') +
         `Month: ${formatMonthNum(datum.month)}`;
     tooltip.attr('transform', `translate(${x(datum.month)},${pointer[1]})`)
         .call(callout, value, paymentTypeIdx);
@@ -412,7 +420,7 @@ const makeLegend = (svg, width, color) => {
       .data(keys)
       .enter()
       .append('text')
-      .text((d) => displayKeys[d])
+      .text((d) => fields[d].display)
       .attr('x', 18)
       .attr('y', (_, i) => i * 18)
       .attr('text-anchor', 'start')
