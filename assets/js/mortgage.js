@@ -283,12 +283,12 @@ const buildCumulativeChart = (data) => {
     const yTarget = y.invert(mouseY);
     const sorted = keys.map((key) => ({key, value: datum[key]}))
                        .sort((a, b) => a.value - b.value);
-    const idx = sorted.findIndex(
+    const elt = sorted.find(
         (elt, idx, arr) => yTarget <= elt.value &&
             (idx === arr.length - 1 || arr[idx + 1].value >= yTarget),
         ) ??
-        sorted.length - 1;
-    return keys.indexOf(sorted[idx].key);
+        sorted[sorted.length - 1];
+    return keys.indexOf(elt.key);
   });
 
   makeLegend(svg, width, (d) => transparent(fields[d].color));
