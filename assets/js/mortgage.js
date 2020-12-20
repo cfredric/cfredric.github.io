@@ -98,8 +98,13 @@
         document.querySelector("#monthly-payment-pmi-div").style.display = show_pmi ? "" : "none";
 
         if (interest_rate()) {
-            const {sum: amortized_sum, schedule} = calculatePaymentSchedule(M);
+            const {
+                sum: amortized_sum,
+                schedule,
+                cumulative,
+            } = calculatePaymentSchedule(M);
             buildPaymentScheduleChart(schedule);
+            buildCumulativeChart(cumulative);
             lifetime_payment_output.innerText = `${fmt.format(amortized_sum)}`;
         }
 
@@ -131,7 +136,11 @@
                 homeowners_insurance: homeowners_insurance(),
             });
         }
-        return {sum, schedule};
+        return {
+            sum,
+            schedule,
+            cumulative: cumulativeSumByFields(schedule, new Set(keys)),
+        };
     };
 
     const showDownPaymentHint = () => {
@@ -147,19 +156,19 @@
         return b && (month - a.month > b.month - month) ? b : a;
     };
 
-    const identify_payment_type = (y, mouse_y, datum) => {
-        const y_target = y.invert(mouse_y);
-        let cumulative = 0;
-        for (const [idx, key] of keys.entries()) {
-            if (cumulative + datum[key] >= y_target) {
-                return idx;
-            }
-            cumulative += datum[key];
-        }
-        return keys.length - 1;
-    };
-
     const buildPaymentScheduleChart = (schedule) => {
+        const identify_payment_type = (y, mouse_y, datum) => {
+            const y_target = y.invert(mouse_y);
+            let cumulative = 0;
+            for (const [idx, key] of keys.entries()) {
+                if (cumulative + datum[key] >= y_target) {
+                    return idx;
+                }
+                cumulative += datum[key];
+            }
+            return keys.length - 1;
+        };
+
         // set the dimensions and margins of the graph
         const margin = {top: 50, right: 30, bottom: 70, left: 70};
         const width = 860 - margin.left - margin.right;
@@ -296,6 +305,125 @@
         path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
     };
 
+    const buildCumulativeChart = (data) => {
+        const identify_payment_type = (y, mouse_y, datum) => {
+            const y_target = y.invert(mouse_y);
+            const sorted = keys.map((key) => ({key, value: datum[key]}))
+                .sort((a, b) => a.value - b.value);
+            for (const [idx, elt] of sorted.entries()) {
+                if (y_target <= elt.value && (idx === sorted.length - 1 || sorted[idx + 1].value >= y_target)) {
+                    return keys.indexOf(elt.key);
+                }
+            }
+            return keys.indexOf(sorted[sorted.length - 1].key);
+        };
+
+        const margin = {top: 50, right: 30, bottom: 70, left: 70};
+        const width = 860 - margin.left - margin.right;
+        const height = 400 - margin.top - margin.bottom;
+
+        d3.select("#cumulative_viz")
+            .select('svg')
+            .remove();
+        const svg = d3.select("#cumulative_viz")
+            .append("svg")
+            .attr('width', width + margin.left + margin.right)
+            .attr('height', height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+        const x = d3.scaleLinear()
+            .domain(d3.extent(data, (d) => d.month))
+            .range([0, width]);
+        svg.append("g")
+            .attr("transform", `translate(0, ${height})`)
+            .call(d3.axisBottom(x)
+                .tickValues(d3.range(0, data.length, 12))
+            );
+
+        // text label for the x axis
+        svg.append("text")
+            .attr("transform", `translate(${width / 2}, ${height + margin.top})`)
+            .style("text-anchor", "middle")
+            .text("Month");
+
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(data, (d) => d3.max(keys.map((k) => d[k])))*1.25])
+            .range([height, 0]);
+        svg.append("g")
+            .call(d3.axisLeft(y));
+
+        // text label for the y axis
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("Cumulative Payment");
+
+        const area = d3.area()
+            .curve(d3.curveMonotoneX)
+            .x((d) => x(d.month))
+            .y0(y(0))
+            .y1((d) => y(d.value));
+
+        const sources = keys.map((key) => ({
+            key,
+            values: data.map((datum) => ({month: datum.month, value: datum[key]})),
+        }));
+
+        svg.selectAll(".area")
+            .data(sources)
+            .enter()
+            .append("g")
+            .attr("class", (d) => `area ${d.key}`)
+            .append("path")
+            .attr("d", (d) => area(d.values))
+            .style("fill", (d) => transparent(colors[d.key]));
+
+        const tooltip = svg.append('g');
+
+        svg.on("touchmove mousemove", function(event) {
+            const pointer = d3.pointer(event, this);
+            const datum = bisect_month(data, x, pointer[0]);
+            const payment_type_idx = identify_payment_type(y, pointer[1], datum);
+
+            const value = keys.map((k) => `${display_keys[k]}: ${fmt.format(datum[k])}` + '\n').join('') +
+                `Month: ${formatMonthNum(datum.month)}`;
+            tooltip
+                .attr("transform", `translate(${x(datum.month)},${pointer[1]})`)
+                .call(callout, value, payment_type_idx);
+        });
+
+        svg.on("touchend mouseleave", () => tooltip.call(callout, null, null));
+
+        const legend = svg.append('g')
+            .attr('class', 'legend')
+            .attr('transform', `translate(${width - 200}, -50)`);
+        legend.selectAll('rect')
+            .data(keys)
+            .enter()
+            .append('rect')
+            .attr('x', 0)
+            .attr('y', (_, i) => i * 18)
+            .attr('width', 12)
+            .attr('height', 12)
+            .attr('fill', (d, i) => transparent(colors[d]));
+
+        legend.selectAll('text')
+            .data(keys)
+            .enter()
+            .append('text')
+            .text((d) => display_keys[d])
+            .attr('x', 18)
+            .attr('y', (d, i) => i * 18)
+            .attr('text-anchor', 'start')
+            .attr('alignment-baseline', 'hanging');
+    };
+
+    const transparent = (color) => `${color}aa`;
+
     const formatMonthNum = (m) => {
         const years = Math.floor(m / 12);
         const months = m % 12;
@@ -341,6 +469,22 @@
             }
         }
         history.pushState({}, '', url);
+    };
+
+    const cumulativeSumByFields = (data, fields) => {
+        const results = new Array(data.length);
+        const carriedValue = (idx, key) => {
+            if (!fields.has(key)) return data[idx][key];
+            if (idx === 0) return 0;
+            return results[idx - 1][key] + data[idx][key];
+        };
+        for (const [idx, datum] of data.entries()) {
+            results[idx] = Object.keys(datum).reduce((acc, key) => {
+                acc[key] = carriedValue(idx, key);
+                return acc;
+            }, {});
+        }
+        return results;
     };
 
     initFieldsFromUrl();
