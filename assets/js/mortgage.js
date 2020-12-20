@@ -191,11 +191,6 @@ const buildPaymentScheduleChart = (schedule) => {
 
   const svg = makeSvg('schedule_viz', width, height, margin);
 
-  const stack = d3.stack()
-                    .keys(keys)
-                    .order(d3.stackOrderNone)
-                    .offset(d3.stackOffsetNone)(schedule);
-
   const {x, y} = makeAxes(
       svg,
       schedule,
@@ -209,7 +204,10 @@ const buildPaymentScheduleChart = (schedule) => {
   // Add the area
   svg.append('g')
       .selectAll('path')
-      .data(stack)
+      .data(d3.stack()
+                .keys(keys)
+                .order(d3.stackOrderNone)
+                .offset(d3.stackOffsetNone)(schedule))
       .join('path')
       .style('fill', (d) => colors[d.key])
       .attr(
@@ -291,9 +289,7 @@ const buildCumulativeChart = (data) => {
 const transparent = (color) => `${color}aa`;
 
 const formatMonthNum = (m) => {
-  const years = Math.floor(m / 12);
-  const months = m % 12;
-  return (years ? `${years}y ` : '') + `${months}mo`;
+  return (m >= 12 ? `${Math.floor(m / 12)}y ` : '') + `${m % 12}mo`;
 };
 
 const makeSvg = (divId, width, height, margin) => {
