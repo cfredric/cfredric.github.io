@@ -41,7 +41,7 @@
         "interest": "Interest",
         "hoa": "HOA",
         "property_tax": "Property Tax",
-        "homeowners_insurance": "Homeowners Insurance",
+        "homeowners_insurance": "Homeowner's Insurance",
         "pmi": "PMI",
     };
 
