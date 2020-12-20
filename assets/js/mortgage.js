@@ -170,9 +170,9 @@
         };
 
         // set the dimensions and margins of the graph
-        const margin = {top: 50, right: 30, bottom: 70, left: 70};
-        const width = 860 - margin.left - margin.right;
-        const height = 400 - margin.top - margin.bottom;
+        const margin = {top: 50, right: 100, bottom: 120, left: 100};
+        const width = 900 - margin.left - margin.right;
+        const height = 450 - margin.top - margin.bottom;
 
         d3.select("#schedule_viz")
             .select('svg')
@@ -318,9 +318,9 @@
             return keys.indexOf(sorted[sorted.length - 1].key);
         };
 
-        const margin = {top: 50, right: 30, bottom: 70, left: 70};
-        const width = 860 - margin.left - margin.right;
-        const height = 400 - margin.top - margin.bottom;
+        const margin = {top: 50, right: 100, bottom: 120, left: 100};
+        const width = 900 - margin.left - margin.right;
+        const height = 450 - margin.top - margin.bottom;
 
         d3.select("#cumulative_viz")
             .select('svg')
