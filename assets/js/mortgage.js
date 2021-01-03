@@ -147,7 +147,7 @@ const setContents = () => {
       cumulative,
     } = calculatePaymentSchedule(M);
     buildPaymentScheduleChart(schedule);
-    buildCumulativeChart(cumulative);
+    buildCumulativeChart(cumulative, ['principal', 'interest']);
     lifetimePaymentOutput.innerText = `${fmt.format(amortizedSum)}`;
   }
 
@@ -237,7 +237,7 @@ const buildPaymentScheduleChart = (schedule) => {
               .y1((d) => y(d[1])),
       );
 
-  makeTooltip(svg, schedule, x, (mouseY, datum) => {
+  makeTooltip(svg, schedule, keys, x, (mouseY, datum) => {
     const yTarget = y.invert(mouseY);
     let cumulative = 0;
     for (const [idx, key] of keys.entries()) {
@@ -249,10 +249,10 @@ const buildPaymentScheduleChart = (schedule) => {
     return keys.length - 1;
   });
 
-  makeLegend(svg, width, (d) => fields[d].color);
+  makeLegend(svg, width, (d) => fields[d].color, keys);
 };
 
-const buildCumulativeChart = (data) => {
+const buildCumulativeChart = (data, keys) => {
   const margin = {top: 50, right: 100, bottom: 120, left: 100};
   const width = 900 - margin.left - margin.right;
   const height = 450 - margin.top - margin.bottom;
@@ -290,7 +290,7 @@ const buildCumulativeChart = (data) => {
       .attr('d', (d) => area(d.values))
       .style('fill', (d) => transparent(fields[d.key].color));
 
-  makeTooltip(svg, data, x, (mouseY, datum) => {
+  makeTooltip(svg, data, keys, x, (mouseY, datum) => {
     const yTarget = y.invert(mouseY);
     const sorted = keys.map((key) => ({key, value: datum[key]}))
                        .sort((a, b) => a.value - b.value);
@@ -303,7 +303,7 @@ const buildCumulativeChart = (data) => {
     return keys.indexOf(elt.key);
   });
 
-  makeLegend(svg, width, (d) => transparent(fields[d].color));
+  makeLegend(svg, width, (d) => transparent(fields[d].color), keys);
 };
 
 const transparent = (color) => `${color}aa`;
@@ -357,7 +357,7 @@ const makeAxes = (svg, data, width, height, margin, yLabel, yDomainFn) => {
   return {x, y};
 };
 
-const makeTooltip = (svg, data, x, identifyPaymentType) => {
+const makeTooltip = (svg, data, keys, x, identifyPaymentType) => {
   const tooltip = svg.append('g');
 
   svg.on('touchmove mousemove', function(event) {
@@ -414,7 +414,7 @@ const makeTooltip = (svg, data, x, identifyPaymentType) => {
   };
 };
 
-const makeLegend = (svg, width, color) => {
+const makeLegend = (svg, width, color, keys) => {
   const legend = svg.append('g')
                      .attr('class', 'legend')
                      .attr('transform', `translate(${width - 200}, -50)`);
