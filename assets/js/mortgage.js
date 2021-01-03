@@ -5,16 +5,24 @@ const fmt = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
 });
+const get = (elt) => Number.parseFloat(elt.value);
 const orZero = (num) => (Number.isNaN(num) ? 0 : num);
 
 const priceInput = document.getElementById('price-input');
+const homeValueInput = document.getElementById('home-value-input');
+const homeValueHintOutput = document.getElementById('home-value-hint');
 const hoaInput = document.getElementById('hoa-input');
 const downPaymentInput = document.getElementById('down-payment-input');
 const interestRateInput = document.getElementById('interest-rate-input');
 const mortgageInsuranceInput = document.getElementById(
     'mortgage-insurance-input',
 );
-const propertyTaxInput = document.getElementById('property-tax-input');
+const propertyTaxAbsoluteInput =
+    document.getElementById('property-tax-absolute-input');
+const propertyTaxPercentageInput =
+    document.getElementById('property-tax-percentage-input');
+const propertyTaxHintOutput =
+    document.getElementById('property-tax-percentage-hint');
 const homeownersInsuranceInput = document.getElementById(
     'homeowners-insurance-input',
 );
@@ -72,17 +80,19 @@ const fields = {
 
 const attachListeners = () => {
   const onChange = () => {
-    showDownPaymentHint();
+    showAmountHints();
     updateUrl();
     setContents();
   };
   for (const elt
            of [priceInput,
+               homeValueInput,
                hoaInput,
                downPaymentInput,
                interestRateInput,
                mortgageInsuranceInput,
-               propertyTaxInput,
+               propertyTaxAbsoluteInput,
+               propertyTaxPercentageInput,
                homeownersInsuranceInput,
                closingCostInput,
   ]) {
@@ -102,7 +112,9 @@ const downPaymentPct = () =>
 const interestRate = () =>
     orZero(Number.parseFloat(interestRateInput.value) / 100);
 const pmi = () => orZero(Number.parseFloat(mortgageInsuranceInput.value));
-const propertyTax = () => orZero(Number.parseFloat(propertyTaxInput.value));
+const homeValue = () => orZero(get(homeValueInput)) || price();
+const propertyTax = () => orZero(get(propertyTaxAbsoluteInput)) ||
+    (orZero(get(propertyTaxPercentageInput) / 100) * homeValue() / 12);
 const homeownersInsurance = () =>
     orZero(Number.parseFloat(homeownersInsuranceInput.value));
 const closingCost = () => orZero(Number.parseFloat(closingCostInput.value));
@@ -178,8 +190,10 @@ const calculatePaymentSchedule = (monthlyPayment) => {
   };
 };
 
-const showDownPaymentHint = () => {
+const showAmountHints = () => {
+  homeValueHintOutput.innerText = `(${fmt.format(homeValue())})`;
   downPaymentHintOutput.innerText = `(${fmt.format(downPayment())})`;
+  propertyTaxHintOutput.innerText = `(${fmt.format(propertyTax())} /mo)`;
 };
 
 const bisectMonth = (data, x, mouseX) => {
@@ -283,10 +297,11 @@ const buildCumulativeChart = (data) => {
     const yTarget = y.invert(mouseY);
     const sorted = keys.map((key) => ({key, value: datum[key]}))
                        .sort((a, b) => a.value - b.value);
-    const elt = sorted.find(
-        (elt, idx, arr) => yTarget <= elt.value &&
-            (idx === arr.length - 1 || arr[idx + 1].value >= yTarget),
-        ) ??
+    const elt =
+        sorted.find(
+            (elt, idx, arr) => yTarget <= elt.value &&
+                (idx === arr.length - 1 || arr[idx + 1].value >= yTarget),
+            ) ??
         sorted[sorted.length - 1];
     return keys.indexOf(elt.key);
   });
@@ -432,11 +447,13 @@ const initFieldsFromUrl = () => {
   let hasValue = false;
   for (const [name, elt] of [
            ['price', priceInput],
+           ['home_value', homeValueInput],
            ['hoa', hoaInput],
            ['down_payment', downPaymentInput],
            ['interest_rate', interestRateInput],
            ['mortgage_insurance', mortgageInsuranceInput],
-           ['property_tax', propertyTaxInput],
+           ['property_tax', propertyTaxAbsoluteInput],
+           ['property_tax_pct', propertyTaxPercentageInput],
            ['hoi', homeownersInsuranceInput],
            ['closing_cost', closingCostInput],
   ]) {
@@ -445,6 +462,7 @@ const initFieldsFromUrl = () => {
     hasValue = hasValue || value !== null;
   }
   if (hasValue) {
+    showAmountHints();
     setContents();
   }
 };
@@ -453,11 +471,13 @@ const updateUrl = () => {
   const url = new URL(location.href);
   for (const [name, elt] of [
            ['price', priceInput],
+           ['home_value', homeValueInput],
            ['hoa', hoaInput],
            ['down_payment', downPaymentInput],
            ['interest_rate', interestRateInput],
            ['mortgage_insurance', mortgageInsuranceInput],
-           ['property_tax', propertyTaxInput],
+           ['property_tax', propertyTaxAbsoluteInput],
+           ['property_tax_pct', propertyTaxPercentageInput],
            ['hoi', homeownersInsuranceInput],
            ['closing_cost', closingCostInput],
   ]) {
