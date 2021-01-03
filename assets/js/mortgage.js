@@ -105,19 +105,16 @@ const attachListeners = () => {
 const years = 30;
 
 // Value getters.
-const price = () => orZero(Number.parseFloat(priceInput.value));
-const hoa = () => orZero(Number.parseFloat(hoaInput.value));
-const downPaymentPct = () =>
-    orZero(Number.parseFloat(downPaymentInput.value) / 100);
-const interestRate = () =>
-    orZero(Number.parseFloat(interestRateInput.value) / 100);
-const pmi = () => orZero(Number.parseFloat(mortgageInsuranceInput.value));
+const price = () => orZero(get(priceInput));
+const hoa = () => orZero(get(hoaInput));
+const downPaymentPct = () => orZero(get(downPaymentInput) / 100);
+const interestRate = () => orZero(get(interestRateInput) / 100);
+const pmi = () => orZero(get(mortgageInsuranceInput));
 const homeValue = () => orZero(get(homeValueInput)) || price();
 const propertyTax = () => orZero(get(propertyTaxAbsoluteInput)) ||
     (orZero(get(propertyTaxPercentageInput) / 100) * homeValue() / 12);
-const homeownersInsurance = () =>
-    orZero(Number.parseFloat(homeownersInsuranceInput.value));
-const closingCost = () => orZero(Number.parseFloat(closingCostInput.value));
+const homeownersInsurance = () => orZero(get(homeownersInsuranceInput));
+const closingCost = () => orZero(get(closingCostInput));
 
 // For convenience.
 const n = 12 * years;
