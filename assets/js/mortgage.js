@@ -5,8 +5,10 @@ const fmt = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
 });
-const get = (elt) => Number.parseFloat(elt.value);
-const orZero = (num) => (Number.isNaN(num) ? 0 : num);
+const orZero = (elt) => {
+  const num = Number.parseFloat(elt.value);
+  return Number.isNaN(num) ? 0 : num;
+};
 
 const priceInput = document.getElementById('price-input');
 const homeValueInput = document.getElementById('home-value-input');
@@ -105,16 +107,16 @@ const attachListeners = () => {
 const years = 30;
 
 // Value getters.
-const price = () => orZero(get(priceInput));
-const hoa = () => orZero(get(hoaInput));
-const downPaymentPct = () => orZero(get(downPaymentInput) / 100);
-const interestRate = () => orZero(get(interestRateInput) / 100);
-const pmi = () => orZero(get(mortgageInsuranceInput));
-const homeValue = () => orZero(get(homeValueInput)) || price();
-const propertyTax = () => orZero(get(propertyTaxAbsoluteInput)) ||
-    (orZero(get(propertyTaxPercentageInput) / 100) * homeValue() / 12);
-const homeownersInsurance = () => orZero(get(homeownersInsuranceInput));
-const closingCost = () => orZero(get(closingCostInput));
+const price = () => orZero(priceInput);
+const homeValue = () => orZero(homeValueInput) || price();
+const hoa = () => orZero(hoaInput);
+const downPaymentPct = () => orZero(downPaymentInput) / 100;
+const interestRate = () => orZero(interestRateInput) / 100;
+const pmi = () => orZero(mortgageInsuranceInput);
+const propertyTax = () => orZero(propertyTaxAbsoluteInput) ||
+    (orZero(propertyTaxPercentageInput) / 100 * homeValue() / 12);
+const homeownersInsurance = () => orZero(homeownersInsuranceInput);
+const closingCost = () => orZero(closingCostInput);
 
 // For convenience.
 const n = 12 * years;
