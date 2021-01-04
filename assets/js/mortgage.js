@@ -153,7 +153,7 @@ const setContents = () => {
       schedule,
       cumulative,
     } = calculatePaymentSchedule(M);
-    buildPaymentScheduleChart(schedule);
+    buildPaymentScheduleChart(schedule, keys);
     buildCumulativeChart(cumulative, ['principal', 'interest']);
     lifetimePaymentOutput.innerText = `${fmt.format(amortizedSum)}`;
   }
@@ -164,9 +164,8 @@ const setContents = () => {
           )}`;
 };
 
-const monthlyFormula = (P, r, n) => {
-  return (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-};
+const monthlyFormula = (P, r, n) =>
+    (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
 
 const calculatePaymentSchedule = (monthlyPayment) => {
   let equity = downPayment();
@@ -209,7 +208,7 @@ const bisectMonth = (data, x, mouseX) => {
   return b && month - a.month > b.month - month ? b : a;
 };
 
-const buildPaymentScheduleChart = (schedule) => {
+const buildPaymentScheduleChart = (schedule, keys) => {
   // set the dimensions and margins of the graph
   const margin = {top: 50, right: 100, bottom: 120, left: 100};
   const width = 900 - margin.left - margin.right;
@@ -220,6 +219,7 @@ const buildPaymentScheduleChart = (schedule) => {
   const {x, y} = makeAxes(
       svg,
       schedule,
+      keys,
       width,
       height,
       margin,
@@ -269,6 +269,7 @@ const buildCumulativeChart = (data, keys) => {
   const {x, y} = makeAxes(
       svg,
       data,
+      keys,
       width,
       height,
       margin,
@@ -328,7 +329,7 @@ const makeSvg = (divId, width, height, margin) => {
       .attr('transform', `translate(${margin.left}, ${margin.top})`);
 };
 
-const makeAxes = (svg, data, width, height, margin, yLabel, yDomainFn) => {
+const makeAxes = (svg, data, keys, width, height, margin, yLabel, yDomainFn) => {
   // Add X axis
   const x = d3.scaleLinear().domain(d3.extent(data, (d) => d.month)).range([
     0,
