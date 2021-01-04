@@ -14,7 +14,8 @@ const priceInput = document.getElementById('price-input');
 const homeValueInput = document.getElementById('home-value-input');
 const homeValueHintOutput = document.getElementById('home-value-hint');
 const hoaInput = document.getElementById('hoa-input');
-const downPaymentInput = document.getElementById('down-payment-input');
+const downPaymentPercentageInput = document.getElementById('down-payment-percentage-input');
+const downPaymentAbsoluteInput = document.getElementById('down-payment-absolute-input');
 const interestRateInput = document.getElementById('interest-rate-input');
 const mortgageInsuranceInput = document.getElementById(
     'mortgage-insurance-input',
@@ -90,7 +91,8 @@ const attachListeners = () => {
            of [priceInput,
                homeValueInput,
                hoaInput,
-               downPaymentInput,
+               downPaymentPercentageInput,
+               downPaymentAbsoluteInput,
                interestRateInput,
                mortgageInsuranceInput,
                propertyTaxAbsoluteInput,
@@ -110,7 +112,7 @@ const years = 30;
 const price = () => orZero(priceInput);
 const homeValue = () => orZero(homeValueInput) || price();
 const hoa = () => orZero(hoaInput);
-const downPaymentPct = () => orZero(downPaymentInput) / 100;
+const downPayment = () => orZero(downPaymentPercentageInput) / 100 * price() || orZero(downPaymentAbsoluteInput);
 const interestRate = () => orZero(interestRateInput) / 100;
 const pmi = () => orZero(mortgageInsuranceInput);
 const propertyTax = () => orZero(propertyTaxAbsoluteInput) ||
@@ -120,7 +122,7 @@ const closingCost = () => orZero(closingCostInput);
 
 // For convenience.
 const n = 12 * years;
-const downPayment = () => price() * downPaymentPct();
+const downPaymentPct = () => downPayment() / price();
 
 const setContents = () => {
   loanAmountOutput.innerText = `${fmt.format(price() - downPayment())}`;
@@ -448,7 +450,8 @@ const initFieldsFromUrl = () => {
            ['price', priceInput],
            ['home_value', homeValueInput],
            ['hoa', hoaInput],
-           ['down_payment', downPaymentInput],
+           ['down_payment', downPaymentPercentageInput],
+           ['down_payment_amt', downPaymentAbsoluteInput],
            ['interest_rate', interestRateInput],
            ['mortgage_insurance', mortgageInsuranceInput],
            ['property_tax', propertyTaxAbsoluteInput],
@@ -472,7 +475,8 @@ const updateUrl = () => {
            ['price', priceInput],
            ['home_value', homeValueInput],
            ['hoa', hoaInput],
-           ['down_payment', downPaymentInput],
+           ['down_payment', downPaymentPercentageInput],
+           ['down_payment_amt', downPaymentAbsoluteInput],
            ['interest_rate', interestRateInput],
            ['mortgage_insurance', mortgageInsuranceInput],
            ['property_tax', propertyTaxAbsoluteInput],
