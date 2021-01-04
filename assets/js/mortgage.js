@@ -83,6 +83,20 @@ const fields = {
   },
 };
 
+const urlParamMap = new Map([
+  ['price', priceInput],
+  ['home_value', homeValueInput],
+  ['hoa', hoaInput],
+  ['down_payment', downPaymentPercentageInput],
+  ['down_payment_amt', downPaymentAbsoluteInput],
+  ['interest_rate', interestRateInput],
+  ['mortgage_insurance', mortgageInsuranceInput],
+  ['property_tax', propertyTaxAbsoluteInput],
+  ['property_tax_pct', propertyTaxPercentageInput],
+  ['hoi', homeownersInsuranceInput],
+  ['closing_cost', closingCostInput],
+]);
+
 const attachListeners = () => {
   const onChange = () => {
     showAmountHints();
@@ -329,41 +343,43 @@ const makeSvg = (divId, width, height, margin) => {
       .attr('transform', `translate(${margin.left}, ${margin.top})`);
 };
 
-const makeAxes = (svg, data, keys, width, height, margin, yLabel, yDomainFn) => {
-  // Add X axis
-  const x = d3.scaleLinear().domain(d3.extent(data, (d) => d.month)).range([
-    0,
-    width,
-  ]);
-  svg.append('g')
-      .attr('transform', `translate(0, ${height})`)
-      .call(d3.axisBottom(x).tickValues(d3.range(0, data.length, 12)));
+const makeAxes =
+    (svg, data, keys, width, height, margin, yLabel, yDomainFn) => {
+      // Add X axis
+      const x = d3.scaleLinear().domain(d3.extent(data, (d) => d.month)).range([
+        0,
+        width,
+      ]);
+      svg.append('g')
+          .attr('transform', `translate(0, ${height})`)
+          .call(d3.axisBottom(x).tickValues(d3.range(0, data.length, 12)));
 
-  // text label for the x axis
-  svg.append('text')
-      .attr('transform', `translate(${width / 2}, ${height + margin.top})`)
-      .style('text-anchor', 'middle')
-      .text('Month');
+      // text label for the x axis
+      svg.append('text')
+          .attr('transform', `translate(${width / 2}, ${height + margin.top})`)
+          .style('text-anchor', 'middle')
+          .text('Month');
 
-  const y = d3.scaleLinear()
-                .domain([
-                  0,
-                  d3.max(data, (d) => yDomainFn(keys.map((k) => d[k])) * 1.25),
-                ])
-                .range([height, 0]);
-  svg.append('g').call(d3.axisLeft(y));
+      const y =
+          d3.scaleLinear()
+              .domain([
+                0,
+                d3.max(data, (d) => yDomainFn(keys.map((k) => d[k])) * 1.25),
+              ])
+              .range([height, 0]);
+      svg.append('g').call(d3.axisLeft(y));
 
-  // text label for the y axis
-  svg.append('text')
-      .attr('transform', 'rotate(-90)')
-      .attr('y', 0 - margin.left)
-      .attr('x', 0 - height / 2)
-      .attr('dy', '1em')
-      .style('text-anchor', 'middle')
-      .text(yLabel);
+      // text label for the y axis
+      svg.append('text')
+          .attr('transform', 'rotate(-90)')
+          .attr('y', 0 - margin.left)
+          .attr('x', 0 - height / 2)
+          .attr('dy', '1em')
+          .style('text-anchor', 'middle')
+          .text(yLabel);
 
-  return {x, y};
-};
+      return {x, y};
+    };
 
 const makeTooltip = (svg, data, keys, x, identifyPaymentType) => {
   const tooltip = svg.append('g');
@@ -450,19 +466,7 @@ const makeLegend = (svg, width, color, keys) => {
 const initFieldsFromUrl = () => {
   const url = new URL(location.href);
   let hasValue = false;
-  for (const [name, elt] of [
-           ['price', priceInput],
-           ['home_value', homeValueInput],
-           ['hoa', hoaInput],
-           ['down_payment', downPaymentPercentageInput],
-           ['down_payment_amt', downPaymentAbsoluteInput],
-           ['interest_rate', interestRateInput],
-           ['mortgage_insurance', mortgageInsuranceInput],
-           ['property_tax', propertyTaxAbsoluteInput],
-           ['property_tax_pct', propertyTaxPercentageInput],
-           ['hoi', homeownersInsuranceInput],
-           ['closing_cost', closingCostInput],
-  ]) {
+  for (const [name, elt] of urlParamMap.entries()) {
     const value = url.searchParams.get(name);
     elt.value = value ?? '';
     hasValue = hasValue || value !== null;
@@ -475,19 +479,7 @@ const initFieldsFromUrl = () => {
 
 const updateUrl = () => {
   const url = new URL(location.href);
-  for (const [name, elt] of [
-           ['price', priceInput],
-           ['home_value', homeValueInput],
-           ['hoa', hoaInput],
-           ['down_payment', downPaymentPercentageInput],
-           ['down_payment_amt', downPaymentAbsoluteInput],
-           ['interest_rate', interestRateInput],
-           ['mortgage_insurance', mortgageInsuranceInput],
-           ['property_tax', propertyTaxAbsoluteInput],
-           ['property_tax_pct', propertyTaxPercentageInput],
-           ['hoi', homeownersInsuranceInput],
-           ['closing_cost', closingCostInput],
-  ]) {
+  for (const [name, elt] of urlParamMap.entries()) {
     if (elt.value === '') {
       url.searchParams.delete(name);
     } else {
