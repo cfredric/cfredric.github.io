@@ -14,8 +14,10 @@ const priceInput = document.getElementById('price-input');
 const homeValueInput = document.getElementById('home-value-input');
 const homeValueHintOutput = document.getElementById('home-value-hint');
 const hoaInput = document.getElementById('hoa-input');
-const downPaymentPercentageInput = document.getElementById('down-payment-percentage-input');
-const downPaymentAbsoluteInput = document.getElementById('down-payment-absolute-input');
+const downPaymentPercentageInput =
+    document.getElementById('down-payment-percentage-input');
+const downPaymentAbsoluteInput =
+    document.getElementById('down-payment-absolute-input');
 const interestRateInput = document.getElementById('interest-rate-input');
 const mortgageInsuranceInput = document.getElementById(
     'mortgage-insurance-input',
@@ -112,7 +114,8 @@ const years = 30;
 const price = () => orZero(priceInput);
 const homeValue = () => orZero(homeValueInput) || price();
 const hoa = () => orZero(hoaInput);
-const downPayment = () => orZero(downPaymentPercentageInput) / 100 * price() || orZero(downPaymentAbsoluteInput);
+const downPayment = () => orZero(downPaymentPercentageInput) / 100 * price() ||
+    orZero(downPaymentAbsoluteInput);
 const interestRate = () => orZero(interestRateInput) / 100;
 const pmi = () => orZero(mortgageInsuranceInput);
 const propertyTax = () => orZero(propertyTaxAbsoluteInput) ||
@@ -194,7 +197,7 @@ const calculatePaymentSchedule = (monthlyPayment) => {
 const showAmountHints = () => {
   homeValueHintOutput.innerText = `(${fmt.format(homeValue())})`;
   downPaymentHintOutput.innerText = `(${fmt.format(downPayment())})`;
-  propertyTaxHintOutput.innerText = `(${fmt.format(propertyTax())} /mo)`;
+  propertyTaxHintOutput.innerText = `(${fmt.format(propertyTax())}/mo)`;
 };
 
 const bisectMonth = (data, x, mouseX) => {
