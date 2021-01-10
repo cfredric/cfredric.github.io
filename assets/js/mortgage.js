@@ -213,7 +213,9 @@ const calculatePaymentSchedule = (monthlyPayment) => {
 const showAmountHints = () => {
   homeValueHintOutput.innerText = `(${fmt.format(homeValue())})`;
   downPaymentHintOutput.innerText = `(${fmt.format(downPayment())})`;
-  propertyTaxHintOutput.innerText = `(${fmt.format(propertyTax())}/mo)`;
+  propertyTaxHintOutput.innerText =
+      `(${fmt.format(propertyTax() * 12 / homeValue() * 1000)} / $1000; ${
+          fmt.format(propertyTax())}/mo)`;
   mortgageTermHintOutput.innerText = `(${mortgageTerm()} yrs)`;
 };
 
