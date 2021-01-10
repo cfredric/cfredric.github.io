@@ -32,6 +32,8 @@ const homeownersInsuranceInput = document.getElementById(
     'homeowners-insurance-input',
 );
 const closingCostInput = document.getElementById('closing-cost-input');
+const mortgageTermInput = document.getElementById('mortgage-term-input');
+const mortgageTermHintOutput = document.getElementById('mortgage-term-hint');
 
 const downPaymentHintOutput = document.getElementById('down-payment-hint');
 const loanAmountOutput = document.getElementById('loan-amount-output');
@@ -95,6 +97,7 @@ const urlParamMap = new Map([
   ['property_tax_pct', propertyTaxPercentageInput],
   ['hoi', homeownersInsuranceInput],
   ['closing_cost', closingCostInput],
+  ['mortgage-term', mortgageTermInput],
 ]);
 
 const attachListeners = () => {
@@ -115,14 +118,12 @@ const attachListeners = () => {
                propertyTaxPercentageInput,
                homeownersInsuranceInput,
                closingCostInput,
+               mortgageTermInput,
   ]) {
     elt.addEventListener('change', () => onChange());
     elt.addEventListener('input', () => onChange());
   }
 };
-
-// Assume a 30 year fixed loan.
-const years = 30;
 
 // Value getters.
 const price = () => orZero(priceInput);
@@ -136,9 +137,11 @@ const propertyTax = () => orZero(propertyTaxAbsoluteInput) ||
     (orZero(propertyTaxPercentageInput) / 100 * homeValue() / 12);
 const homeownersInsurance = () => orZero(homeownersInsuranceInput);
 const closingCost = () => orZero(closingCostInput);
+// Assume a 30 year fixed loan.
+const mortgageTerm = () => orZero(mortgageTermInput) || 30;
 
 // For convenience.
-const n = 12 * years;
+const n = () => 12 * mortgageTerm();
 const downPaymentPct = () => downPayment() / price();
 
 const setContents = () => {
@@ -146,7 +149,7 @@ const setContents = () => {
   const M = monthlyFormula(
       price() * (1 - downPaymentPct()),
       interestRate() / 12,
-      n,
+      n(),
   );
   const extras = hoa() + propertyTax() + homeownersInsurance();
 
@@ -184,7 +187,7 @@ const monthlyFormula = (P, r, n) =>
 const calculatePaymentSchedule = (monthlyPayment) => {
   let equity = downPayment();
   const schedule = [];
-  for (const month of d3.range(n)) {
+  for (const month of d3.range(n())) {
     const principal = price() - equity;
     const interestPayment = (interestRate() / 12) * principal;
     const pmiPayment = equity < 0.2 * price() ? pmi() : 0;
@@ -201,7 +204,7 @@ const calculatePaymentSchedule = (monthlyPayment) => {
     });
   }
   return {
-    sum: n * monthlyPayment + d3.sum(schedule, (d) => d.pmi),
+    sum: n() * monthlyPayment + d3.sum(schedule, (d) => d.pmi),
     schedule,
     cumulative: cumulativeSumByFields(schedule, new Set(keys)),
   };
@@ -211,6 +214,7 @@ const showAmountHints = () => {
   homeValueHintOutput.innerText = `(${fmt.format(homeValue())})`;
   downPaymentHintOutput.innerText = `(${fmt.format(downPayment())})`;
   propertyTaxHintOutput.innerText = `(${fmt.format(propertyTax())}/mo)`;
+  mortgageTermHintOutput.innerText = `(${mortgageTerm()} yrs)`;
 };
 
 const bisectMonth = (data, x, mouseX) => {
@@ -316,11 +320,10 @@ const buildCumulativeChart = (data, keys) => {
     const yTarget = y.invert(mouseY);
     const sorted = keys.map((key) => ({key, value: datum[key]}))
                        .sort((a, b) => a.value - b.value);
-    const elt =
-        sorted.find(
-            (elt, idx, arr) => yTarget <= elt.value &&
-                (idx === arr.length - 1 || arr[idx + 1].value >= yTarget),
-            ) ??
+    const elt = sorted.find(
+        (elt, idx, arr) => yTarget <= elt.value &&
+            (idx === arr.length - 1 || arr[idx + 1].value >= yTarget),
+        ) ??
         sorted[sorted.length - 1];
     return keys.indexOf(elt.key);
   });
