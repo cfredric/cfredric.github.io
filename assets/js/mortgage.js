@@ -465,7 +465,7 @@ const makeLegend = (svg, width, color, keys) => {
       .attr('x', 18)
       .attr('y', (_, i) => i * 18)
       .attr('text-anchor', 'start')
-      .attr('alignment-baseline', 'hanging');
+      .attr('dominant-baseline', 'hanging');
 };
 
 const initFieldsFromUrl = () => {
