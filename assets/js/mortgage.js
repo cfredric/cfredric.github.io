@@ -154,11 +154,11 @@ const setContents = () => {
   monthlyPaymentPmiOutput.innerText = `${fmt.format(M + extras + pmi())}`;
   const showPmi = pmi() && downPaymentPct() < 0.2;
   document
-      .querySelector(
-          '#monthly-payment-without-pmi-span',
+      .getElementById(
+          'monthly-payment-without-pmi-span',
           )
       .style.display = showPmi ? '' : 'none';
-  document.querySelector('#monthly-payment-pmi-div').style.display =
+  document.getElementById('monthly-payment-pmi-div').style.display =
       showPmi ? '' : 'none';
 
   if (interestRate()) {
