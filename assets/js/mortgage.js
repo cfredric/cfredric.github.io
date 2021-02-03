@@ -5,6 +5,9 @@ const fmt = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
 });
+const pctFmt = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+});
 const orZero = (elt) => {
   const num = Number.parseFloat(elt.value);
   return Number.isNaN(num) ? 0 : num;
@@ -34,6 +37,8 @@ const homeownersInsuranceInput = document.getElementById(
 const closingCostInput = document.getElementById('closing-cost-input');
 const mortgageTermInput = document.getElementById('mortgage-term-input');
 const mortgageTermHintOutput = document.getElementById('mortgage-term-hint');
+const annualIncomeInput = document.getElementById('annual-income-input');
+const monthlyDebtInput = document.getElementById('monthly-debt-input');
 
 const downPaymentHintOutput = document.getElementById('down-payment-hint');
 const loanAmountOutput = document.getElementById('loan-amount-output');
@@ -49,6 +54,7 @@ const lifetimePaymentOutput = document.getElementById(
 const purchasePaymentOutput = document.getElementById(
     'purchase-payment-output',
 );
+const debtToIncomeOutput = document.getElementById('debt-to-income-ratio-output');
 
 const keys = [
   'principal',
@@ -98,6 +104,8 @@ const urlParamMap = new Map([
   ['hoi', homeownersInsuranceInput],
   ['closing_cost', closingCostInput],
   ['mortgage-term', mortgageTermInput],
+  ['annual-income', annualIncomeInput],
+  ['monthly-debt', monthlyDebtInput],
 ]);
 
 const attachListeners = () => {
@@ -106,20 +114,7 @@ const attachListeners = () => {
     updateUrl();
     setContents();
   };
-  for (const elt
-           of [priceInput,
-               homeValueInput,
-               hoaInput,
-               downPaymentPercentageInput,
-               downPaymentAbsoluteInput,
-               interestRateInput,
-               mortgageInsuranceInput,
-               propertyTaxAbsoluteInput,
-               propertyTaxPercentageInput,
-               homeownersInsuranceInput,
-               closingCostInput,
-               mortgageTermInput,
-  ]) {
+  for (const elt of urlParamMap.values()) {
     elt.addEventListener('change', () => onChange());
     elt.addEventListener('input', () => onChange());
   }
@@ -139,6 +134,8 @@ const homeownersInsurance = () => orZero(homeownersInsuranceInput);
 const closingCost = () => orZero(closingCostInput);
 // Assume a 30 year fixed loan.
 const mortgageTerm = () => orZero(mortgageTermInput) || 30;
+const annualIncome = () => orZero(annualIncomeInput);
+const monthlyDebt = () => orZero(monthlyDebtInput);
 
 // For convenience.
 const n = () => 12 * mortgageTerm();
@@ -179,6 +176,14 @@ const setContents = () => {
       fmt.format(
           downPayment() + closingCost(),
           )}`;
+
+  if (annualIncome()) {
+    debtToIncomeOutput.innerText = `${pctFmt.format((monthlyDebt() + M + extras + pmi()) / annualIncome() * 12)}`;
+    document.getElementById('debt-to-income-ratio-div').style.display = '';
+  } else {
+    debtToIncomeOutput.innerText = '';
+    document.getElementById('debt-to-income-ratio-div').style.display = 'none';
+  }
 };
 
 const monthlyFormula = (P, r, n) =>
