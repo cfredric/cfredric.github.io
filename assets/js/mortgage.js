@@ -42,6 +42,7 @@ const monthlyDebtInput = document.getElementById('monthly-debt-input');
 
 const downPaymentHintOutput = document.getElementById('down-payment-hint');
 const loanAmountOutput = document.getElementById('loan-amount-output');
+const principalAndInterestOutput = document.getElementById('principal-and-interest-output');
 const monthlyPaymentAmountOutput = document.getElementById(
     'monthly-payment-output',
 );
@@ -148,6 +149,7 @@ const setContents = () => {
       interestRate() / 12,
       n(),
   );
+  principalAndInterestOutput.innerText = `${fmt.format(M)}`;
   const extras = hoa() + propertyTax() + homeownersInsurance();
 
   monthlyPaymentAmountOutput.innerText = `${fmt.format(M + extras)}`;
