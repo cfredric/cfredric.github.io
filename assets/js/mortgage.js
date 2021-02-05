@@ -144,48 +144,55 @@ const downPaymentPct = () => downPayment() / price();
 
 const setContents = () => {
   loanAmountOutput.innerText = `${fmt.format(price() - downPayment())}`;
-  const M = monthlyFormula(
-      price() * (1 - downPaymentPct()),
-      interestRate() / 12,
-      n(),
-  );
-  principalAndInterestOutput.innerText = `${fmt.format(M)}`;
-  const extras = hoa() + propertyTax() + homeownersInsurance();
 
-  monthlyPaymentAmountOutput.innerText = `${fmt.format(M + extras)}`;
-  monthlyPaymentPmiOutput.innerText = `${fmt.format(M + extras + pmi())}`;
-  const showPmi = pmi() && downPaymentPct() < 0.2;
-  document
-      .getElementById(
-          'monthly-payment-without-pmi-span',
-          )
-      .style.display = showPmi ? '' : 'none';
-  document.getElementById('monthly-payment-pmi-div').style.display =
-      showPmi ? '' : 'none';
+  if (interestRate() || downPayment() === price()) {
+    const M = downPayment() == price() ? 0 : monthlyFormula(
+        price() * (1 - downPaymentPct()),
+        interestRate() / 12,
+        n(),
+    );
+    principalAndInterestOutput.innerText = `${fmt.format(M)}`;
+    const extras = hoa() + propertyTax() + homeownersInsurance();
 
-  if (interestRate()) {
+    monthlyPaymentAmountOutput.innerText = `${fmt.format(M + extras)}`;
+    monthlyPaymentPmiOutput.innerText = `${fmt.format(M + extras + pmi())}`;
+    const showPmi = pmi() && downPaymentPct() < 0.2;
+    document
+        .getElementById(
+            'monthly-payment-without-pmi-span',
+            )
+        .style.display = showPmi ? '' : 'none';
+    document.getElementById('monthly-payment-pmi-div').style.display =
+        showPmi ? '' : 'none';
     const {
       sum: amortizedSum,
       schedule,
       cumulative,
     } = calculatePaymentSchedule(M);
     buildPaymentScheduleChart(schedule, keys);
-    buildCumulativeChart(cumulative, ['principal', 'interest']);
-    lifetimePaymentOutput.innerText = `${fmt.format(amortizedSum)}`;
+    if (M) {
+      buildCumulativeChart(cumulative, ['principal', 'interest']);
+      lifetimePaymentOutput.innerText = `${fmt.format(amortizedSum)}`;
+    } else {
+      document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
+      lifetimePaymentOutput.innerText = `${fmt.format(0)}`;
+    }
+
+    if (annualIncome()) {
+      debtToIncomeOutput.innerText = `${pctFmt.format((monthlyDebt() + M + extras + pmi()) / annualIncome() * 12)}`;
+      document.getElementById('debt-to-income-ratio-div').style.display = '';
+    } else {
+      debtToIncomeOutput.innerText = '';
+      document.getElementById('debt-to-income-ratio-div').style.display = 'none';
+    }
+  } else {
+    clearMonthlyPaymentOutputs();
   }
 
   purchasePaymentOutput.innerText = `${
       fmt.format(
           downPayment() + closingCost(),
           )}`;
-
-  if (annualIncome()) {
-    debtToIncomeOutput.innerText = `${pctFmt.format((monthlyDebt() + M + extras + pmi()) / annualIncome() * 12)}`;
-    document.getElementById('debt-to-income-ratio-div').style.display = '';
-  } else {
-    debtToIncomeOutput.innerText = '';
-    document.getElementById('debt-to-income-ratio-div').style.display = 'none';
-  }
 };
 
 const monthlyFormula = (P, r, n) =>
@@ -473,6 +480,19 @@ const makeLegend = (svg, width, color, keys) => {
       .attr('y', (_, i) => i * 18)
       .attr('text-anchor', 'start')
       .attr('dominant-baseline', 'hanging');
+};
+
+const clearMonthlyPaymentOutputs = () => {
+  principalAndInterestOutput.innerText = '';
+  monthlyPaymentAmountOutput.innerText = '';
+  monthlyPaymentPmiOutput.innerText = '';
+  lifetimePaymentOutput.innerText = '';
+
+  debtToIncomeOutput.innerText = '';
+  document.getElementById('debt-to-income-ratio-div').style.display = 'none';
+
+  document.querySelector('#schedule_viz > svg:first-of-type')?.remove();
+  document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
 };
 
 const initFieldsFromUrl = () => {
