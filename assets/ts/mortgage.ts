@@ -8,7 +8,7 @@ const fmt = new Intl.NumberFormat('en-US', {
 const pctFmt = new Intl.NumberFormat('en-US', {
   style: 'percent',
 });
-const orZero = (elt: HTMLInputElement) => {
+const orZero = (elt: HTMLInputElement): number => {
   const num = Number.parseFloat(elt.value);
   return Number.isNaN(num) ? 0 : num;
 };
@@ -107,7 +107,7 @@ const urlParamMap = new Map<string, HTMLInputElement>([
   ['monthly-debt', monthlyDebtInput],
 ]);
 
-const attachListeners = () => {
+const attachListeners = (): void => {
   const onChange = () => {
     showAmountHints();
     updateUrl();
@@ -120,27 +120,27 @@ const attachListeners = () => {
 };
 
 // Value getters.
-const price = () => orZero(priceInput);
-const homeValue = () => orZero(homeValueInput) || price();
-const hoa = () => orZero(hoaInput);
-const downPayment = () => orZero(downPaymentPercentageInput) / 100 * price() ||
+const price = (): number => orZero(priceInput);
+const homeValue = (): number => orZero(homeValueInput) || price();
+const hoa = (): number => orZero(hoaInput);
+const downPayment = (): number => orZero(downPaymentPercentageInput) / 100 * price() ||
     orZero(downPaymentAbsoluteInput);
-const interestRate = () => orZero(interestRateInput) / 100;
-const pmi = () => orZero(mortgageInsuranceInput);
-const propertyTax = () => orZero(propertyTaxAbsoluteInput) ||
+const interestRate = (): number => orZero(interestRateInput) / 100;
+const pmi = (): number => orZero(mortgageInsuranceInput);
+const propertyTax = (): number => orZero(propertyTaxAbsoluteInput) ||
     (orZero(propertyTaxPercentageInput) / 100 * homeValue() / 12);
-const homeownersInsurance = () => orZero(homeownersInsuranceInput);
-const closingCost = () => orZero(closingCostInput);
+const homeownersInsurance = (): number => orZero(homeownersInsuranceInput);
+const closingCost = (): number => orZero(closingCostInput);
 // Assume a 30 year fixed loan.
-const mortgageTerm = () => orZero(mortgageTermInput) || 30;
-const annualIncome = () => orZero(annualIncomeInput);
-const monthlyDebt = () => orZero(monthlyDebtInput);
+const mortgageTerm = (): number => orZero(mortgageTermInput) || 30;
+const annualIncome = (): number => orZero(annualIncomeInput);
+const monthlyDebt = (): number => orZero(monthlyDebtInput);
 
 // For convenience.
-const n = () => 12 * mortgageTerm();
-const downPaymentPct = () => downPayment() / price();
+const n = (): number => 12 * mortgageTerm();
+const downPaymentPct = (): number => downPayment() / price();
 
-const setContents = () => {
+const setContents = (): void => {
   loanAmountOutput.innerText = `${fmt.format(price() - downPayment())}`;
 
   if (interestRate() || downPayment() === price()) {
@@ -193,7 +193,7 @@ const setContents = () => {
           )}`;
 };
 
-const monthlyFormula = (P: number, r: number, n: number) =>
+const monthlyFormula = (P: number, r: number, n: number): number =>
     (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
 
 interface MonthlyPayment {
@@ -208,7 +208,7 @@ interface Margin {
   right: number;
 }
 
-const calculatePaymentSchedule = (monthlyPayment: number) => {
+const calculatePaymentSchedule = (monthlyPayment: number): {sum: number, schedule: MonthlyPayment[], cumulative: MonthlyPayment[]} => {
   let equity = downPayment();
   const schedule: MonthlyPayment[] = [];
   for (const month of d3.range(n())) {
@@ -235,7 +235,7 @@ const calculatePaymentSchedule = (monthlyPayment: number) => {
   };
 };
 
-const showAmountHints = () => {
+const showAmountHints = (): void => {
   homeValueHintOutput.innerText = `(${fmt.format(homeValue())})`;
   downPaymentHintOutput.innerText = `(${fmt.format(downPayment())})`;
   propertyTaxHintOutput.innerText =
@@ -244,7 +244,7 @@ const showAmountHints = () => {
   mortgageTermHintOutput.innerText = `(${mortgageTerm()} yrs)`;
 };
 
-const bisectMonth = (data: readonly MonthlyPayment[], x: d3.ScaleLinear<number, number>, mouseX: number) => {
+const bisectMonth = (data: readonly MonthlyPayment[], x: d3.ScaleLinear<number, number>, mouseX: number): MonthlyPayment => {
   const month = x.invert(mouseX);
   const index = d3.bisector((d: MonthlyPayment) => d.month).left(data, month, 1);
   const a = data[index - 1]!;
@@ -252,7 +252,7 @@ const bisectMonth = (data: readonly MonthlyPayment[], x: d3.ScaleLinear<number, 
   return b && month - a.month > b.month - month ? b : a;
 };
 
-const buildPaymentScheduleChart = (schedule: readonly MonthlyPayment[], keys: readonly PaymentType[]) => {
+const buildPaymentScheduleChart = (schedule: readonly MonthlyPayment[], keys: readonly PaymentType[]): void => {
   // set the dimensions and margins of the graph
   const margin = {top: 50, right: 100, bottom: 120, left: 100};
   const width = 900 - margin.left - margin.right;
@@ -305,7 +305,7 @@ const buildPaymentScheduleChart = (schedule: readonly MonthlyPayment[], keys: re
   makeLegend(svg, width, (d: PaymentType) => fieldColor(d), keys);
 };
 
-const buildCumulativeChart = (data: readonly MonthlyPayment[], keys: readonly PaymentType[]) => {
+const buildCumulativeChart = (data: readonly MonthlyPayment[], keys: readonly PaymentType[]): void => {
   const margin = {top: 50, right: 100, bottom: 120, left: 100};
   const width = 900 - margin.left - margin.right;
   const height = 450 - margin.top - margin.bottom;
@@ -344,7 +344,7 @@ const buildCumulativeChart = (data: readonly MonthlyPayment[], keys: readonly Pa
       .attr('d', (d) => area(d.values))
       .style('fill', (d) => transparent(fieldColor(d.key)));
 
-  makeTooltip(svg, data, keys, x, (mouseY: number, datum) => {
+  makeTooltip(svg, data, keys, x, (mouseY: number, datum): number => {
     const yTarget = y.invert(mouseY);
     const sorted = keys.map((key) => ({key, value: datum.data[key]}))
                        .sort((a, b) => a.value - b.value);
@@ -359,12 +359,12 @@ const buildCumulativeChart = (data: readonly MonthlyPayment[], keys: readonly Pa
   makeLegend(svg, width, (d) => transparent(fieldColor(d)), keys);
 };
 
-const transparent = (color: string) => `${color}aa`;
+const transparent = (color: string): string => `${color}aa`;
 
-const formatMonthNum = (m: number) =>
+const formatMonthNum = (m: number): string =>
     (m >= 12 ? `${Math.floor(m / 12)}y ` : '') + `${m % 12}mo`;
 
-const makeSvg = (divId: string, width: number, height: number, margin: Margin) => {
+const makeSvg = (divId: string, width: number, height: number, margin: Margin): d3.Selection<SVGGElement, unknown, HTMLElement, any> => {
   d3.select(`#${divId}`).select('svg').remove();
   return d3.select(`#${divId}`)
       .append('svg')
@@ -434,7 +434,7 @@ const makeTooltip = (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, 
 
   svg.on('touchend mouseleave', () => tooltip.call(callout, null, null));
 
-  const callout = (g: d3.Selection<SVGGElement, unknown, HTMLElement, any>, value: string, paymentTypeIdx: number) => {
+  const callout = (g: d3.Selection<SVGGElement, unknown, HTMLElement, any>, value: string, paymentTypeIdx: number): void => {
     if (!value) {
       g.style('display', 'none');
       return;
@@ -473,7 +473,7 @@ const makeTooltip = (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, 
   };
 };
 
-const makeLegend = (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, width: number, color: (d: PaymentType) => string, keys: readonly PaymentType[]) => {
+const makeLegend = (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, width: number, color: (d: PaymentType) => string, keys: readonly PaymentType[]): void => {
   const legend = svg.append('g')
                      .attr('class', 'legend')
                      .attr('transform', `translate(${width - 200}, -50)`);
@@ -511,7 +511,7 @@ const clearMonthlyPaymentOutputs = () => {
   document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
 };
 
-const initFieldsFromUrl = () => {
+const initFieldsFromUrl = (): void => {
   const url = new URL(location.href);
   let hasValue = false;
   for (const [name, elt] of urlParamMap.entries()) {
@@ -525,7 +525,7 @@ const initFieldsFromUrl = () => {
   }
 };
 
-const updateUrl = () => {
+const updateUrl = (): void => {
   const url = new URL(location.href);
   for (const [name, elt] of urlParamMap.entries()) {
     if (elt.value === '') {
@@ -537,7 +537,7 @@ const updateUrl = () => {
   history.pushState({}, '', url.toString());
 };
 
-const cumulativeSumByFields = (data: MonthlyPayment[], fields: Set<PaymentType>) => {
+const cumulativeSumByFields = (data: MonthlyPayment[], fields: Set<PaymentType>): MonthlyPayment[] => {
   const results = new Array<MonthlyPayment>(data.length);
   const carriedValue = (idx: number, key: PaymentType) => {
     if (!fields.has(key)) return data[idx]!.data[key];
