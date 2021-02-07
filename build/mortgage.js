@@ -75,22 +75,34 @@ var d3 = require("d3");
     ];
     var fieldColor = function (pt) {
         switch (pt) {
-            case 'principal': return '#1f77b4';
-            case 'interest': return '#ff7f0e';
-            case 'hoa': return '#bcbd22';
-            case 'property_tax': return '#17becf';
-            case 'homeowners_insurance': return '#9467bd';
-            case 'pmi': return '#7f7f7f';
+            case 'principal':
+                return '#1f77b4';
+            case 'interest':
+                return '#ff7f0e';
+            case 'hoa':
+                return '#bcbd22';
+            case 'property_tax':
+                return '#17becf';
+            case 'homeowners_insurance':
+                return '#9467bd';
+            case 'pmi':
+                return '#7f7f7f';
         }
     };
     var fieldDisplay = function (pt) {
         switch (pt) {
-            case 'principal': return 'Principal';
-            case 'interest': return 'Interest';
-            case 'hoa': return 'HOA';
-            case 'property_tax': return 'Property Tax';
-            case 'homeowners_insurance': return 'Homeowner\'s Insurance';
-            case 'pmi': return 'PMI';
+            case 'principal':
+                return 'Principal';
+            case 'interest':
+                return 'Interest';
+            case 'hoa':
+                return 'HOA';
+            case 'property_tax':
+                return 'Property Tax';
+            case 'homeowners_insurance':
+                return 'Homeowner\'s Insurance';
+            case 'pmi':
+                return 'PMI';
         }
     };
     var urlParamMap = new Map([
@@ -135,8 +147,10 @@ var d3 = require("d3");
     var price = function () { return orZero(priceInput); };
     var homeValue = function () { return orZero(homeValueInput) || price(); };
     var hoa = function () { return orZero(hoaInput); };
-    var downPayment = function () { return orZero(downPaymentPercentageInput) / 100 * price() ||
-        orZero(downPaymentAbsoluteInput); };
+    var downPayment = function () {
+        return orZero(downPaymentPercentageInput) / 100 * price() ||
+            orZero(downPaymentAbsoluteInput);
+    };
     var interestRate = function () { return orZero(interestRateInput) / 100; };
     var pmi = function () { return orZero(mortgageInsuranceInput); };
     var propertyTax = function () { return orZero(propertyTaxAbsoluteInput) ||
@@ -154,15 +168,15 @@ var d3 = require("d3");
         var _a;
         loanAmountOutput.innerText = "" + fmt.format(price() - downPayment());
         if (interestRate() || downPayment() === price()) {
-            var M = downPayment() == price() ? 0 : monthlyFormula(price() * (1 - downPaymentPct()), interestRate() / 12, n());
+            var M = downPayment() == price() ? 0 :
+                monthlyFormula(price() * (1 - downPaymentPct()), interestRate() / 12, n());
             principalAndInterestOutput.innerText = "" + fmt.format(M);
             var extras = hoa() + propertyTax() + homeownersInsurance();
             monthlyPaymentAmountOutput.innerText = "" + fmt.format(M + extras);
             monthlyPaymentPmiOutput.innerText = "" + fmt.format(M + extras + pmi());
             var showPmi = pmi() && downPaymentPct() < 0.2;
             document
-                .getElementById('monthly-payment-without-pmi-span')
-                .style.display = showPmi ? '' : 'none';
+                .getElementById('monthly-payment-without-pmi-span').style.display = showPmi ? '' : 'none';
             document.getElementById('monthly-payment-pmi-div').style.display =
                 showPmi ? '' : 'none';
             var _b = calculatePaymentSchedule(M), amortizedSum = _b.sum, schedule = _b.schedule, cumulative = _b.cumulative;
@@ -181,7 +195,8 @@ var d3 = require("d3");
             }
             else {
                 debtToIncomeOutput.innerText = '';
-                document.getElementById('debt-to-income-ratio-div').style.display = 'none';
+                document.getElementById('debt-to-income-ratio-div').style.display =
+                    'none';
             }
         }
         else {
@@ -395,13 +410,15 @@ var d3 = require("d3");
                 .join('path')
                 .attr('fill', 'white')
                 .attr('stroke', 'black');
-            var text = g.selectAll('text').data([null]).join('text').call(function (text) { return text.selectAll('tspan')
-                .data((value + '').split(/\n/))
-                .join('tspan')
-                .attr('x', 0)
-                .attr('y', function (_, i) { return i * 1.1 + "em"; })
-                .style('font-weight', function (_, i) { return i === paymentTypeIdx ? 'bold' : null; })
-                .text(function (d) { return d; }); });
+            var text = g.selectAll('text').data([null]).join('text').call(function (text) {
+                return text.selectAll('tspan')
+                    .data((value + '').split(/\n/))
+                    .join('tspan')
+                    .attr('x', 0)
+                    .attr('y', function (_, i) { return i * 1.1 + "em"; })
+                    .style('font-weight', function (_, i) { return i === paymentTypeIdx ? 'bold' : null; })
+                    .text(function (d) { return d; });
+            });
             var _a = text.node().getBBox(), y = _a.y, w = _a.width, h = _a.height;
             text.attr('transform', "translate(" + -w / 2 + "," + (15 - y) + ")");
             path.attr('d', "M" + (-w / 2 - 10) + ",5H-5l5,-5l5,5H" + (w / 2 + 10) + "v" + (h + 20) + "h-" + (w + 20) + "z");
@@ -501,7 +518,10 @@ var d3 = require("d3");
         try {
             for (var _c = __values(data.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
                 var _e = __read(_d.value, 2), idx = _e[0], datum = _e[1];
-                results[idx] = { month: datum.month, data: {} };
+                results[idx] = {
+                    month: datum.month,
+                    data: {}
+                };
                 try {
                     for (var fields_1 = (e_7 = void 0, __values(fields)), fields_1_1 = fields_1.next(); !fields_1_1.done; fields_1_1 = fields_1.next()) {
                         var field = fields_1_1.value;
