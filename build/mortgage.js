@@ -73,32 +73,26 @@ var d3 = require("d3");
         'homeowners_insurance',
         'pmi',
     ];
-    var fields = new Map([
-        ['principal', {
-                display: 'Principal',
-                color: '#1f77b4',
-            }],
-        ['interest', {
-                display: 'Interest',
-                color: '#ff7f0e',
-            }],
-        ['hoa', {
-                display: 'HOA',
-                color: '#bcbd22',
-            }],
-        ['property_tax', {
-                display: 'Property Tax',
-                color: '#17becf',
-            }],
-        ['homeowners_insurance', {
-                display: 'Homeowner\'s Insurance',
-                color: '#9467bd',
-            }],
-        ['pmi', {
-                display: 'PMI',
-                color: '#7f7f7f',
-            }],
-    ]);
+    var fieldColor = function (pt) {
+        switch (pt) {
+            case 'principal': return '#1f77b4';
+            case 'interest': return '#ff7f0e';
+            case 'hoa': return '#bcbd22';
+            case 'property_tax': return '#17becf';
+            case 'homeowners_insurance': return '#9467bd';
+            case 'pmi': return '#7f7f7f';
+        }
+    };
+    var fieldDisplay = function (pt) {
+        switch (pt) {
+            case 'principal': return 'Principal';
+            case 'interest': return 'Interest';
+            case 'hoa': return 'HOA';
+            case 'property_tax': return 'Property Tax';
+            case 'homeowners_insurance': return 'Homeowner\'s Insurance';
+            case 'pmi': return 'PMI';
+        }
+    };
     var urlParamMap = new Map([
         ['price', priceInput],
         ['home_value', homeValueInput],
@@ -243,9 +237,8 @@ var d3 = require("d3");
         mortgageTermHintOutput.innerText = "(" + mortgageTerm() + " yrs)";
     };
     var bisectMonth = function (data, x, mouseX) {
-        var bisect = d3.bisector(function (d) { return d.month; }).left;
         var month = x.invert(mouseX);
-        var index = bisect(data, month, 1);
+        var index = d3.bisector(function (d) { return d.month; }).left(data, month, 1);
         var a = data[index - 1];
         var b = data[index];
         return b && month - a.month > b.month - month ? b : a;
@@ -266,7 +259,7 @@ var d3 = require("d3");
             .offset(d3.stackOffsetNone)
             .value(function (d, key) { return d.data[key]; })(schedule))
             .join('path')
-            .style('fill', function (d) { return fields.get(d.key).color; })
+            .style('fill', function (d) { return fieldColor(d.key); })
             .attr('d', d3.area()
             .x(function (d) { return x(d.data.month); })
             .y0(function (d) { return y(d['0']); })
@@ -278,10 +271,10 @@ var d3 = require("d3");
             try {
                 for (var _b = __values(keys.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
                     var _d = __read(_c.value, 2), idx = _d[0], key = _d[1];
-                    if (cumulative + datum[key] >= yTarget) {
+                    if (cumulative + datum.data[key] >= yTarget) {
                         return idx;
                     }
-                    cumulative += datum[key];
+                    cumulative += datum.data[key];
                 }
             }
             catch (e_3_1) { e_3 = { error: e_3_1 }; }
@@ -293,7 +286,7 @@ var d3 = require("d3");
             }
             return keys.length - 1;
         });
-        makeLegend(svg, width, function (d) { return fields.get(d).color; }, keys);
+        makeLegend(svg, width, function (d) { return fieldColor(d); }, keys);
     };
     var buildCumulativeChart = function (data, keys) {
         var margin = { top: 50, right: 100, bottom: 120, left: 100 };
@@ -317,17 +310,17 @@ var d3 = require("d3");
             .attr('class', function (d) { return "area " + d.key; })
             .append('path')
             .attr('d', function (d) { return area(d.values); })
-            .style('fill', function (d) { return transparent(fields.get(d.key).color); });
+            .style('fill', function (d) { return transparent(fieldColor(d.key)); });
         makeTooltip(svg, data, keys, x, function (mouseY, datum) {
             var _a;
             var yTarget = y.invert(mouseY);
-            var sorted = keys.map(function (key) { return ({ key: key, value: datum[key] }); })
+            var sorted = keys.map(function (key) { return ({ key: key, value: datum.data[key] }); })
                 .sort(function (a, b) { return a.value - b.value; });
             var elt = (_a = sorted.find(function (elt, idx, arr) { return yTarget <= elt.value &&
                 (idx === arr.length - 1 || arr[idx + 1].value >= yTarget); })) !== null && _a !== void 0 ? _a : sorted[sorted.length - 1];
             return keys.indexOf(elt.key);
         });
-        makeLegend(svg, width, function (d) { return transparent(fields.get(d).color); }, keys);
+        makeLegend(svg, width, function (d) { return transparent(fieldColor(d)); }, keys);
     };
     var transparent = function (color) { return color + "aa"; };
     var formatMonthNum = function (m) {
@@ -344,7 +337,8 @@ var d3 = require("d3");
     };
     var makeAxes = function (svg, data, keys, width, height, margin, yLabel, yDomainFn) {
         // Add X axis
-        var x = d3.scaleLinear().domain(d3.extent(data, function (d) { return d.month; })).range([
+        var ext = d3.extent(data, function (d) { return d.month; });
+        var x = d3.scaleLinear().domain(ext).range([
             0,
             width,
         ]);
@@ -380,7 +374,7 @@ var d3 = require("d3");
             var pointer = d3.pointer(event, this);
             var datum = bisectMonth(data, x, pointer[0]);
             var paymentTypeIdx = identifyPaymentType(pointer[1], datum);
-            var value = keys.map(function (k) { return fields.get(k).display + ": " + fmt.format(datum.data[k]) +
+            var value = keys.map(function (k) { return fieldDisplay(k) + ": " + fmt.format(datum.data[k]) +
                 '\n'; })
                 .join('') +
                 ("Month: " + formatMonthNum(datum.month));
@@ -430,7 +424,7 @@ var d3 = require("d3");
             .data(keys)
             .enter()
             .append('text')
-            .text(function (d) { return fields.get(d).display; })
+            .text(function (d) { return fieldDisplay(d); })
             .attr('x', 18)
             .attr('y', function (_, i) { return i * 18; })
             .attr('text-anchor', 'start')

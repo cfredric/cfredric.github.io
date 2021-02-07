@@ -15,7 +15,7 @@ const orZero = (elt: HTMLInputElement) => {
 
 const priceInput = document.getElementById('price-input') as HTMLInputElement;
 const homeValueInput = document.getElementById('home-value-input') as HTMLInputElement;
-const homeValueHintOutput = document.getElementById('home-value-hint');
+const homeValueHintOutput = document.getElementById('home-value-hint')!;
 const hoaInput = document.getElementById('hoa-input') as HTMLInputElement;
 const downPaymentPercentageInput =
     document.getElementById('down-payment-percentage-input') as HTMLInputElement;
@@ -30,75 +30,65 @@ const propertyTaxAbsoluteInput =
 const propertyTaxPercentageInput =
     document.getElementById('property-tax-percentage-input') as HTMLInputElement;
 const propertyTaxHintOutput =
-    document.getElementById('property-tax-percentage-hint');
+    document.getElementById('property-tax-percentage-hint')!;
 const homeownersInsuranceInput = document.getElementById(
     'homeowners-insurance-input',
 ) as HTMLInputElement;
 const closingCostInput = document.getElementById('closing-cost-input') as HTMLInputElement;
 const mortgageTermInput = document.getElementById('mortgage-term-input') as HTMLInputElement;
-const mortgageTermHintOutput = document.getElementById('mortgage-term-hint');
+const mortgageTermHintOutput = document.getElementById('mortgage-term-hint')!;
 const annualIncomeInput = document.getElementById('annual-income-input') as HTMLInputElement;
 const monthlyDebtInput = document.getElementById('monthly-debt-input') as HTMLInputElement;
 
-const downPaymentHintOutput = document.getElementById('down-payment-hint');
-const loanAmountOutput = document.getElementById('loan-amount-output');
-const principalAndInterestOutput = document.getElementById('principal-and-interest-output');
+const downPaymentHintOutput = document.getElementById('down-payment-hint')!;
+const loanAmountOutput = document.getElementById('loan-amount-output')!;
+const principalAndInterestOutput = document.getElementById('principal-and-interest-output')!;
 const monthlyPaymentAmountOutput = document.getElementById(
     'monthly-payment-output',
-);
+)!;
 const monthlyPaymentPmiOutput = document.getElementById(
     'monthly-payment-pmi-output',
-);
+)!;
 const lifetimePaymentOutput = document.getElementById(
     'lifetime-payment-output',
-);
+)!;
 const purchasePaymentOutput = document.getElementById(
     'purchase-payment-output',
-);
-const debtToIncomeOutput = document.getElementById('debt-to-income-ratio-output');
+)!;
+const debtToIncomeOutput = document.getElementById('debt-to-income-ratio-output')!;
 
-type PaymentType =
-  'principal' | 
-  'interest' |
-  'hoa' |
-  'property_tax' |
-  'homeowners_insurance' |
-  'pmi';
 
-const keys: PaymentType[] = [
+const keys = [
   'principal',
   'interest',
   'hoa',
   'property_tax',
   'homeowners_insurance',
   'pmi',
-];
-const fields = new Map<PaymentType, {display: string, color: string}>([
-  ['principal', {
-    display: 'Principal',
-    color: '#1f77b4',
-  }],
-  ['interest', {
-    display: 'Interest',
-    color: '#ff7f0e',
-  }],
-  ['hoa', {
-    display: 'HOA',
-    color: '#bcbd22',
-  }],
-  ['property_tax', {
-    display: 'Property Tax',
-    color: '#17becf',
-  }],
-  ['homeowners_insurance', {
-    display: 'Homeowner\'s Insurance',
-    color: '#9467bd',
-  }],
-  ['pmi', {
-    display: 'PMI',
-    color: '#7f7f7f',
-  }],
-]);
+] as const;
+type PaymentType = typeof keys[number];
+
+const fieldColor = (pt: PaymentType): string => {
+  switch (pt) {
+    case 'principal': return '#1f77b4';
+    case 'interest': return '#ff7f0e';
+    case 'hoa': return '#bcbd22';
+    case 'property_tax': return '#17becf';
+    case 'homeowners_insurance': return '#9467bd';
+    case 'pmi': return '#7f7f7f';
+  }
+};
+
+const fieldDisplay = (pt: PaymentType): string => {
+  switch (pt) {
+    case 'principal': return 'Principal';
+    case 'interest': return 'Interest';
+    case 'hoa': return 'HOA';
+    case 'property_tax': return 'Property Tax';
+    case 'homeowners_insurance': return 'Homeowner\'s Insurance';
+    case 'pmi': return 'PMI';
+  }
+};
 
 const urlParamMap = new Map<string, HTMLInputElement>([
   ['price', priceInput],
@@ -168,9 +158,9 @@ const setContents = () => {
     document
         .getElementById(
             'monthly-payment-without-pmi-span',
-            )
+            )!
         .style.display = showPmi ? '' : 'none';
-    document.getElementById('monthly-payment-pmi-div').style.display =
+    document.getElementById('monthly-payment-pmi-div')!.style.display =
         showPmi ? '' : 'none';
     const {
       sum: amortizedSum,
@@ -188,10 +178,10 @@ const setContents = () => {
 
     if (annualIncome()) {
       debtToIncomeOutput.innerText = `${pctFmt.format((monthlyDebt() + M + extras + pmi()) / annualIncome() * 12)}`;
-      document.getElementById('debt-to-income-ratio-div').style.display = '';
+      document.getElementById('debt-to-income-ratio-div')!.style.display = '';
     } else {
       debtToIncomeOutput.innerText = '';
-      document.getElementById('debt-to-income-ratio-div').style.display = 'none';
+      document.getElementById('debt-to-income-ratio-div')!.style.display = 'none';
     }
   } else {
     clearMonthlyPaymentOutputs();
@@ -254,16 +244,15 @@ const showAmountHints = () => {
   mortgageTermHintOutput.innerText = `(${mortgageTerm()} yrs)`;
 };
 
-const bisectMonth = (data: MonthlyPayment[], x: d3.ScaleLinear<number, number>, mouseX: number) => {
-  const bisect = d3.bisector((d: MonthlyPayment) => d.month).left;
+const bisectMonth = (data: readonly MonthlyPayment[], x: d3.ScaleLinear<number, number>, mouseX: number) => {
   const month = x.invert(mouseX);
-  const index = bisect(data, month, 1);
-  const a = data[index - 1];
+  const index = d3.bisector((d: MonthlyPayment) => d.month).left(data, month, 1);
+  const a = data[index - 1]!;
   const b = data[index];
   return b && month - a.month > b.month - month ? b : a;
 };
 
-const buildPaymentScheduleChart = (schedule: MonthlyPayment[], keys: PaymentType[]) => {
+const buildPaymentScheduleChart = (schedule: readonly MonthlyPayment[], keys: readonly PaymentType[]) => {
   // set the dimensions and margins of the graph
   const margin = {top: 50, right: 100, bottom: 120, left: 100};
   const width = 900 - margin.left - margin.right;
@@ -292,7 +281,7 @@ const buildPaymentScheduleChart = (schedule: MonthlyPayment[], keys: PaymentType
                 .value((d, key) => d.data[key])
                 (schedule))
       .join('path')
-      .style('fill', (d) => fields.get(d.key).color)
+      .style('fill', (d) => fieldColor(d.key))
       .attr(
           'd',
           d3.area<d3.SeriesPoint<MonthlyPayment>>()
@@ -305,18 +294,18 @@ const buildPaymentScheduleChart = (schedule: MonthlyPayment[], keys: PaymentType
     const yTarget = y.invert(mouseY);
     let cumulative = 0;
     for (const [idx, key] of keys.entries()) {
-      if (cumulative + datum[key] >= yTarget) {
+      if (cumulative + datum.data[key] >= yTarget) {
         return idx;
       }
-      cumulative += datum[key];
+      cumulative += datum.data[key];
     }
     return keys.length - 1;
   });
 
-  makeLegend(svg, width, (d: PaymentType) => fields.get(d).color, keys);
+  makeLegend(svg, width, (d: PaymentType) => fieldColor(d), keys);
 };
 
-const buildCumulativeChart = (data: MonthlyPayment[], keys: PaymentType[]) => {
+const buildCumulativeChart = (data: readonly MonthlyPayment[], keys: readonly PaymentType[]) => {
   const margin = {top: 50, right: 100, bottom: 120, left: 100};
   const width = 900 - margin.left - margin.right;
   const height = 450 - margin.top - margin.bottom;
@@ -353,21 +342,21 @@ const buildCumulativeChart = (data: MonthlyPayment[], keys: PaymentType[]) => {
       .attr('class', (d) => `area ${d.key}`)
       .append('path')
       .attr('d', (d) => area(d.values))
-      .style('fill', (d) => transparent(fields.get(d.key).color));
+      .style('fill', (d) => transparent(fieldColor(d.key)));
 
   makeTooltip(svg, data, keys, x, (mouseY: number, datum) => {
     const yTarget = y.invert(mouseY);
-    const sorted = keys.map((key) => ({key, value: datum[key]}))
+    const sorted = keys.map((key) => ({key, value: datum.data[key]}))
                        .sort((a, b) => a.value - b.value);
     const elt = sorted.find(
         (elt, idx, arr) => yTarget <= elt.value &&
-            (idx === arr.length - 1 || arr[idx + 1].value >= yTarget),
+            (idx === arr.length - 1 || arr[idx + 1]!.value >= yTarget),
         ) ??
-        sorted[sorted.length - 1];
+        sorted[sorted.length - 1]!;
     return keys.indexOf(elt.key);
   });
 
-  makeLegend(svg, width, (d) => transparent(fields.get(d).color), keys);
+  makeLegend(svg, width, (d) => transparent(fieldColor(d)), keys);
 };
 
 const transparent = (color: string) => `${color}aa`;
@@ -386,9 +375,10 @@ const makeSvg = (divId: string, width: number, height: number, margin: Margin) =
 };
 
 const makeAxes =
-    (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, data: MonthlyPayment[], keys: PaymentType[], width: number, height: number, margin: Margin, yLabel: string, yDomainFn: (ys: number[]) => number) => {
+    (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, data: readonly MonthlyPayment[], keys: readonly PaymentType[], width: number, height: number, margin: Margin, yLabel: string, yDomainFn: (ys: number[]) => number) => {
       // Add X axis
-      const x = d3.scaleLinear().domain(d3.extent(data, (d) => d.month)).range([
+      const ext = d3.extent(data, (d) => d.month) as [number, number];
+      const x = d3.scaleLinear().domain(ext).range([
         0,
         width,
       ]);
@@ -406,7 +396,7 @@ const makeAxes =
           d3.scaleLinear()
               .domain([
                 0,
-                d3.max(data, (d) => yDomainFn(keys.map((k) => d.data[k])) * 1.25),
+                d3.max(data, (d) => yDomainFn(keys.map((k) => d.data[k])) * 1.25)!,
               ])
               .range([height, 0]);
       svg.append('g').call(d3.axisLeft(y));
@@ -423,7 +413,7 @@ const makeAxes =
       return {x, y};
     };
 
-const makeTooltip = (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, data: MonthlyPayment[], keys: PaymentType[], x: d3.ScaleLinear<number, number, never>, identifyPaymentType: (yCoord: number, d: any) => number) => {
+const makeTooltip = (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, data: readonly MonthlyPayment[], keys: readonly PaymentType[], x: d3.ScaleLinear<number, number, never>, identifyPaymentType: (yCoord: number, d: MonthlyPayment) => number) => {
   const tooltip = svg.append('g');
 
   svg.on('touchmove mousemove', function(event) {
@@ -434,7 +424,7 @@ const makeTooltip = (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, 
 
     const value =
         keys.map(
-                (k) => `${fields.get(k).display}: ${fmt.format(datum.data[k])}` +
+                (k) => `${fieldDisplay(k)}: ${fmt.format(datum.data[k])}` +
                     '\n')
             .join('') +
         `Month: ${formatMonthNum(datum.month)}`;
@@ -483,7 +473,7 @@ const makeTooltip = (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, 
   };
 };
 
-const makeLegend = (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, width: number, color: (d: PaymentType) => string, keys: PaymentType[]) => {
+const makeLegend = (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, width: number, color: (d: PaymentType) => string, keys: readonly PaymentType[]) => {
   const legend = svg.append('g')
                      .attr('class', 'legend')
                      .attr('transform', `translate(${width - 200}, -50)`);
@@ -501,7 +491,7 @@ const makeLegend = (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, w
       .data(keys)
       .enter()
       .append('text')
-      .text((d) => fields.get(d).display)
+      .text((d) => fieldDisplay(d))
       .attr('x', 18)
       .attr('y', (_, i) => i * 18)
       .attr('text-anchor', 'start')
@@ -515,7 +505,7 @@ const clearMonthlyPaymentOutputs = () => {
   lifetimePaymentOutput.innerText = '';
 
   debtToIncomeOutput.innerText = '';
-  document.getElementById('debt-to-income-ratio-div').style.display = 'none';
+  document.getElementById('debt-to-income-ratio-div')!.style.display = 'none';
 
   document.querySelector('#schedule_viz > svg:first-of-type')?.remove();
   document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
@@ -550,14 +540,14 @@ const updateUrl = () => {
 const cumulativeSumByFields = (data: MonthlyPayment[], fields: Set<PaymentType>) => {
   const results = new Array<MonthlyPayment>(data.length);
   const carriedValue = (idx: number, key: PaymentType) => {
-    if (!fields.has(key)) return data[idx].data[key];
+    if (!fields.has(key)) return data[idx]!.data[key];
     if (idx === 0) return 0;
-    return results[idx - 1].data[key] + data[idx].data[key];
+    return results[idx - 1]!.data[key] + data[idx]!.data[key];
   };
   for (const [idx, datum] of data.entries()) {
     results[idx] = {month: datum.month, data: {} as Record<PaymentType, number>};
     for (const field of fields) {
-      results[idx].data[field] = carriedValue(idx, field);
+      results[idx]!.data[field] = carriedValue(idx, field);
     }
   }
   return results;
