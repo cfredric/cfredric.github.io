@@ -168,7 +168,7 @@ var d3 = require("d3");
         var _a;
         loanAmountOutput.innerText = "" + fmt.format(price() - downPayment());
         if (interestRate() || downPayment() === price()) {
-            var M = downPayment() == price() ? 0 :
+            var M = downPayment() === price() ? 0 :
                 monthlyFormula(price() * (1 - downPaymentPct()), interestRate() / 12, n());
             principalAndInterestOutput.innerText = "" + fmt.format(M);
             var extras = hoa() + propertyTax() + homeownersInsurance();

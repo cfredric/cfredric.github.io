@@ -166,7 +166,7 @@ const setContents = (): void => {
   loanAmountOutput.innerText = `${fmt.format(price() - downPayment())}`;
 
   if (interestRate() || downPayment() === price()) {
-    const M = downPayment() == price() ? 0 :
+    const M = downPayment() === price() ? 0 :
                                          monthlyFormula(
                                              price() * (1 - downPaymentPct()),
                                              interestRate() / 12,
