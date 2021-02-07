@@ -221,7 +221,7 @@ const setContents = (): void => {
 const monthlyFormula = (P: number, r: number, n: number): number =>
     (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
 
-interface MonthlyPayment {
+interface PaymentRecord {
   month: number;
   data: Record<PaymentType, number>;
 }
@@ -234,9 +234,9 @@ interface Margin {
 }
 
 const calculatePaymentSchedule = (monthlyPayment: number):
-    {sum: number, schedule: MonthlyPayment[], cumulative: MonthlyPayment[]} => {
+    {sum: number, schedule: PaymentRecord[], cumulative: PaymentRecord[]} => {
       let equity = downPayment();
-      const schedule: MonthlyPayment[] = [];
+      const schedule: PaymentRecord[] = [];
       for (const month of d3.range(n())) {
         const principal = price() - equity;
         const interestPayment = (interestRate() / 12) * principal;
@@ -271,18 +271,18 @@ const showAmountHints = (): void => {
 };
 
 const bisectMonth =
-    (data: readonly MonthlyPayment[], x: d3.ScaleLinear<number, number>,
-     mouseX: number): MonthlyPayment => {
+    (data: readonly PaymentRecord[], x: d3.ScaleLinear<number, number>,
+     mouseX: number): PaymentRecord => {
       const month = x.invert(mouseX);
       const index =
-          d3.bisector((d: MonthlyPayment) => d.month).left(data, month, 1);
+          d3.bisector((d: PaymentRecord) => d.month).left(data, month, 1);
       const a = data[index - 1]!;
       const b = data[index];
       return b && month - a.month > b.month - month ? b : a;
     };
 
 const buildPaymentScheduleChart =
-    (schedule: readonly MonthlyPayment[], keys: readonly PaymentType[]):
+    (schedule: readonly PaymentRecord[], keys: readonly PaymentType[]):
         void => {
           // set the dimensions and margins of the graph
           const margin = {top: 50, right: 100, bottom: 120, left: 100};
@@ -305,7 +305,7 @@ const buildPaymentScheduleChart =
           // Add the area
           svg.append('g')
               .selectAll('path')
-              .data(d3.stack<any, MonthlyPayment, PaymentType>()
+              .data(d3.stack<any, PaymentRecord, PaymentType>()
                         .keys(keys)
                         .order(d3.stackOrderNone)
                         .offset(d3.stackOffsetNone)
@@ -314,7 +314,7 @@ const buildPaymentScheduleChart =
               .style('fill', (d) => fieldColor(d.key))
               .attr(
                   'd',
-                  d3.area<d3.SeriesPoint<MonthlyPayment>>()
+                  d3.area<d3.SeriesPoint<PaymentRecord>>()
                       .x((d) => x(d.data.month))
                       .y0((d) => y(d['0']))
                       .y1((d) => y(d['1'])),
@@ -336,7 +336,7 @@ const buildPaymentScheduleChart =
         };
 
 const buildCumulativeChart =
-    (data: readonly MonthlyPayment[], keys: readonly PaymentType[]): void => {
+    (data: readonly PaymentRecord[], keys: readonly PaymentType[]): void => {
       const margin = {top: 50, right: 100, bottom: 120, left: 100};
       const width = 900 - margin.left - margin.right;
       const height = 450 - margin.top - margin.bottom;
@@ -410,7 +410,7 @@ const makeSvg = (divId: string, width: number, height: number, margin: Margin):
 
 const makeAxes =
     (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>,
-     data: readonly MonthlyPayment[], keys: readonly PaymentType[],
+     data: readonly PaymentRecord[], keys: readonly PaymentType[],
      width: number, height: number, margin: Margin, yLabel: string,
      yDomainFn: (ys: number[]) => number) => {
       // Add X axis
@@ -453,9 +453,9 @@ const makeAxes =
 
 const makeTooltip =
     (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>,
-     data: readonly MonthlyPayment[], keys: readonly PaymentType[],
+     data: readonly PaymentRecord[], keys: readonly PaymentType[],
      x: d3.ScaleLinear<number, number, never>,
-     identifyPaymentType: (yCoord: number, d: MonthlyPayment) => number) => {
+     identifyPaymentType: (yCoord: number, d: PaymentRecord) => number) => {
       const tooltip = svg.append('g');
 
       svg.on('touchmove mousemove', function(event) {
@@ -587,8 +587,8 @@ const updateUrl = (): void => {
 };
 
 const cumulativeSumByFields =
-    (data: MonthlyPayment[], fields: Set<PaymentType>): MonthlyPayment[] => {
-      const results = new Array<MonthlyPayment>(data.length);
+    (data: PaymentRecord[], fields: Set<PaymentType>): PaymentRecord[] => {
+      const results = new Array<PaymentRecord>(data.length);
       const carriedValue = (idx: number, key: PaymentType) => {
         if (!fields.has(key)) return data[idx]!.data[key];
         if (idx === 0) return 0;
