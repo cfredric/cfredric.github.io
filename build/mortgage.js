@@ -143,7 +143,6 @@ var d3 = require("d3");
             finally { if (e_1) throw e_1.error; }
         }
     };
-    // Value getters.
     var price = function () { return orZero(priceInput); };
     var homeValue = function () { return orZero(homeValueInput) || price(); };
     var hoa = function () { return orZero(hoaInput); };
@@ -157,11 +156,9 @@ var d3 = require("d3");
         (orZero(propertyTaxPercentageInput) / 100 * homeValue() / 12); };
     var homeownersInsurance = function () { return orZero(homeownersInsuranceInput); };
     var closingCost = function () { return orZero(closingCostInput); };
-    // Assume a 30 year fixed loan.
     var mortgageTerm = function () { return orZero(mortgageTermInput) || 30; };
     var annualIncome = function () { return orZero(annualIncomeInput); };
     var monthlyDebt = function () { return orZero(monthlyDebtInput); };
-    // For convenience.
     var n = function () { return 12 * mortgageTerm(); };
     var downPaymentPct = function () { return downPayment() / price(); };
     var setContents = function () {
@@ -259,13 +256,11 @@ var d3 = require("d3");
         return b && month - a.month > b.month - month ? b : a;
     };
     var buildPaymentScheduleChart = function (schedule, keys) {
-        // set the dimensions and margins of the graph
         var margin = { top: 50, right: 100, bottom: 120, left: 100 };
         var width = 900 - margin.left - margin.right;
         var height = 450 - margin.top - margin.bottom;
         var svg = makeSvg('schedule_viz', width, height, margin);
         var _a = makeAxes(svg, schedule, keys, width, height, margin, 'Monthly Payment', d3.sum), x = _a.x, y = _a.y;
-        // Add the area
         svg.append('g')
             .selectAll('path')
             .data(d3.stack()
@@ -351,7 +346,6 @@ var d3 = require("d3");
             .attr('transform', "translate(" + margin.left + ", " + margin.top + ")");
     };
     var makeAxes = function (svg, data, keys, width, height, margin, yLabel, yDomainFn) {
-        // Add X axis
         var ext = d3.extent(data, function (d) { return d.month; });
         var x = d3.scaleLinear().domain(ext).range([
             0,
@@ -360,7 +354,6 @@ var d3 = require("d3");
         svg.append('g')
             .attr('transform', "translate(0, " + height + ")")
             .call(d3.axisBottom(x).tickValues(d3.range(0, data.length, 12)));
-        // text label for the x axis
         svg.append('text')
             .attr('transform', "translate(" + width / 2 + ", " + (height + margin.top) + ")")
             .style('text-anchor', 'middle')
@@ -372,7 +365,6 @@ var d3 = require("d3");
         ])
             .range([height, 0]);
         svg.append('g').call(d3.axisLeft(y));
-        // text label for the y axis
         svg.append('text')
             .attr('transform', 'rotate(-90)')
             .attr('y', 0 - margin.left)
@@ -385,7 +377,6 @@ var d3 = require("d3");
     var makeTooltip = function (svg, data, keys, x, identifyPaymentType) {
         var tooltip = svg.append('g');
         svg.on('touchmove mousemove', function (event) {
-            // eslint-disable-next-line no-invalid-this
             var pointer = d3.pointer(event, this);
             var datum = bisectMonth(data, x, pointer[0]);
             var paymentTypeIdx = identifyPaymentType(pointer[1], datum);
