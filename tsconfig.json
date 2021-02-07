@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "downlevelIteration": true,
+    "lib": ["ES2016", "DOM"],
+    "noEmitOnError": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "outDir": "./build",
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "target": "es5",
+  },
+  "include": ["./assets/ts/*"]
+}

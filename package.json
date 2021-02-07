@@ -1,0 +1,28 @@
+{
+  "name": "cfredric.github.io",
+  "version": "1.0.0",
+  "description": "blag",
+  "main": "index.js",
+  "dependencies": {
+    "d3": "^6.5.0"
+  },
+  "devDependencies": {
+    "@types/d3": "^6.3.0",
+    "typescript": "^4.1.3"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "jekyll serve",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cfredric/cfredric.github.io.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cfredric/cfredric.github.io/issues"
+  },
+  "homepage": "https://github.com/cfredric/cfredric.github.io#readme"
+}
