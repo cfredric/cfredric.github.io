@@ -305,7 +305,7 @@ const buildPaymentScheduleChart =
           // Add the area
           svg.append('g')
               .selectAll('path')
-              .data(d3.stack<any, PaymentRecord, PaymentType>()
+              .data(d3.stack<unknown, PaymentRecord, PaymentType>()
                         .keys(keys)
                         .order(d3.stackOrderNone)
                         .offset(d3.stackOffsetNone)
@@ -398,7 +398,7 @@ const formatMonthNum = (m: number): string =>
     (m >= 12 ? `${Math.floor(m / 12)}y ` : '') + `${m % 12}mo`;
 
 const makeSvg = (divId: string, width: number, height: number, margin: Margin):
-                    d3.Selection<SVGGElement, unknown, HTMLElement, any> => {
+                    d3.Selection<SVGGElement, unknown, HTMLElement, unknown> => {
   d3.select(`#${divId}`).select('svg').remove();
   return d3.select(`#${divId}`)
       .append('svg')
@@ -409,7 +409,7 @@ const makeSvg = (divId: string, width: number, height: number, margin: Margin):
 };
 
 const makeAxes =
-    (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>,
+    (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
      data: readonly PaymentRecord[], keys: readonly PaymentType[],
      width: number, height: number, margin: Margin, yLabel: string,
      yDomainFn: (ys: number[]) => number) => {
@@ -452,7 +452,7 @@ const makeAxes =
     };
 
 const makeTooltip =
-    (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>,
+    (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
      data: readonly PaymentRecord[], keys: readonly PaymentType[],
      x: d3.ScaleLinear<number, number, never>,
      identifyPaymentType: (yCoord: number, d: PaymentRecord) => number) => {
@@ -477,7 +477,7 @@ const makeTooltip =
       svg.on('touchend mouseleave', () => tooltip.call(callout, null, null));
 
       const callout =
-          (g: d3.Selection<SVGGElement, unknown, HTMLElement, any>,
+          (g: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
            value: string, paymentTypeIdx: number): void => {
             if (!value) {
               g.style('display', 'none');
@@ -521,7 +521,7 @@ const makeTooltip =
     };
 
 const makeLegend =
-    (svg: d3.Selection<SVGGElement, unknown, HTMLElement, any>, width: number,
+    (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>, width: number,
      color: (d: PaymentType) => string, keys: readonly PaymentType[]): void => {
       const legend = svg.append('g')
                          .attr('class', 'legend')
