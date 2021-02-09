@@ -356,15 +356,14 @@ const buildCumulativeChart =
                        .y0(y(0))
                        .y1((d) => y(d.value));
 
-      const sources = keys.map(
-          (key) => ({
-            key,
-            values: data.map(
-                (datum) => ({month: datum.month, value: datum.data[key]})),
-          }));
-
       svg.selectAll('.area')
-          .data(sources)
+          .data(keys.map((key) => ({
+                           key,
+                           values: data.map((datum) => ({
+                                              month: datum.month,
+                                              value: datum.data[key],
+                                            })),
+                         })))
           .enter()
           .append('g')
           .attr('class', (d) => `area ${d.key}`)

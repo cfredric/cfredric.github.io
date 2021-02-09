@@ -307,12 +307,14 @@ var d3 = require("d3");
             .x(function (d) { return x(d.month); })
             .y0(y(0))
             .y1(function (d) { return y(d.value); });
-        var sources = keys.map(function (key) { return ({
-            key: key,
-            values: data.map(function (datum) { return ({ month: datum.month, value: datum.data[key] }); }),
-        }); });
         svg.selectAll('.area')
-            .data(sources)
+            .data(keys.map(function (key) { return ({
+            key: key,
+            values: data.map(function (datum) { return ({
+                month: datum.month,
+                value: datum.data[key],
+            }); }),
+        }); }))
             .enter()
             .append('g')
             .attr('class', function (d) { return "area " + d.key; })
