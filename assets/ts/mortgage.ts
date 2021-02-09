@@ -184,15 +184,16 @@ const setContents = (): void => {
             )!.style.display = showPmi ? '' : 'none';
     document.getElementById('monthly-payment-pmi-div')!.style.display =
         showPmi ? '' : 'none';
-    const {
-      sum: amortizedSum,
-      schedule,
-      cumulative,
-    } = calculatePaymentSchedule(M);
+    const schedule = calculatePaymentSchedule(M);
     buildPaymentScheduleChart(schedule, keys);
     if (M) {
-      buildCumulativeChart(cumulative, ['principal', 'interest']);
-      lifetimePaymentOutput.innerText = `${fmt.format(amortizedSum)}`;
+      const cumulativePaymentTypes: PaymentType[] =
+          ['principal', 'interest', 'pmi'];
+      buildCumulativeChart(
+          cumulativeSumByFields(schedule, cumulativePaymentTypes),
+          cumulativePaymentTypes);
+      lifetimePaymentOutput.innerText =
+          `${fmt.format(n() * M + d3.sum(schedule, (d) => d.data.pmi))}`;
     } else {
       document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
       lifetimePaymentOutput.innerText = `${fmt.format(0)}`;
@@ -233,33 +234,28 @@ interface Margin {
   right: number;
 }
 
-const calculatePaymentSchedule = (monthlyPayment: number):
-    {sum: number, schedule: PaymentRecord[], cumulative: PaymentRecord[]} => {
-      let equity = downPayment();
-      const schedule: PaymentRecord[] = [];
-      for (const month of d3.range(n())) {
-        const principal = price() - equity;
-        const interestPayment = (interestRate() / 12) * principal;
-        const pmiPayment = equity < 0.2 * price() ? pmi() : 0;
-        equity += monthlyPayment - interestPayment;
-        schedule.push({
-          month: month + 1,
-          data: {
-            interest: interestPayment,
-            principal: monthlyPayment - interestPayment,
-            pmi: pmiPayment,
-            hoa: hoa(),
-            property_tax: propertyTax(),
-            homeowners_insurance: homeownersInsurance(),
-          },
-        });
-      }
-      return {
-        sum: n() * monthlyPayment + d3.sum(schedule, (d) => d.data.pmi),
-        schedule,
-        cumulative: cumulativeSumByFields(schedule, new Set(keys)),
-      };
-    };
+const calculatePaymentSchedule = (monthlyPayment: number): PaymentRecord[] => {
+  let equity = downPayment();
+  const schedule: PaymentRecord[] = [];
+  for (const month of d3.range(n())) {
+    const principal = price() - equity;
+    const interestPayment = (interestRate() / 12) * principal;
+    const pmiPayment = equity < 0.2 * price() ? pmi() : 0;
+    equity += monthlyPayment - interestPayment;
+    schedule.push({
+      month: month + 1,
+      data: {
+        interest: interestPayment,
+        principal: monthlyPayment - interestPayment,
+        pmi: pmiPayment,
+        hoa: hoa(),
+        property_tax: propertyTax(),
+        homeowners_insurance: homeownersInsurance(),
+      },
+    });
+  }
+  return schedule;
+};
 
 const showAmountHints = (): void => {
   homeValueHintOutput.innerText = `(${fmt.format(homeValue())})`;
@@ -587,10 +583,10 @@ const updateUrl = (): void => {
 };
 
 const cumulativeSumByFields =
-    (data: PaymentRecord[], fields: Set<PaymentType>): PaymentRecord[] => {
+    (data: PaymentRecord[], fields: PaymentType[]): PaymentRecord[] => {
       const results = new Array<PaymentRecord>(data.length);
       const carriedValue = (idx: number, key: PaymentType) => {
-        if (!fields.has(key)) return data[idx]!.data[key];
+        if (!fields.includes(key)) return data[idx]!.data[key];
         if (idx === 0) return 0;
         return results[idx - 1]!.data[key] + data[idx]!.data[key];
       };

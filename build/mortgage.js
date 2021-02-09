@@ -176,11 +176,13 @@ var d3 = require("d3");
                 .getElementById('monthly-payment-without-pmi-span').style.display = showPmi ? '' : 'none';
             document.getElementById('monthly-payment-pmi-div').style.display =
                 showPmi ? '' : 'none';
-            var _b = calculatePaymentSchedule(M), amortizedSum = _b.sum, schedule = _b.schedule, cumulative = _b.cumulative;
+            var schedule = calculatePaymentSchedule(M);
             buildPaymentScheduleChart(schedule, keys);
             if (M) {
-                buildCumulativeChart(cumulative, ['principal', 'interest']);
-                lifetimePaymentOutput.innerText = "" + fmt.format(amortizedSum);
+                var cumulativePaymentTypes = ['principal', 'interest', 'pmi'];
+                buildCumulativeChart(cumulativeSumByFields(schedule, cumulativePaymentTypes), cumulativePaymentTypes);
+                lifetimePaymentOutput.innerText =
+                    "" + fmt.format(n() * M + d3.sum(schedule, function (d) { return d.data.pmi; }));
             }
             else {
                 (_a = document.querySelector('#cumulative_viz > svg:first-of-type')) === null || _a === void 0 ? void 0 : _a.remove();
@@ -235,11 +237,7 @@ var d3 = require("d3");
             }
             finally { if (e_2) throw e_2.error; }
         }
-        return {
-            sum: n() * monthlyPayment + d3.sum(schedule, function (d) { return d.data.pmi; }),
-            schedule: schedule,
-            cumulative: cumulativeSumByFields(schedule, new Set(keys)),
-        };
+        return schedule;
     };
     var showAmountHints = function () {
         homeValueHintOutput.innerText = "(" + fmt.format(homeValue()) + ")";
@@ -500,7 +498,7 @@ var d3 = require("d3");
         var e_6, _a, e_7, _b;
         var results = new Array(data.length);
         var carriedValue = function (idx, key) {
-            if (!fields.has(key))
+            if (!fields.includes(key))
                 return data[idx].data[key];
             if (idx === 0)
                 return 0;
