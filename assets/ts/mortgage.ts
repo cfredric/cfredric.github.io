@@ -167,11 +167,11 @@ const setContents = (): void => {
 
   if (interestRate() || downPayment() === price()) {
     const M = downPayment() === price() ? 0 :
-                                         monthlyFormula(
-                                             price() * (1 - downPaymentPct()),
-                                             interestRate() / 12,
-                                             n(),
-                                         );
+                                          monthlyFormula(
+                                              price() * (1 - downPaymentPct()),
+                                              interestRate() / 12,
+                                              n(),
+                                          );
     principalAndInterestOutput.innerText = `${fmt.format(M)}`;
     const extras = hoa() + propertyTax() + homeownersInsurance();
 
@@ -316,7 +316,7 @@ const buildPaymentScheduleChart =
                       .y1((d) => y(d['1'])),
               );
 
-          makeTooltip(svg, schedule, keys, x, (mouseY: number, datum) => {
+          makeTooltip(svg, schedule, keys, x, (mouseY, datum) => {
             const yTarget = y.invert(mouseY);
             let cumulative = 0;
             for (const [idx, key] of keys.entries()) {
@@ -328,7 +328,7 @@ const buildPaymentScheduleChart =
             return keys.length - 1;
           });
 
-          makeLegend(svg, width, (d: PaymentType) => fieldColor(d), keys);
+          makeLegend(svg, width, (d) => fieldColor(d), keys);
         };
 
 const buildCumulativeChart =
@@ -372,7 +372,7 @@ const buildCumulativeChart =
           .attr('d', (d) => area(d.values))
           .style('fill', (d) => transparent(fieldColor(d.key)));
 
-      makeTooltip(svg, data, keys, x, (mouseY: number, datum): number => {
+      makeTooltip(svg, data, keys, x, (mouseY, datum) => {
         const yTarget = y.invert(mouseY);
         const sorted = keys.map((key) => ({key, value: datum.data[key]}))
                            .sort((a, b) => a.value - b.value);
@@ -408,7 +408,10 @@ const makeAxes =
     (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
      data: readonly PaymentRecord[], keys: readonly PaymentType[],
      width: number, height: number, margin: Margin, yLabel: string,
-     yDomainFn: (ys: number[]) => number) => {
+     yDomainFn: (ys: number[]) => number): {
+      x: d3.ScaleLinear<number, number, never>,
+      y: d3.ScaleLinear<number, number, never>,
+    } => {
       // Add X axis
       const ext = d3.extent(data, (d) => d.month) as [number, number];
       const x = d3.scaleLinear().domain(ext).range([
@@ -451,7 +454,8 @@ const makeTooltip =
     (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
      data: readonly PaymentRecord[], keys: readonly PaymentType[],
      x: d3.ScaleLinear<number, number, never>,
-     identifyPaymentType: (yCoord: number, d: PaymentRecord) => number) => {
+     identifyPaymentType: (yCoord: number, d: PaymentRecord) =>
+         number): void => {
       const tooltip = svg.append('g');
 
       svg.on('touchmove mousemove', function(event) {
@@ -517,8 +521,9 @@ const makeTooltip =
     };
 
 const makeLegend =
-    (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>, width: number,
-     color: (d: PaymentType) => string, keys: readonly PaymentType[]): void => {
+    (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
+     width: number, color: (d: PaymentType) => string,
+     keys: readonly PaymentType[]): void => {
       const legend = svg.append('g')
                          .attr('class', 'legend')
                          .attr('transform', `translate(${width - 200}, -50)`);
@@ -543,7 +548,7 @@ const makeLegend =
           .attr('dominant-baseline', 'hanging');
     };
 
-const clearMonthlyPaymentOutputs = () => {
+const clearMonthlyPaymentOutputs = (): void => {
   principalAndInterestOutput.innerText = '';
   monthlyPaymentAmountOutput.innerText = '';
   monthlyPaymentPmiOutput.innerText = '';
