@@ -28,6 +28,8 @@ const interestRateInput =
 const mortgageInsuranceInput = document.getElementById(
                                    'mortgage-insurance-input',
                                    ) as HTMLInputElement;
+const pmiEquityPercentageInput = document.getElementById('mortgage-insurance-equity-percentage-input') as HTMLInputElement;
+const pmiEquityPercentageHintOutput = document.getElementById('mortgage-insurance-equity-percent-hint')!;
 const propertyTaxAbsoluteInput =
     document.getElementById('property-tax-absolute-input') as HTMLInputElement;
 const propertyTaxPercentageInput =
@@ -58,6 +60,7 @@ const monthlyPaymentAmountOutput = document.getElementById(
 const monthlyPaymentPmiOutput = document.getElementById(
     'monthly-payment-pmi-output',
     )!;
+const pmiPaymentTimelineOutput = document.getElementById('pmi-payment-timeline-output')!;
 const lifetimePaymentOutput = document.getElementById(
     'lifetime-payment-output',
     )!;
@@ -119,6 +122,7 @@ const urlParamMap = new Map<string, HTMLInputElement>([
   ['down_payment_amt', downPaymentAbsoluteInput],
   ['interest_rate', interestRateInput],
   ['mortgage_insurance', mortgageInsuranceInput],
+  ['pmi_equity_pct', pmiEquityPercentageInput],
   ['property_tax', propertyTaxAbsoluteInput],
   ['property_tax_pct', propertyTaxPercentageInput],
   ['hoi', homeownersInsuranceInput],
@@ -149,6 +153,7 @@ const downPayment = (): number =>
     orZero(downPaymentAbsoluteInput);
 const interestRate = (): number => orZero(interestRateInput) / 100;
 const pmi = (): number => orZero(mortgageInsuranceInput);
+const pmiEquityPct = (): number => orZero(pmiEquityPercentageInput) / 100 || 0.22;
 const propertyTax = (): number => orZero(propertyTaxAbsoluteInput) ||
     (orZero(propertyTaxPercentageInput) / 100 * homeValue() / 12);
 const homeownersInsurance = (): number => orZero(homeownersInsuranceInput);
@@ -177,7 +182,7 @@ const setContents = (): void => {
 
     monthlyPaymentAmountOutput.innerText = `${fmt.format(M + extras)}`;
     monthlyPaymentPmiOutput.innerText = `${fmt.format(M + extras + pmi())}`;
-    const showPmi = pmi() && downPaymentPct() < 0.2;
+    const showPmi = pmi() && downPaymentPct() < pmiEquityPct();
     document
         .getElementById(
             'monthly-payment-without-pmi-span',
@@ -186,6 +191,8 @@ const setContents = (): void => {
         showPmi ? '' : 'none';
     const schedule = calculatePaymentSchedule(M);
     buildPaymentScheduleChart(schedule, keys);
+    const pmiMonths = countSatisfying(schedule, payment => payment.data.pmi !== 0);
+    pmiPaymentTimelineOutput.innerText = `${formatMonthNum(pmiMonths)} (${fmt.format(pmiMonths * pmi())} total)`;
     if (M) {
       const cumulativePaymentTypes: PaymentType[] =
           ['principal', 'interest', 'pmi'];
@@ -240,7 +247,7 @@ const calculatePaymentSchedule = (monthlyPayment: number): PaymentRecord[] => {
   for (const month of d3.range(n())) {
     const principal = price() - equity;
     const interestPayment = (interestRate() / 12) * principal;
-    const pmiPayment = equity < 0.2 * price() ? pmi() : 0;
+    const pmiPayment = equity < pmiEquityPct() * price() ? pmi() : 0;
     equity += monthlyPayment - interestPayment;
     schedule.push({
       month: month + 1,
@@ -260,6 +267,7 @@ const calculatePaymentSchedule = (monthlyPayment: number): PaymentRecord[] => {
 const showAmountHints = (): void => {
   homeValueHintOutput.innerText = `(${fmt.format(homeValue())})`;
   downPaymentHintOutput.innerText = `(${fmt.format(downPayment())})`;
+  pmiEquityPercentageHintOutput.innerText = `(${pctFmt.format(pmiEquityPct())})`;
   propertyTaxHintOutput.innerText =
       `(${fmt.format(propertyTax() * 12 / homeValue() * 1000)} / $1000; ${
           fmt.format(propertyTax())}/mo)`;
@@ -605,6 +613,16 @@ const cumulativeSumByFields =
       }
       return results;
     };
+
+  const countSatisfying = <T,>(data: T[], predicate: (t: T) => boolean): number => {
+    let count = 0;
+    for (const t of data) {
+      if (predicate(t)) {
+        ++count;
+      }
+    }
+    return count;
+  };
 
 initFieldsFromUrl();
 attachListeners();

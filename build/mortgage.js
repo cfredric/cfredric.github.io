@@ -48,6 +48,8 @@ var d3 = require("d3");
     var downPaymentAbsoluteInput = document.getElementById('down-payment-absolute-input');
     var interestRateInput = document.getElementById('interest-rate-input');
     var mortgageInsuranceInput = document.getElementById('mortgage-insurance-input');
+    var pmiEquityPercentageInput = document.getElementById('mortgage-insurance-equity-percentage-input');
+    var pmiEquityPercentageHintOutput = document.getElementById('mortgage-insurance-equity-percent-hint');
     var propertyTaxAbsoluteInput = document.getElementById('property-tax-absolute-input');
     var propertyTaxPercentageInput = document.getElementById('property-tax-percentage-input');
     var propertyTaxHintOutput = document.getElementById('property-tax-percentage-hint');
@@ -62,6 +64,7 @@ var d3 = require("d3");
     var principalAndInterestOutput = document.getElementById('principal-and-interest-output');
     var monthlyPaymentAmountOutput = document.getElementById('monthly-payment-output');
     var monthlyPaymentPmiOutput = document.getElementById('monthly-payment-pmi-output');
+    var pmiPaymentTimelineOutput = document.getElementById('pmi-payment-timeline-output');
     var lifetimePaymentOutput = document.getElementById('lifetime-payment-output');
     var purchasePaymentOutput = document.getElementById('purchase-payment-output');
     var debtToIncomeOutput = document.getElementById('debt-to-income-ratio-output');
@@ -113,6 +116,7 @@ var d3 = require("d3");
         ['down_payment_amt', downPaymentAbsoluteInput],
         ['interest_rate', interestRateInput],
         ['mortgage_insurance', mortgageInsuranceInput],
+        ['pmi_equity_pct', pmiEquityPercentageInput],
         ['property_tax', propertyTaxAbsoluteInput],
         ['property_tax_pct', propertyTaxPercentageInput],
         ['hoi', homeownersInsuranceInput],
@@ -152,6 +156,7 @@ var d3 = require("d3");
     };
     var interestRate = function () { return orZero(interestRateInput) / 100; };
     var pmi = function () { return orZero(mortgageInsuranceInput); };
+    var pmiEquityPct = function () { return orZero(pmiEquityPercentageInput) / 100 || 0.22; };
     var propertyTax = function () { return orZero(propertyTaxAbsoluteInput) ||
         (orZero(propertyTaxPercentageInput) / 100 * homeValue() / 12); };
     var homeownersInsurance = function () { return orZero(homeownersInsuranceInput); };
@@ -171,13 +176,15 @@ var d3 = require("d3");
             var extras = hoa() + propertyTax() + homeownersInsurance();
             monthlyPaymentAmountOutput.innerText = "" + fmt.format(M + extras);
             monthlyPaymentPmiOutput.innerText = "" + fmt.format(M + extras + pmi());
-            var showPmi = pmi() && downPaymentPct() < 0.2;
+            var showPmi = pmi() && downPaymentPct() < pmiEquityPct();
             document
                 .getElementById('monthly-payment-without-pmi-span').style.display = showPmi ? '' : 'none';
             document.getElementById('monthly-payment-pmi-div').style.display =
                 showPmi ? '' : 'none';
             var schedule = calculatePaymentSchedule(M);
             buildPaymentScheduleChart(schedule, keys);
+            var pmiMonths = countSatisfying(schedule, function (payment) { return payment.data.pmi !== 0; });
+            pmiPaymentTimelineOutput.innerText = formatMonthNum(pmiMonths) + " (" + fmt.format(pmiMonths * pmi()) + " total)";
             if (M) {
                 var cumulativePaymentTypes = ['principal', 'interest', 'pmi'];
                 buildCumulativeChart(cumulativeSumByFields(schedule, cumulativePaymentTypes), cumulativePaymentTypes);
@@ -215,7 +222,7 @@ var d3 = require("d3");
                 var month = _c.value;
                 var principal = price() - equity;
                 var interestPayment = (interestRate() / 12) * principal;
-                var pmiPayment = equity < 0.2 * price() ? pmi() : 0;
+                var pmiPayment = equity < pmiEquityPct() * price() ? pmi() : 0;
                 equity += monthlyPayment - interestPayment;
                 schedule.push({
                     month: month + 1,
@@ -242,6 +249,7 @@ var d3 = require("d3");
     var showAmountHints = function () {
         homeValueHintOutput.innerText = "(" + fmt.format(homeValue()) + ")";
         downPaymentHintOutput.innerText = "(" + fmt.format(downPayment()) + ")";
+        pmiEquityPercentageHintOutput.innerText = "(" + pctFmt.format(pmiEquityPct()) + ")";
         propertyTaxHintOutput.innerText =
             "(" + fmt.format(propertyTax() * 12 / homeValue() * 1000) + " / $1000; " + fmt.format(propertyTax()) + "/mo)";
         mortgageTermHintOutput.innerText = "(" + mortgageTerm() + " yrs)";
@@ -536,6 +544,26 @@ var d3 = require("d3");
             finally { if (e_6) throw e_6.error; }
         }
         return results;
+    };
+    var countSatisfying = function (data, predicate) {
+        var e_8, _a;
+        var count = 0;
+        try {
+            for (var data_1 = __values(data), data_1_1 = data_1.next(); !data_1_1.done; data_1_1 = data_1.next()) {
+                var t = data_1_1.value;
+                if (predicate(t)) {
+                    ++count;
+                }
+            }
+        }
+        catch (e_8_1) { e_8 = { error: e_8_1 }; }
+        finally {
+            try {
+                if (data_1_1 && !data_1_1.done && (_a = data_1.return)) _a.call(data_1);
+            }
+            finally { if (e_8) throw e_8.error; }
+        }
+        return count;
     };
     initFieldsFromUrl();
     attachListeners();
