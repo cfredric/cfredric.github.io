@@ -40,6 +40,10 @@ var d3 = require("d3");
         var num = Number.parseFloat(elt.value);
         return Number.isNaN(num) ? 0 : num;
     };
+    var clamp = function (x, _a) {
+        var min = _a.min, max = _a.max;
+        return Math.max(min, Math.min(max, x));
+    };
     var priceInput = document.getElementById('price-input');
     var homeValueInput = document.getElementById('home-value-input');
     var homeValueHintOutput = document.getElementById('home-value-hint');
@@ -147,23 +151,33 @@ var d3 = require("d3");
             finally { if (e_1) throw e_1.error; }
         }
     };
-    var price = function () { return orZero(priceInput); };
-    var homeValue = function () { return orZero(homeValueInput) || price(); };
-    var hoa = function () { return orZero(hoaInput); };
+    var price = function () { return Math.max(0, orZero(priceInput)); };
+    var homeValue = function () { return Math.max(0, orZero(homeValueInput)) || price(); };
+    var hoa = function () { return Math.max(0, orZero(hoaInput)); };
     var downPayment = function () {
-        return orZero(downPaymentPercentageInput) / 100 * price() ||
-            orZero(downPaymentAbsoluteInput);
+        return clamp(orZero(downPaymentPercentageInput), { min: 0, max: 100 }) / 100 *
+            price() ||
+            clamp(orZero(downPaymentAbsoluteInput), { min: 0, max: price() });
     };
-    var interestRate = function () { return orZero(interestRateInput) / 100; };
-    var pmi = function () { return orZero(mortgageInsuranceInput); };
-    var pmiEquityPct = function () { return orZero(pmiEquityPercentageInput) / 100 || 0.22; };
-    var propertyTax = function () { return orZero(propertyTaxAbsoluteInput) ||
-        (orZero(propertyTaxPercentageInput) / 100 * homeValue() / 12); };
-    var homeownersInsurance = function () { return orZero(homeownersInsuranceInput); };
-    var closingCost = function () { return orZero(closingCostInput); };
-    var mortgageTerm = function () { return orZero(mortgageTermInput) || 30; };
-    var annualIncome = function () { return orZero(annualIncomeInput); };
-    var monthlyDebt = function () { return orZero(monthlyDebtInput); };
+    var interestRate = function () {
+        return clamp(orZero(interestRateInput), { min: 0, max: 100 }) / 100;
+    };
+    var pmi = function () { return Math.max(0, orZero(mortgageInsuranceInput)); };
+    var pmiEquityPct = function () {
+        return clamp(orZero(pmiEquityPercentageInput), { min: 0, max: 100 }) / 100 || 0.22;
+    };
+    var propertyTax = function () {
+        return Math.max(0, orZero(propertyTaxAbsoluteInput)) ||
+            (clamp(orZero(propertyTaxPercentageInput), { min: 0, max: 100 }) / 100 *
+                homeValue() / 12);
+    };
+    var homeownersInsurance = function () {
+        return Math.max(0, orZero(homeownersInsuranceInput));
+    };
+    var closingCost = function () { return Math.max(0, orZero(closingCostInput)); };
+    var mortgageTerm = function () { return Math.max(0, orZero(mortgageTermInput)) || 30; };
+    var annualIncome = function () { return Math.max(0, orZero(annualIncomeInput)); };
+    var monthlyDebt = function () { return Math.max(0, orZero(monthlyDebtInput)); };
     var n = function () { return 12 * mortgageTerm(); };
     var downPaymentPct = function () { return downPayment() / price(); };
     var setContents = function () {
@@ -184,7 +198,8 @@ var d3 = require("d3");
             var schedule = calculatePaymentSchedule(M);
             buildPaymentScheduleChart(schedule, keys);
             var pmiMonths = countSatisfying(schedule, function (payment) { return payment.data.pmi !== 0; });
-            pmiPaymentTimelineOutput.innerText = formatMonthNum(pmiMonths) + " (" + fmt.format(pmiMonths * pmi()) + " total)";
+            pmiPaymentTimelineOutput.innerText =
+                formatMonthNum(pmiMonths) + " (" + fmt.format(pmiMonths * pmi()) + " total)";
             if (M) {
                 var cumulativePaymentTypes = ['principal', 'interest', 'pmi'];
                 buildCumulativeChart(cumulativeSumByFields(schedule, cumulativePaymentTypes), cumulativePaymentTypes);
@@ -249,7 +264,8 @@ var d3 = require("d3");
     var showAmountHints = function () {
         homeValueHintOutput.innerText = "(" + fmt.format(homeValue()) + ")";
         downPaymentHintOutput.innerText = "(" + fmt.format(downPayment()) + ")";
-        pmiEquityPercentageHintOutput.innerText = "(" + pctFmt.format(pmiEquityPct()) + ")";
+        pmiEquityPercentageHintOutput.innerText =
+            "(" + pctFmt.format(pmiEquityPct()) + ")";
         propertyTaxHintOutput.innerText =
             "(" + fmt.format(propertyTax() * 12 / homeValue() * 1000) + " / $1000; " + fmt.format(propertyTax()) + "/mo)";
         mortgageTermHintOutput.innerText = "(" + mortgageTerm() + " yrs)";

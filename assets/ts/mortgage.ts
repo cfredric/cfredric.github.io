@@ -12,6 +12,8 @@ const orZero = (elt: HTMLInputElement): number => {
   const num = Number.parseFloat(elt.value);
   return Number.isNaN(num) ? 0 : num;
 };
+const clamp = (x: number, {min, max}: {min: number, max: number}): number =>
+    Math.max(min, Math.min(max, x));
 
 const priceInput = document.getElementById('price-input') as HTMLInputElement;
 const homeValueInput =
@@ -28,8 +30,11 @@ const interestRateInput =
 const mortgageInsuranceInput = document.getElementById(
                                    'mortgage-insurance-input',
                                    ) as HTMLInputElement;
-const pmiEquityPercentageInput = document.getElementById('mortgage-insurance-equity-percentage-input') as HTMLInputElement;
-const pmiEquityPercentageHintOutput = document.getElementById('mortgage-insurance-equity-percent-hint')!;
+const pmiEquityPercentageInput =
+    document.getElementById('mortgage-insurance-equity-percentage-input') as
+    HTMLInputElement;
+const pmiEquityPercentageHintOutput =
+    document.getElementById('mortgage-insurance-equity-percent-hint')!;
 const propertyTaxAbsoluteInput =
     document.getElementById('property-tax-absolute-input') as HTMLInputElement;
 const propertyTaxPercentageInput =
@@ -60,7 +65,8 @@ const monthlyPaymentAmountOutput = document.getElementById(
 const monthlyPaymentPmiOutput = document.getElementById(
     'monthly-payment-pmi-output',
     )!;
-const pmiPaymentTimelineOutput = document.getElementById('pmi-payment-timeline-output')!;
+const pmiPaymentTimelineOutput =
+    document.getElementById('pmi-payment-timeline-output')!;
 const lifetimePaymentOutput = document.getElementById(
     'lifetime-payment-output',
     )!;
@@ -145,23 +151,29 @@ const attachListeners = (): void => {
 };
 
 // Value getters.
-const price = (): number => orZero(priceInput);
-const homeValue = (): number => orZero(homeValueInput) || price();
-const hoa = (): number => orZero(hoaInput);
+const price = (): number => Math.max(0, orZero(priceInput));
+const homeValue = (): number => Math.max(0, orZero(homeValueInput)) || price();
+const hoa = (): number => Math.max(0, orZero(hoaInput));
 const downPayment = (): number =>
-    orZero(downPaymentPercentageInput) / 100 * price() ||
-    orZero(downPaymentAbsoluteInput);
-const interestRate = (): number => orZero(interestRateInput) / 100;
-const pmi = (): number => orZero(mortgageInsuranceInput);
-const pmiEquityPct = (): number => orZero(pmiEquityPercentageInput) / 100 || 0.22;
-const propertyTax = (): number => orZero(propertyTaxAbsoluteInput) ||
-    (orZero(propertyTaxPercentageInput) / 100 * homeValue() / 12);
-const homeownersInsurance = (): number => orZero(homeownersInsuranceInput);
-const closingCost = (): number => orZero(closingCostInput);
+    clamp(orZero(downPaymentPercentageInput), {min: 0, max: 100}) / 100 *
+        price() ||
+    clamp(orZero(downPaymentAbsoluteInput), {min: 0, max: price()});
+const interestRate = (): number =>
+    clamp(orZero(interestRateInput), {min: 0, max: 100}) / 100;
+const pmi = (): number => Math.max(0, orZero(mortgageInsuranceInput));
+const pmiEquityPct = (): number =>
+    clamp(orZero(pmiEquityPercentageInput), {min: 0, max: 100}) / 100 || 0.22;
+const propertyTax = (): number =>
+    Math.max(0, orZero(propertyTaxAbsoluteInput)) ||
+    (clamp(orZero(propertyTaxPercentageInput), {min: 0, max: 100}) / 100 *
+     homeValue() / 12);
+const homeownersInsurance = (): number =>
+    Math.max(0, orZero(homeownersInsuranceInput));
+const closingCost = (): number => Math.max(0, orZero(closingCostInput));
 // Assume a 30 year fixed loan.
-const mortgageTerm = (): number => orZero(mortgageTermInput) || 30;
-const annualIncome = (): number => orZero(annualIncomeInput);
-const monthlyDebt = (): number => orZero(monthlyDebtInput);
+const mortgageTerm = (): number => Math.max(0, orZero(mortgageTermInput)) || 30;
+const annualIncome = (): number => Math.max(0, orZero(annualIncomeInput));
+const monthlyDebt = (): number => Math.max(0, orZero(monthlyDebtInput));
 
 // For convenience.
 const n = (): number => 12 * mortgageTerm();
@@ -191,8 +203,10 @@ const setContents = (): void => {
         showPmi ? '' : 'none';
     const schedule = calculatePaymentSchedule(M);
     buildPaymentScheduleChart(schedule, keys);
-    const pmiMonths = countSatisfying(schedule, payment => payment.data.pmi !== 0);
-    pmiPaymentTimelineOutput.innerText = `${formatMonthNum(pmiMonths)} (${fmt.format(pmiMonths * pmi())} total)`;
+    const pmiMonths =
+        countSatisfying(schedule, payment => payment.data.pmi !== 0);
+    pmiPaymentTimelineOutput.innerText =
+        `${formatMonthNum(pmiMonths)} (${fmt.format(pmiMonths * pmi())} total)`;
     if (M) {
       const cumulativePaymentTypes: PaymentType[] =
           ['principal', 'interest', 'pmi'];
@@ -267,7 +281,8 @@ const calculatePaymentSchedule = (monthlyPayment: number): PaymentRecord[] => {
 const showAmountHints = (): void => {
   homeValueHintOutput.innerText = `(${fmt.format(homeValue())})`;
   downPaymentHintOutput.innerText = `(${fmt.format(downPayment())})`;
-  pmiEquityPercentageHintOutput.innerText = `(${pctFmt.format(pmiEquityPct())})`;
+  pmiEquityPercentageHintOutput.innerText =
+      `(${pctFmt.format(pmiEquityPct())})`;
   propertyTaxHintOutput.innerText =
       `(${fmt.format(propertyTax() * 12 / homeValue() * 1000)} / $1000; ${
           fmt.format(propertyTax())}/mo)`;
@@ -383,11 +398,10 @@ const buildCumulativeChart =
         const yTarget = y.invert(mouseY);
         const sorted = keys.map((key) => ({key, value: datum.data[key]}))
                            .sort((a, b) => a.value - b.value);
-        const elt =
-            sorted.find(
-                (elt, idx, arr) => yTarget <= elt.value &&
-                    (idx === arr.length - 1 || arr[idx + 1]!.value >= yTarget),
-                ) ??
+        const elt = sorted.find(
+            (elt, idx, arr) => yTarget <= elt.value &&
+                (idx === arr.length - 1 || arr[idx + 1]!.value >= yTarget),
+            ) ??
             sorted[sorted.length - 1]!;
         return keys.indexOf(elt.key);
       });
@@ -400,16 +414,17 @@ const transparent = (color: string): string => `${color}aa`;
 const formatMonthNum = (m: number): string =>
     (m >= 12 ? `${Math.floor(m / 12)}y ` : '') + `${m % 12}mo`;
 
-const makeSvg = (divId: string, width: number, height: number, margin: Margin):
-                    d3.Selection<SVGGElement, unknown, HTMLElement, unknown> => {
-  d3.select(`#${divId}`).select('svg').remove();
-  return d3.select(`#${divId}`)
-      .append('svg')
-      .attr('width', width + margin.left + margin.right)
-      .attr('height', height + margin.top + margin.bottom)
-      .append('g')
-      .attr('transform', `translate(${margin.left}, ${margin.top})`);
-};
+const makeSvg =
+    (divId: string, width: number, height: number, margin: Margin):
+        d3.Selection<SVGGElement, unknown, HTMLElement, unknown> => {
+      d3.select(`#${divId}`).select('svg').remove();
+      return d3.select(`#${divId}`)
+          .append('svg')
+          .attr('width', width + margin.left + margin.right)
+          .attr('height', height + margin.top + margin.bottom)
+          .append('g')
+          .attr('transform', `translate(${margin.left}, ${margin.top})`);
+    };
 
 const makeAxes =
     (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
@@ -614,7 +629,7 @@ const cumulativeSumByFields =
       return results;
     };
 
-  const countSatisfying = <T,>(data: T[], predicate: (t: T) => boolean): number => {
+const countSatisfying = <T,>(data: T[], predicate: (t: T) => boolean): number => {
     let count = 0;
     for (const t of data) {
       if (predicate(t)) {
