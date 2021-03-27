@@ -203,43 +203,31 @@ class Context {
     this.pmiEquityPct =
         clamp(orZero(pmiEquityPercentageInput), {min: 0, max: 100}) / 100 ||
         0.22;
-    this.propertyTax = ((): number => {
+    {
       const rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
       const rawAnnualRate =
           clamp(orZero(propertyTaxPercentageInput), {min: 0, max: 100}) / 100;
 
-      const savings =
-          Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
-      if (savings) {
-        const monthlyAbsolute = rawMonthlyAbsolute ?
-            rawMonthlyAbsolute :
-            rawAnnualRate * this.homeValue / 12;
-        return monthlyAbsolute - savings;
-      }
-
-      const annualRate = rawMonthlyAbsolute ?
-          rawMonthlyAbsolute * 12 / this.homeValue :
-          rawAnnualRate;
-      const deduction = clamp(
-          orZero(residentialExemptionDeductionInput),
-          {min: 0, max: this.price});
-      return annualRate * (this.homeValue - deduction) / 12;
-    })();
-    this.residentialExemptionPerMonth = ((): number => {
-      const annualSavings =
+      const rawExemptionAnnualSavings =
           Math.max(0, orZero(residentialExemptionSavingsInput));
-      if (annualSavings) return annualSavings / 12;
-
-      const annualRate =
-          Math.max(0, orZero(propertyTaxAbsoluteInput)) * 12 / this.homeValue ||
-          clamp(orZero(propertyTaxPercentageInput), {min: 0, max: 100});
-
-      const deduction = clamp(
+      const rawAnnualDeduction = clamp(
           orZero(residentialExemptionDeductionInput),
           {min: 0, max: this.price});
 
-      return annualRate * deduction / 12;
-    })();
+      if (rawExemptionAnnualSavings) {
+        const monthlyAbsolute =
+            rawMonthlyAbsolute || rawAnnualRate * this.homeValue / 12;
+        this.propertyTax = monthlyAbsolute - rawExemptionAnnualSavings / 12;
+        this.residentialExemptionPerMonth = rawExemptionAnnualSavings / 12;
+      } else {
+        const annualRate =
+            rawMonthlyAbsolute * 12 / this.homeValue || rawAnnualRate;
+        this.propertyTax =
+            annualRate * (this.homeValue - rawAnnualDeduction) / 12;
+        this.residentialExemptionPerMonth =
+            annualRate * rawAnnualDeduction / 12;
+      }
+    }
     this.homeownersInsurance = Math.max(0, orZero(homeownersInsuranceInput));
     this.closingCost = Math.max(0, orZero(closingCostInput));
     // Assume a 30 year fixed loan.
