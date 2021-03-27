@@ -172,6 +172,7 @@ class Context {
   readonly homeValue: number;
   readonly hoa: number;
   readonly downPayment: number;
+  readonly downPaymentPct: number;
   readonly interestRate: number;
   readonly pmi: number;
   readonly pmiEquityPct: number;
@@ -184,7 +185,6 @@ class Context {
   readonly monthlyDebt: number;
 
   readonly n: number;
-  readonly downPaymentPct: number;
 
   constructor() {
     this.price = Math.max(0, orZero(priceInput));
@@ -194,9 +194,12 @@ class Context {
         clamp(orZero(downPaymentPercentageInput), {min: 0, max: 100}) / 100 *
             this.price ||
         clamp(orZero(downPaymentAbsoluteInput), {min: 0, max: this.price});
+    this.downPaymentPct = this.downPayment / this.price;
     this.interestRate =
         clamp(orZero(interestRateInput), {min: 0, max: 100}) / 100;
-    this.pmi = Math.max(0, orZero(mortgageInsuranceInput));
+    this.pmi = this.downPaymentPct >= 0.2 ?
+        0 :
+        Math.max(0, orZero(mortgageInsuranceInput));
     this.pmiEquityPct =
         clamp(orZero(pmiEquityPercentageInput), {min: 0, max: 100}) / 100 ||
         0.22;
@@ -255,7 +258,6 @@ class Context {
 
     // For convenience.
     this.n = 12 * this.mortgageTerm;
-    this.downPaymentPct = this.downPayment / this.price;
   }
 }
 

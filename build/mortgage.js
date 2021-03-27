@@ -167,9 +167,12 @@ var d3 = require("d3");
                 clamp(orZero(downPaymentPercentageInput), { min: 0, max: 100 }) / 100 *
                     this.price ||
                     clamp(orZero(downPaymentAbsoluteInput), { min: 0, max: this.price });
+            this.downPaymentPct = this.downPayment / this.price;
             this.interestRate =
                 clamp(orZero(interestRateInput), { min: 0, max: 100 }) / 100;
-            this.pmi = Math.max(0, orZero(mortgageInsuranceInput));
+            this.pmi = this.downPaymentPct >= 0.2 ?
+                0 :
+                Math.max(0, orZero(mortgageInsuranceInput));
             this.pmiEquityPct =
                 clamp(orZero(pmiEquityPercentageInput), { min: 0, max: 100 }) / 100 ||
                     0.22;
@@ -214,7 +217,6 @@ var d3 = require("d3");
             this.annualIncome = Math.max(0, orZero(annualIncomeInput));
             this.monthlyDebt = Math.max(0, orZero(monthlyDebtInput));
             this.n = 12 * this.mortgageTerm;
-            this.downPaymentPct = this.downPayment / this.price;
         }
         return Context;
     }());
