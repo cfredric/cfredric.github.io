@@ -57,6 +57,7 @@ var d3 = require("d3");
     var propertyTaxAbsoluteInput = document.getElementById('property-tax-absolute-input');
     var propertyTaxPercentageInput = document.getElementById('property-tax-percentage-input');
     var propertyTaxHintOutput = document.getElementById('property-tax-percentage-hint');
+    var residentialExemptionSavingsInput = document.getElementById('residential-exemption-savings-input');
     var homeownersInsuranceInput = document.getElementById('homeowners-insurance-input');
     var closingCostInput = document.getElementById('closing-cost-input');
     var mortgageTermInput = document.getElementById('mortgage-term-input');
@@ -123,6 +124,7 @@ var d3 = require("d3");
         ['pmi_equity_pct', pmiEquityPercentageInput],
         ['property_tax', propertyTaxAbsoluteInput],
         ['property_tax_pct', propertyTaxPercentageInput],
+        ['resi_savings', residentialExemptionSavingsInput],
         ['hoi', homeownersInsuranceInput],
         ['closing_cost', closingCostInput],
         ['mortgage-term', mortgageTermInput],
@@ -167,9 +169,13 @@ var d3 = require("d3");
         return clamp(orZero(pmiEquityPercentageInput), { min: 0, max: 100 }) / 100 || 0.22;
     };
     var propertyTax = function () {
-        return Math.max(0, orZero(propertyTaxAbsoluteInput)) ||
+        var rawMonthly = Math.max(0, orZero(propertyTaxAbsoluteInput)) ||
             (clamp(orZero(propertyTaxPercentageInput), { min: 0, max: 100 }) / 100 *
                 homeValue() / 12);
+        return rawMonthly - residentialExemptionSavingsPerMonth();
+    };
+    var residentialExemptionSavingsPerMonth = function () {
+        return Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
     };
     var homeownersInsurance = function () {
         return Math.max(0, orZero(homeownersInsuranceInput));

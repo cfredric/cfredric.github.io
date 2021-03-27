@@ -42,6 +42,9 @@ const propertyTaxPercentageInput =
     HTMLInputElement;
 const propertyTaxHintOutput =
     document.getElementById('property-tax-percentage-hint')!;
+const residentialExemptionSavingsInput =
+    document.getElementById('residential-exemption-savings-input') as
+    HTMLInputElement;
 const homeownersInsuranceInput = document.getElementById(
                                      'homeowners-insurance-input',
                                      ) as HTMLInputElement;
@@ -131,6 +134,7 @@ const urlParamMap = new Map<string, HTMLInputElement>([
   ['pmi_equity_pct', pmiEquityPercentageInput],
   ['property_tax', propertyTaxAbsoluteInput],
   ['property_tax_pct', propertyTaxPercentageInput],
+  ['resi_savings', residentialExemptionSavingsInput],
   ['hoi', homeownersInsuranceInput],
   ['closing_cost', closingCostInput],
   ['mortgage-term', mortgageTermInput],
@@ -163,10 +167,14 @@ const interestRate = (): number =>
 const pmi = (): number => Math.max(0, orZero(mortgageInsuranceInput));
 const pmiEquityPct = (): number =>
     clamp(orZero(pmiEquityPercentageInput), {min: 0, max: 100}) / 100 || 0.22;
-const propertyTax = (): number =>
-    Math.max(0, orZero(propertyTaxAbsoluteInput)) ||
-    (clamp(orZero(propertyTaxPercentageInput), {min: 0, max: 100}) / 100 *
-     homeValue() / 12);
+const propertyTax = (): number => {
+  const rawMonthly = Math.max(0, orZero(propertyTaxAbsoluteInput)) ||
+      (clamp(orZero(propertyTaxPercentageInput), {min: 0, max: 100}) / 100 *
+       homeValue() / 12);
+  return rawMonthly - residentialExemptionSavingsPerMonth();
+};
+const residentialExemptionSavingsPerMonth = (): number =>
+    Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
 const homeownersInsurance = (): number =>
     Math.max(0, orZero(homeownersInsuranceInput));
 const closingCost = (): number => Math.max(0, orZero(closingCostInput));
