@@ -150,9 +150,10 @@ const urlParamMap = new Map<string, HTMLInputElement>([
 
 const attachListeners = (): void => {
   const onChange = () => {
-    showAmountHints();
+    const ctx = new Context();
+    showAmountHints(ctx);
     updateUrl();
-    setContents();
+    setContents(ctx);
   };
   for (const elt of urlParamMap.values()) {
     elt.addEventListener('change', () => onChange());
@@ -160,101 +161,133 @@ const attachListeners = (): void => {
   }
 };
 
-// Value getters.
-const price = (): number => Math.max(0, orZero(priceInput));
-const homeValue = (): number => Math.max(0, orZero(homeValueInput)) || price();
-const hoa = (): number => Math.max(0, orZero(hoaInput));
-const downPayment = (): number =>
-    clamp(orZero(downPaymentPercentageInput), {min: 0, max: 100}) / 100 *
-        price() ||
-    clamp(orZero(downPaymentAbsoluteInput), {min: 0, max: price()});
-const interestRate = (): number =>
-    clamp(orZero(interestRateInput), {min: 0, max: 100}) / 100;
-const pmi = (): number => Math.max(0, orZero(mortgageInsuranceInput));
-const pmiEquityPct = (): number =>
-    clamp(orZero(pmiEquityPercentageInput), {min: 0, max: 100}) / 100 || 0.22;
-const propertyTax = (): number => {
-  const rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
-  const rawAnnualRate =
-      clamp(orZero(propertyTaxPercentageInput), {min: 0, max: 100}) / 100;
-  const savings = Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
-  const deduction =
-      clamp(orZero(residentialExemptionDeductionInput), {min: 0, max: price()});
+class Context {
+  // This class captures a snapshot of the input fields at construction, and
+  // computes all the interesting values to be used in the payment schedule
+  // calculation.
+  //
+  // This is an optimization detail, as a kind of memoization to avoid needless
+  // extra function calls when we've already computed a value.
+  readonly price: number;
+  readonly homeValue: number;
+  readonly hoa: number;
+  readonly downPayment: number;
+  readonly interestRate: number;
+  readonly pmi: number;
+  readonly pmiEquityPct: number;
+  readonly propertyTax: number;
+  readonly residentialExemptionPerMonth: number;
+  readonly homeownersInsurance: number;
+  readonly closingCost: number;
+  readonly mortgageTerm: number;
+  readonly annualIncome: number;
+  readonly monthlyDebt: number;
 
-  if (rawMonthlyAbsolute) {
-    if (savings) return rawMonthlyAbsolute - savings;
-    if (deduction) {
-      // We assume that the monthly absolute does not include the deduction.
-      const annualRate = rawMonthlyAbsolute * 12 / homeValue();
-      return annualRate * (homeValue() - deduction) / 12;
-    }
-    return rawMonthlyAbsolute;
+  readonly n: number;
+  readonly downPaymentPct: number;
+
+  constructor() {
+    this.price = Math.max(0, orZero(priceInput));
+    this.homeValue = Math.max(0, orZero(homeValueInput)) || this.price;
+    this.hoa = Math.max(0, orZero(hoaInput));
+    this.downPayment =
+        clamp(orZero(downPaymentPercentageInput), {min: 0, max: 100}) / 100 *
+            this.price ||
+        clamp(orZero(downPaymentAbsoluteInput), {min: 0, max: this.price});
+    this.interestRate =
+        clamp(orZero(interestRateInput), {min: 0, max: 100}) / 100;
+    this.pmi = Math.max(0, orZero(mortgageInsuranceInput));
+    this.pmiEquityPct =
+        clamp(orZero(pmiEquityPercentageInput), {min: 0, max: 100}) / 100 ||
+        0.22;
+    this.propertyTax = ((): number => {
+      const rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
+      const rawAnnualRate =
+          clamp(orZero(propertyTaxPercentageInput), {min: 0, max: 100}) / 100;
+      const savings =
+          Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
+      const deduction = clamp(
+          orZero(residentialExemptionDeductionInput),
+          {min: 0, max: this.price});
+
+      if (rawMonthlyAbsolute) {
+        if (savings) return rawMonthlyAbsolute - savings;
+        if (deduction) {
+          // We assume that the monthly absolute does not include the deduction.
+          const annualRate = rawMonthlyAbsolute * 12 / this.homeValue;
+          return annualRate * (this.homeValue - deduction) / 12;
+        }
+        return rawMonthlyAbsolute;
+      }
+      if (savings) {
+        const monthlyAbsolute = rawAnnualRate * this.homeValue / 12;
+        return monthlyAbsolute - savings;
+      }
+      return rawAnnualRate * (this.homeValue - deduction) / 12;
+    })();
+    this.residentialExemptionPerMonth = ((): number => {
+      const savings =
+          Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
+      if (savings) return savings;
+
+      const deduction = clamp(
+          orZero(residentialExemptionDeductionInput),
+          {min: 0, max: this.price});
+
+      if (!deduction) return deduction;
+
+      const rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
+      if (rawMonthlyAbsolute) {
+        const annualRate = rawMonthlyAbsolute * 12 / this.homeValue;
+        return annualRate * deduction / 12;
+      }
+
+      const rawAnnualRate =
+          clamp(orZero(propertyTaxPercentageInput), {min: 0, max: 100}) / 100;
+      return rawAnnualRate * deduction / 12;
+    })();
+    this.homeownersInsurance = Math.max(0, orZero(homeownersInsuranceInput));
+    this.closingCost = Math.max(0, orZero(closingCostInput));
+    // Assume a 30 year fixed loan.
+    this.mortgageTerm = Math.max(0, orZero(mortgageTermInput)) || 30;
+    this.annualIncome = Math.max(0, orZero(annualIncomeInput));
+    this.monthlyDebt = Math.max(0, orZero(monthlyDebtInput));
+
+    // For convenience.
+    this.n = 12 * this.mortgageTerm;
+    this.downPaymentPct = this.downPayment / this.price;
   }
-  if (savings) {
-    const monthlyAbsolute = rawAnnualRate * homeValue() / 12;
-    return monthlyAbsolute - savings;
-  }
-  return rawAnnualRate * (homeValue() - deduction) / 12;
-};
-const residentialExemptionPerMonth = (): number => {
-  const savings = Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
-  if (savings) return savings;
+}
 
-  const deduction =
-      clamp(orZero(residentialExemptionDeductionInput), {min: 0, max: price()});
+const setContents = (ctx: Context): void => {
+  loanAmountOutput.innerText = `${fmt.format(ctx.price - ctx.downPayment)}`;
 
-  if (!deduction) return deduction;
-
-  const rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
-  if (rawMonthlyAbsolute) {
-    const annualRate = rawMonthlyAbsolute * 12 / homeValue();
-    return annualRate * deduction / 12;
-  }
-
-  const rawAnnualRate =
-      clamp(orZero(propertyTaxPercentageInput), {min: 0, max: 100}) / 100;
-  return rawAnnualRate * deduction / 12;
-};
-const homeownersInsurance = (): number =>
-    Math.max(0, orZero(homeownersInsuranceInput));
-const closingCost = (): number => Math.max(0, orZero(closingCostInput));
-// Assume a 30 year fixed loan.
-const mortgageTerm = (): number => Math.max(0, orZero(mortgageTermInput)) || 30;
-const annualIncome = (): number => Math.max(0, orZero(annualIncomeInput));
-const monthlyDebt = (): number => Math.max(0, orZero(monthlyDebtInput));
-
-// For convenience.
-const n = (): number => 12 * mortgageTerm();
-const downPaymentPct = (): number => downPayment() / price();
-
-const setContents = (): void => {
-  loanAmountOutput.innerText = `${fmt.format(price() - downPayment())}`;
-
-  if (interestRate() || downPayment() === price()) {
-    const M = downPayment() === price() ? 0 :
-                                          monthlyFormula(
-                                              price() * (1 - downPaymentPct()),
-                                              interestRate() / 12,
-                                              n(),
-                                          );
+  if (ctx.interestRate || ctx.downPayment === ctx.price) {
+    const M = ctx.downPayment === ctx.price ?
+        0 :
+        monthlyFormula(
+            ctx.price * (1 - ctx.downPaymentPct),
+            ctx.interestRate / 12,
+            ctx.n,
+        );
     principalAndInterestOutput.innerText = `${fmt.format(M)}`;
-    const extras = hoa() + propertyTax() + homeownersInsurance();
+    const extras = ctx.hoa + ctx.propertyTax + ctx.homeownersInsurance;
 
     monthlyPaymentAmountOutput.innerText = `${fmt.format(M + extras)}`;
-    monthlyPaymentPmiOutput.innerText = `${fmt.format(M + extras + pmi())}`;
-    const showPmi = pmi() && downPaymentPct() < pmiEquityPct();
+    monthlyPaymentPmiOutput.innerText = `${fmt.format(M + extras + ctx.pmi)}`;
+    const showPmi = ctx.pmi && ctx.downPaymentPct < ctx.pmiEquityPct;
     document
         .getElementById(
             'monthly-payment-without-pmi-span',
             )!.style.display = showPmi ? '' : 'none';
     document.getElementById('monthly-payment-pmi-div')!.style.display =
         showPmi ? '' : 'none';
-    const schedule = calculatePaymentSchedule(M);
+    const schedule = calculatePaymentSchedule(ctx, M);
     buildPaymentScheduleChart(schedule, keys);
     const pmiMonths =
         countSatisfying(schedule, payment => payment.data.pmi !== 0);
-    pmiPaymentTimelineOutput.innerText =
-        `${formatMonthNum(pmiMonths)} (${fmt.format(pmiMonths * pmi())} total)`;
+    pmiPaymentTimelineOutput.innerText = `${formatMonthNum(pmiMonths)} (${
+        fmt.format(pmiMonths * ctx.pmi)} total)`;
     if (M) {
       const cumulativePaymentTypes: PaymentType[] =
           ['principal', 'interest', 'pmi'];
@@ -262,16 +295,17 @@ const setContents = (): void => {
           cumulativeSumByFields(schedule, cumulativePaymentTypes),
           cumulativePaymentTypes);
       lifetimePaymentOutput.innerText =
-          `${fmt.format(n() * M + d3.sum(schedule, (d) => d.data.pmi))}`;
+          `${fmt.format(ctx.n * M + d3.sum(schedule, (d) => d.data.pmi))}`;
     } else {
       document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
       lifetimePaymentOutput.innerText = `${fmt.format(0)}`;
     }
 
-    if (annualIncome()) {
+    if (ctx.annualIncome) {
       debtToIncomeOutput.innerText = `${
           pctFmt.format(
-              (monthlyDebt() + M + extras + pmi()) / annualIncome() * 12)}`;
+              (ctx.monthlyDebt + M + extras + ctx.pmi) / ctx.annualIncome *
+              12)}`;
       document.getElementById('debt-to-income-ratio-div')!.style.display = '';
     } else {
       debtToIncomeOutput.innerText = '';
@@ -284,7 +318,7 @@ const setContents = (): void => {
 
   purchasePaymentOutput.innerText = `${
       fmt.format(
-          downPayment() + closingCost(),
+          ctx.downPayment + ctx.closingCost,
           )}`;
 };
 
@@ -303,40 +337,41 @@ interface Margin {
   right: number;
 }
 
-const calculatePaymentSchedule = (monthlyPayment: number): PaymentRecord[] => {
-  let equity = downPayment();
-  const schedule: PaymentRecord[] = [];
-  for (const month of d3.range(n())) {
-    const principal = price() - equity;
-    const interestPayment = (interestRate() / 12) * principal;
-    const pmiPayment = equity < pmiEquityPct() * price() ? pmi() : 0;
-    equity += monthlyPayment - interestPayment;
-    schedule.push({
-      month: month + 1,
-      data: {
-        interest: interestPayment,
-        principal: monthlyPayment - interestPayment,
-        pmi: pmiPayment,
-        hoa: hoa(),
-        property_tax: propertyTax(),
-        homeowners_insurance: homeownersInsurance(),
-      },
-    });
-  }
-  return schedule;
-};
+const calculatePaymentSchedule =
+    (ctx: Context, monthlyPayment: number): PaymentRecord[] => {
+      let equity = ctx.downPayment;
+      const schedule: PaymentRecord[] = [];
+      for (const month of d3.range(ctx.n)) {
+        const principal = ctx.price - equity;
+        const interestPayment = (ctx.interestRate / 12) * principal;
+        const pmiPayment = equity < ctx.pmiEquityPct * ctx.price ? ctx.pmi : 0;
+        equity += monthlyPayment - interestPayment;
+        schedule.push({
+          month: month + 1,
+          data: {
+            interest: interestPayment,
+            principal: monthlyPayment - interestPayment,
+            pmi: pmiPayment,
+            hoa: ctx.hoa,
+            property_tax: ctx.propertyTax,
+            homeowners_insurance: ctx.homeownersInsurance,
+          },
+        });
+      }
+      return schedule;
+    };
 
-const showAmountHints = (): void => {
-  homeValueHintOutput.innerText = `(${fmt.format(homeValue())})`;
-  downPaymentHintOutput.innerText = `(${fmt.format(downPayment())})`;
+const showAmountHints = (ctx: Context): void => {
+  homeValueHintOutput.innerText = `(${fmt.format(ctx.homeValue)})`;
+  downPaymentHintOutput.innerText = `(${fmt.format(ctx.downPayment)})`;
   pmiEquityPercentageHintOutput.innerText =
-      `(${pctFmt.format(pmiEquityPct())})`;
+      `(${pctFmt.format(ctx.pmiEquityPct)})`;
   propertyTaxHintOutput.innerText = `(Effective ${
-      fmt.format(propertyTax() * 12 / homeValue() * 1000)} / $1000; ${
-      fmt.format(propertyTax())}/mo)`;
+      fmt.format(ctx.propertyTax * 12 / ctx.homeValue * 1000)} / $1000; ${
+      fmt.format(ctx.propertyTax)}/mo)`;
   residentialExemptionHintOutput.innerText =
-      `(${fmt.format(residentialExemptionPerMonth())}/mo)`
-  mortgageTermHintOutput.innerText = `(${mortgageTerm()} yrs)`;
+      `(${fmt.format(ctx.residentialExemptionPerMonth)}/mo)`
+  mortgageTermHintOutput.innerText = `(${ctx.mortgageTerm} yrs)`;
 };
 
 const bisectMonth =
@@ -642,8 +677,9 @@ const initFieldsFromUrl = (): void => {
     hasValue = hasValue || value !== null;
   }
   if (hasValue) {
-    showAmountHints();
-    setContents();
+    const ctx = new Context();
+    showAmountHints(ctx);
+    setContents(ctx);
   }
 };
 

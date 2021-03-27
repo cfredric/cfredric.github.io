@@ -137,9 +137,10 @@ var d3 = require("d3");
     var attachListeners = function () {
         var e_1, _a;
         var onChange = function () {
-            showAmountHints();
+            var ctx = new Context();
+            showAmountHints(ctx);
             updateUrl();
-            setContents();
+            setContents(ctx);
         };
         try {
             for (var _b = __values(urlParamMap.values()), _c = _b.next(); !_c.done; _c = _b.next()) {
@@ -156,97 +157,100 @@ var d3 = require("d3");
             finally { if (e_1) throw e_1.error; }
         }
     };
-    var price = function () { return Math.max(0, orZero(priceInput)); };
-    var homeValue = function () { return Math.max(0, orZero(homeValueInput)) || price(); };
-    var hoa = function () { return Math.max(0, orZero(hoaInput)); };
-    var downPayment = function () {
-        return clamp(orZero(downPaymentPercentageInput), { min: 0, max: 100 }) / 100 *
-            price() ||
-            clamp(orZero(downPaymentAbsoluteInput), { min: 0, max: price() });
-    };
-    var interestRate = function () {
-        return clamp(orZero(interestRateInput), { min: 0, max: 100 }) / 100;
-    };
-    var pmi = function () { return Math.max(0, orZero(mortgageInsuranceInput)); };
-    var pmiEquityPct = function () {
-        return clamp(orZero(pmiEquityPercentageInput), { min: 0, max: 100 }) / 100 || 0.22;
-    };
-    var propertyTax = function () {
-        var rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
-        var rawAnnualRate = clamp(orZero(propertyTaxPercentageInput), { min: 0, max: 100 }) / 100;
-        var savings = Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
-        var deduction = clamp(orZero(residentialExemptionDeductionInput), { min: 0, max: price() });
-        if (rawMonthlyAbsolute) {
-            if (savings)
-                return rawMonthlyAbsolute - savings;
-            if (deduction) {
-                var annualRate = rawMonthlyAbsolute * 12 / homeValue();
-                return annualRate * (homeValue() - deduction) / 12;
-            }
-            return rawMonthlyAbsolute;
+    var Context = (function () {
+        function Context() {
+            var _this = this;
+            this.price = Math.max(0, orZero(priceInput));
+            this.homeValue = Math.max(0, orZero(homeValueInput)) || this.price;
+            this.hoa = Math.max(0, orZero(hoaInput));
+            this.downPayment =
+                clamp(orZero(downPaymentPercentageInput), { min: 0, max: 100 }) / 100 *
+                    this.price ||
+                    clamp(orZero(downPaymentAbsoluteInput), { min: 0, max: this.price });
+            this.interestRate =
+                clamp(orZero(interestRateInput), { min: 0, max: 100 }) / 100;
+            this.pmi = Math.max(0, orZero(mortgageInsuranceInput));
+            this.pmiEquityPct =
+                clamp(orZero(pmiEquityPercentageInput), { min: 0, max: 100 }) / 100 ||
+                    0.22;
+            this.propertyTax = (function () {
+                var rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
+                var rawAnnualRate = clamp(orZero(propertyTaxPercentageInput), { min: 0, max: 100 }) / 100;
+                var savings = Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
+                var deduction = clamp(orZero(residentialExemptionDeductionInput), { min: 0, max: _this.price });
+                if (rawMonthlyAbsolute) {
+                    if (savings)
+                        return rawMonthlyAbsolute - savings;
+                    if (deduction) {
+                        var annualRate = rawMonthlyAbsolute * 12 / _this.homeValue;
+                        return annualRate * (_this.homeValue - deduction) / 12;
+                    }
+                    return rawMonthlyAbsolute;
+                }
+                if (savings) {
+                    var monthlyAbsolute = rawAnnualRate * _this.homeValue / 12;
+                    return monthlyAbsolute - savings;
+                }
+                return rawAnnualRate * (_this.homeValue - deduction) / 12;
+            })();
+            this.residentialExemptionPerMonth = (function () {
+                var savings = Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
+                if (savings)
+                    return savings;
+                var deduction = clamp(orZero(residentialExemptionDeductionInput), { min: 0, max: _this.price });
+                if (!deduction)
+                    return deduction;
+                var rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
+                if (rawMonthlyAbsolute) {
+                    var annualRate = rawMonthlyAbsolute * 12 / _this.homeValue;
+                    return annualRate * deduction / 12;
+                }
+                var rawAnnualRate = clamp(orZero(propertyTaxPercentageInput), { min: 0, max: 100 }) / 100;
+                return rawAnnualRate * deduction / 12;
+            })();
+            this.homeownersInsurance = Math.max(0, orZero(homeownersInsuranceInput));
+            this.closingCost = Math.max(0, orZero(closingCostInput));
+            this.mortgageTerm = Math.max(0, orZero(mortgageTermInput)) || 30;
+            this.annualIncome = Math.max(0, orZero(annualIncomeInput));
+            this.monthlyDebt = Math.max(0, orZero(monthlyDebtInput));
+            this.n = 12 * this.mortgageTerm;
+            this.downPaymentPct = this.downPayment / this.price;
         }
-        if (savings) {
-            var monthlyAbsolute = rawAnnualRate * homeValue() / 12;
-            return monthlyAbsolute - savings;
-        }
-        return rawAnnualRate * (homeValue() - deduction) / 12;
-    };
-    var residentialExemptionPerMonth = function () {
-        var savings = Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
-        if (savings)
-            return savings;
-        var deduction = clamp(orZero(residentialExemptionDeductionInput), { min: 0, max: price() });
-        if (!deduction)
-            return deduction;
-        var rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
-        if (rawMonthlyAbsolute) {
-            var annualRate = rawMonthlyAbsolute * 12 / homeValue();
-            return annualRate * deduction / 12;
-        }
-        var rawAnnualRate = clamp(orZero(propertyTaxPercentageInput), { min: 0, max: 100 }) / 100;
-        return rawAnnualRate * deduction / 12;
-    };
-    var homeownersInsurance = function () {
-        return Math.max(0, orZero(homeownersInsuranceInput));
-    };
-    var closingCost = function () { return Math.max(0, orZero(closingCostInput)); };
-    var mortgageTerm = function () { return Math.max(0, orZero(mortgageTermInput)) || 30; };
-    var annualIncome = function () { return Math.max(0, orZero(annualIncomeInput)); };
-    var monthlyDebt = function () { return Math.max(0, orZero(monthlyDebtInput)); };
-    var n = function () { return 12 * mortgageTerm(); };
-    var downPaymentPct = function () { return downPayment() / price(); };
-    var setContents = function () {
+        return Context;
+    }());
+    var setContents = function (ctx) {
         var _a;
-        loanAmountOutput.innerText = "" + fmt.format(price() - downPayment());
-        if (interestRate() || downPayment() === price()) {
-            var M = downPayment() === price() ? 0 :
-                monthlyFormula(price() * (1 - downPaymentPct()), interestRate() / 12, n());
+        loanAmountOutput.innerText = "" + fmt.format(ctx.price - ctx.downPayment);
+        if (ctx.interestRate || ctx.downPayment === ctx.price) {
+            var M = ctx.downPayment === ctx.price ?
+                0 :
+                monthlyFormula(ctx.price * (1 - ctx.downPaymentPct), ctx.interestRate / 12, ctx.n);
             principalAndInterestOutput.innerText = "" + fmt.format(M);
-            var extras = hoa() + propertyTax() + homeownersInsurance();
+            var extras = ctx.hoa + ctx.propertyTax + ctx.homeownersInsurance;
             monthlyPaymentAmountOutput.innerText = "" + fmt.format(M + extras);
-            monthlyPaymentPmiOutput.innerText = "" + fmt.format(M + extras + pmi());
-            var showPmi = pmi() && downPaymentPct() < pmiEquityPct();
+            monthlyPaymentPmiOutput.innerText = "" + fmt.format(M + extras + ctx.pmi);
+            var showPmi = ctx.pmi && ctx.downPaymentPct < ctx.pmiEquityPct;
             document
                 .getElementById('monthly-payment-without-pmi-span').style.display = showPmi ? '' : 'none';
             document.getElementById('monthly-payment-pmi-div').style.display =
                 showPmi ? '' : 'none';
-            var schedule = calculatePaymentSchedule(M);
+            var schedule = calculatePaymentSchedule(ctx, M);
             buildPaymentScheduleChart(schedule, keys);
             var pmiMonths = countSatisfying(schedule, function (payment) { return payment.data.pmi !== 0; });
-            pmiPaymentTimelineOutput.innerText =
-                formatMonthNum(pmiMonths) + " (" + fmt.format(pmiMonths * pmi()) + " total)";
+            pmiPaymentTimelineOutput.innerText = formatMonthNum(pmiMonths) + " (" + fmt.format(pmiMonths * ctx.pmi) + " total)";
             if (M) {
                 var cumulativePaymentTypes = ['principal', 'interest', 'pmi'];
                 buildCumulativeChart(cumulativeSumByFields(schedule, cumulativePaymentTypes), cumulativePaymentTypes);
                 lifetimePaymentOutput.innerText =
-                    "" + fmt.format(n() * M + d3.sum(schedule, function (d) { return d.data.pmi; }));
+                    "" + fmt.format(ctx.n * M + d3.sum(schedule, function (d) { return d.data.pmi; }));
             }
             else {
                 (_a = document.querySelector('#cumulative_viz > svg:first-of-type')) === null || _a === void 0 ? void 0 : _a.remove();
                 lifetimePaymentOutput.innerText = "" + fmt.format(0);
             }
-            if (annualIncome()) {
-                debtToIncomeOutput.innerText = "" + pctFmt.format((monthlyDebt() + M + extras + pmi()) / annualIncome() * 12);
+            if (ctx.annualIncome) {
+                debtToIncomeOutput.innerText = "" + pctFmt.format((ctx.monthlyDebt + M + extras + ctx.pmi) / ctx.annualIncome *
+                    12);
                 document.getElementById('debt-to-income-ratio-div').style.display = '';
             }
             else {
@@ -258,21 +262,21 @@ var d3 = require("d3");
         else {
             clearMonthlyPaymentOutputs();
         }
-        purchasePaymentOutput.innerText = "" + fmt.format(downPayment() + closingCost());
+        purchasePaymentOutput.innerText = "" + fmt.format(ctx.downPayment + ctx.closingCost);
     };
     var monthlyFormula = function (P, r, n) {
         return (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
     };
-    var calculatePaymentSchedule = function (monthlyPayment) {
+    var calculatePaymentSchedule = function (ctx, monthlyPayment) {
         var e_2, _a;
-        var equity = downPayment();
+        var equity = ctx.downPayment;
         var schedule = [];
         try {
-            for (var _b = __values(d3.range(n())), _c = _b.next(); !_c.done; _c = _b.next()) {
+            for (var _b = __values(d3.range(ctx.n)), _c = _b.next(); !_c.done; _c = _b.next()) {
                 var month = _c.value;
-                var principal = price() - equity;
-                var interestPayment = (interestRate() / 12) * principal;
-                var pmiPayment = equity < pmiEquityPct() * price() ? pmi() : 0;
+                var principal = ctx.price - equity;
+                var interestPayment = (ctx.interestRate / 12) * principal;
+                var pmiPayment = equity < ctx.pmiEquityPct * ctx.price ? ctx.pmi : 0;
                 equity += monthlyPayment - interestPayment;
                 schedule.push({
                     month: month + 1,
@@ -280,9 +284,9 @@ var d3 = require("d3");
                         interest: interestPayment,
                         principal: monthlyPayment - interestPayment,
                         pmi: pmiPayment,
-                        hoa: hoa(),
-                        property_tax: propertyTax(),
-                        homeowners_insurance: homeownersInsurance(),
+                        hoa: ctx.hoa,
+                        property_tax: ctx.propertyTax,
+                        homeowners_insurance: ctx.homeownersInsurance,
                     },
                 });
             }
@@ -296,15 +300,15 @@ var d3 = require("d3");
         }
         return schedule;
     };
-    var showAmountHints = function () {
-        homeValueHintOutput.innerText = "(" + fmt.format(homeValue()) + ")";
-        downPaymentHintOutput.innerText = "(" + fmt.format(downPayment()) + ")";
+    var showAmountHints = function (ctx) {
+        homeValueHintOutput.innerText = "(" + fmt.format(ctx.homeValue) + ")";
+        downPaymentHintOutput.innerText = "(" + fmt.format(ctx.downPayment) + ")";
         pmiEquityPercentageHintOutput.innerText =
-            "(" + pctFmt.format(pmiEquityPct()) + ")";
-        propertyTaxHintOutput.innerText = "(Effective " + fmt.format(propertyTax() * 12 / homeValue() * 1000) + " / $1000; " + fmt.format(propertyTax()) + "/mo)";
+            "(" + pctFmt.format(ctx.pmiEquityPct) + ")";
+        propertyTaxHintOutput.innerText = "(Effective " + fmt.format(ctx.propertyTax * 12 / ctx.homeValue * 1000) + " / $1000; " + fmt.format(ctx.propertyTax) + "/mo)";
         residentialExemptionHintOutput.innerText =
-            "(" + fmt.format(residentialExemptionPerMonth()) + "/mo)";
-        mortgageTermHintOutput.innerText = "(" + mortgageTerm() + " yrs)";
+            "(" + fmt.format(ctx.residentialExemptionPerMonth) + "/mo)";
+        mortgageTermHintOutput.innerText = "(" + ctx.mortgageTerm + " yrs)";
     };
     var bisectMonth = function (data, x, mouseX) {
         var month = x.invert(mouseX);
@@ -529,8 +533,9 @@ var d3 = require("d3");
             finally { if (e_4) throw e_4.error; }
         }
         if (hasValue) {
-            showAmountHints();
-            setContents();
+            var ctx = new Context();
+            showAmountHints(ctx);
+            setContents(ctx);
         }
     };
     var updateUrl = function () {
