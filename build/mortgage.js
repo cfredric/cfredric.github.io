@@ -180,36 +180,26 @@ var d3 = require("d3");
                 var rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
                 var rawAnnualRate = clamp(orZero(propertyTaxPercentageInput), { min: 0, max: 100 }) / 100;
                 var savings = Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
-                var deduction = clamp(orZero(residentialExemptionDeductionInput), { min: 0, max: _this.price });
-                if (rawMonthlyAbsolute) {
-                    if (savings)
-                        return rawMonthlyAbsolute - savings;
-                    if (deduction) {
-                        var annualRate = rawMonthlyAbsolute * 12 / _this.homeValue;
-                        return annualRate * (_this.homeValue - deduction) / 12;
-                    }
-                    return rawMonthlyAbsolute;
-                }
                 if (savings) {
-                    var monthlyAbsolute = rawAnnualRate * _this.homeValue / 12;
+                    var monthlyAbsolute = rawMonthlyAbsolute ?
+                        rawMonthlyAbsolute :
+                        rawAnnualRate * _this.homeValue / 12;
                     return monthlyAbsolute - savings;
                 }
-                return rawAnnualRate * (_this.homeValue - deduction) / 12;
+                var annualRate = rawMonthlyAbsolute ?
+                    rawMonthlyAbsolute * 12 / _this.homeValue :
+                    rawAnnualRate;
+                var deduction = clamp(orZero(residentialExemptionDeductionInput), { min: 0, max: _this.price });
+                return annualRate * (_this.homeValue - deduction) / 12;
             })();
             this.residentialExemptionPerMonth = (function () {
-                var savings = Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
-                if (savings)
-                    return savings;
+                var annualSavings = Math.max(0, orZero(residentialExemptionSavingsInput));
+                if (annualSavings)
+                    return annualSavings / 12;
+                var annualRate = Math.max(0, orZero(propertyTaxAbsoluteInput)) * 12 / _this.homeValue ||
+                    clamp(orZero(propertyTaxPercentageInput), { min: 0, max: 100 });
                 var deduction = clamp(orZero(residentialExemptionDeductionInput), { min: 0, max: _this.price });
-                if (!deduction)
-                    return deduction;
-                var rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
-                if (rawMonthlyAbsolute) {
-                    var annualRate = rawMonthlyAbsolute * 12 / _this.homeValue;
-                    return annualRate * deduction / 12;
-                }
-                var rawAnnualRate = clamp(orZero(propertyTaxPercentageInput), { min: 0, max: 100 }) / 100;
-                return rawAnnualRate * deduction / 12;
+                return annualRate * deduction / 12;
             })();
             this.homeownersInsurance = Math.max(0, orZero(homeownersInsuranceInput));
             this.closingCost = Math.max(0, orZero(closingCostInput));
