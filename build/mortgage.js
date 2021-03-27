@@ -58,6 +58,8 @@ var d3 = require("d3");
     var propertyTaxPercentageInput = document.getElementById('property-tax-percentage-input');
     var propertyTaxHintOutput = document.getElementById('property-tax-percentage-hint');
     var residentialExemptionSavingsInput = document.getElementById('residential-exemption-savings-input');
+    var residentialExemptionDeductionInput = document.getElementById('residential-exemption-deduction-input');
+    var residentialExemptionHintOutput = document.getElementById('residential-exemption-hint');
     var homeownersInsuranceInput = document.getElementById('homeowners-insurance-input');
     var closingCostInput = document.getElementById('closing-cost-input');
     var mortgageTermInput = document.getElementById('mortgage-term-input');
@@ -125,6 +127,7 @@ var d3 = require("d3");
         ['property_tax', propertyTaxAbsoluteInput],
         ['property_tax_pct', propertyTaxPercentageInput],
         ['resi_savings', residentialExemptionSavingsInput],
+        ['resi_deduction', residentialExemptionDeductionInput],
         ['hoi', homeownersInsuranceInput],
         ['closing_cost', closingCostInput],
         ['mortgage-term', mortgageTermInput],
@@ -169,13 +172,39 @@ var d3 = require("d3");
         return clamp(orZero(pmiEquityPercentageInput), { min: 0, max: 100 }) / 100 || 0.22;
     };
     var propertyTax = function () {
-        var rawMonthly = Math.max(0, orZero(propertyTaxAbsoluteInput)) ||
-            (clamp(orZero(propertyTaxPercentageInput), { min: 0, max: 100 }) / 100 *
-                homeValue() / 12);
-        return rawMonthly - residentialExemptionSavingsPerMonth();
+        var rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
+        var rawAnnualRate = clamp(orZero(propertyTaxPercentageInput), { min: 0, max: 100 }) / 100;
+        var savings = Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
+        var deduction = clamp(orZero(residentialExemptionDeductionInput), { min: 0, max: price() });
+        if (rawMonthlyAbsolute) {
+            if (savings)
+                return rawMonthlyAbsolute - savings;
+            if (deduction) {
+                var annualRate = rawMonthlyAbsolute * 12 / homeValue();
+                return annualRate * (homeValue() - deduction) / 12;
+            }
+            return rawMonthlyAbsolute;
+        }
+        if (savings) {
+            var monthlyAbsolute = rawAnnualRate * homeValue() / 12;
+            return monthlyAbsolute - savings;
+        }
+        return rawAnnualRate * (homeValue() - deduction) / 12;
     };
-    var residentialExemptionSavingsPerMonth = function () {
-        return Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
+    var residentialExemptionPerMonth = function () {
+        var savings = Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
+        if (savings)
+            return savings;
+        var deduction = clamp(orZero(residentialExemptionDeductionInput), { min: 0, max: price() });
+        if (!deduction)
+            return deduction;
+        var rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
+        if (rawMonthlyAbsolute) {
+            var annualRate = rawMonthlyAbsolute * 12 / homeValue();
+            return annualRate * deduction / 12;
+        }
+        var rawAnnualRate = clamp(orZero(propertyTaxPercentageInput), { min: 0, max: 100 }) / 100;
+        return rawAnnualRate * deduction / 12;
     };
     var homeownersInsurance = function () {
         return Math.max(0, orZero(homeownersInsuranceInput));
@@ -272,8 +301,9 @@ var d3 = require("d3");
         downPaymentHintOutput.innerText = "(" + fmt.format(downPayment()) + ")";
         pmiEquityPercentageHintOutput.innerText =
             "(" + pctFmt.format(pmiEquityPct()) + ")";
-        propertyTaxHintOutput.innerText =
-            "(" + fmt.format(propertyTax() * 12 / homeValue() * 1000) + " / $1000; " + fmt.format(propertyTax()) + "/mo)";
+        propertyTaxHintOutput.innerText = "(Effective " + fmt.format(propertyTax() * 12 / homeValue() * 1000) + " / $1000; " + fmt.format(propertyTax()) + "/mo)";
+        residentialExemptionHintOutput.innerText =
+            "(" + fmt.format(residentialExemptionPerMonth()) + "/mo)";
         mortgageTermHintOutput.innerText = "(" + mortgageTerm() + " yrs)";
     };
     var bisectMonth = function (data, x, mouseX) {

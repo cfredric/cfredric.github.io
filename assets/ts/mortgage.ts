@@ -45,6 +45,11 @@ const propertyTaxHintOutput =
 const residentialExemptionSavingsInput =
     document.getElementById('residential-exemption-savings-input') as
     HTMLInputElement;
+const residentialExemptionDeductionInput =
+    document.getElementById('residential-exemption-deduction-input') as
+    HTMLInputElement;
+const residentialExemptionHintOutput =
+    document.getElementById('residential-exemption-hint')!;
 const homeownersInsuranceInput = document.getElementById(
                                      'homeowners-insurance-input',
                                      ) as HTMLInputElement;
@@ -135,6 +140,7 @@ const urlParamMap = new Map<string, HTMLInputElement>([
   ['property_tax', propertyTaxAbsoluteInput],
   ['property_tax_pct', propertyTaxPercentageInput],
   ['resi_savings', residentialExemptionSavingsInput],
+  ['resi_deduction', residentialExemptionDeductionInput],
   ['hoi', homeownersInsuranceInput],
   ['closing_cost', closingCostInput],
   ['mortgage-term', mortgageTermInput],
@@ -168,13 +174,47 @@ const pmi = (): number => Math.max(0, orZero(mortgageInsuranceInput));
 const pmiEquityPct = (): number =>
     clamp(orZero(pmiEquityPercentageInput), {min: 0, max: 100}) / 100 || 0.22;
 const propertyTax = (): number => {
-  const rawMonthly = Math.max(0, orZero(propertyTaxAbsoluteInput)) ||
-      (clamp(orZero(propertyTaxPercentageInput), {min: 0, max: 100}) / 100 *
-       homeValue() / 12);
-  return rawMonthly - residentialExemptionSavingsPerMonth();
+  const rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
+  const rawAnnualRate =
+      clamp(orZero(propertyTaxPercentageInput), {min: 0, max: 100}) / 100;
+  const savings = Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
+  const deduction =
+      clamp(orZero(residentialExemptionDeductionInput), {min: 0, max: price()});
+
+  if (rawMonthlyAbsolute) {
+    if (savings) return rawMonthlyAbsolute - savings;
+    if (deduction) {
+      // We assume that the monthly absolute does not include the deduction.
+      const annualRate = rawMonthlyAbsolute * 12 / homeValue();
+      return annualRate * (homeValue() - deduction) / 12;
+    }
+    return rawMonthlyAbsolute;
+  }
+  if (savings) {
+    const monthlyAbsolute = rawAnnualRate * homeValue() / 12;
+    return monthlyAbsolute - savings;
+  }
+  return rawAnnualRate * (homeValue() - deduction) / 12;
 };
-const residentialExemptionSavingsPerMonth = (): number =>
-    Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
+const residentialExemptionPerMonth = (): number => {
+  const savings = Math.max(0, orZero(residentialExemptionSavingsInput) / 12);
+  if (savings) return savings;
+
+  const deduction =
+      clamp(orZero(residentialExemptionDeductionInput), {min: 0, max: price()});
+
+  if (!deduction) return deduction;
+
+  const rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
+  if (rawMonthlyAbsolute) {
+    const annualRate = rawMonthlyAbsolute * 12 / homeValue();
+    return annualRate * deduction / 12;
+  }
+
+  const rawAnnualRate =
+      clamp(orZero(propertyTaxPercentageInput), {min: 0, max: 100}) / 100;
+  return rawAnnualRate * deduction / 12;
+};
 const homeownersInsurance = (): number =>
     Math.max(0, orZero(homeownersInsuranceInput));
 const closingCost = (): number => Math.max(0, orZero(closingCostInput));
@@ -291,9 +331,11 @@ const showAmountHints = (): void => {
   downPaymentHintOutput.innerText = `(${fmt.format(downPayment())})`;
   pmiEquityPercentageHintOutput.innerText =
       `(${pctFmt.format(pmiEquityPct())})`;
-  propertyTaxHintOutput.innerText =
-      `(${fmt.format(propertyTax() * 12 / homeValue() * 1000)} / $1000; ${
-          fmt.format(propertyTax())}/mo)`;
+  propertyTaxHintOutput.innerText = `(Effective ${
+      fmt.format(propertyTax() * 12 / homeValue() * 1000)} / $1000; ${
+      fmt.format(propertyTax())}/mo)`;
+  residentialExemptionHintOutput.innerText =
+      `(${fmt.format(residentialExemptionPerMonth())}/mo)`
   mortgageTermHintOutput.innerText = `(${mortgageTerm()} yrs)`;
 };
 
