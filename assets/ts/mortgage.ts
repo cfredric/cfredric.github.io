@@ -62,6 +62,8 @@ const annualIncomeInput =
     document.getElementById('annual-income-input') as HTMLInputElement;
 const monthlyDebtInput =
     document.getElementById('monthly-debt-input') as HTMLInputElement;
+const totalAssetsInput =
+    document.getElementById('total-assets-input') as HTMLInputElement;
 
 const downPaymentHintOutput = document.getElementById('down-payment-hint')!;
 const loanAmountOutput = document.getElementById('loan-amount-output')!;
@@ -83,6 +85,8 @@ const purchasePaymentOutput = document.getElementById(
     )!;
 const debtToIncomeOutput =
     document.getElementById('debt-to-income-ratio-output')!;
+const firedTomorrowCountdownOutput =
+    document.getElementById('fired-tomorrow-countdown-output')!;
 
 const keys = [
   'principal',
@@ -146,6 +150,7 @@ const urlParamMap = new Map<string, HTMLInputElement>([
   ['mortgage-term', mortgageTermInput],
   ['annual-income', annualIncomeInput],
   ['monthly-debt', monthlyDebtInput],
+  ['total_assets', totalAssetsInput],
 ]);
 
 const attachListeners = (): void => {
@@ -183,6 +188,7 @@ class Context {
   readonly mortgageTerm: number;
   readonly annualIncome: number;
   readonly monthlyDebt: number;
+  readonly totalAssets: number;
 
   readonly n: number;
 
@@ -234,6 +240,7 @@ class Context {
     this.mortgageTerm = Math.max(0, orZero(mortgageTermInput)) || 30;
     this.annualIncome = Math.max(0, orZero(annualIncomeInput));
     this.monthlyDebt = Math.max(0, orZero(monthlyDebtInput));
+    this.totalAssets = Math.max(0, orZero(totalAssetsInput));
 
     // For convenience.
     this.n = 12 * this.mortgageTerm;
@@ -291,6 +298,16 @@ const setContents = (ctx: Context): void => {
     } else {
       debtToIncomeOutput.innerText = '';
       document.getElementById('debt-to-income-ratio-div')!.style.display =
+          'none';
+    }
+
+    if (ctx.totalAssets && M) {
+      firedTomorrowCountdownOutput.innerText =
+          `${formatMonthNum(countBurndownMonths(ctx, schedule))}`;
+      document.getElementById('fired-tomorrow-countdown-div')!.style.display =
+          '';
+    } else {
+      document.getElementById('fired-tomorrow-countdown-div')!.style.display =
           'none';
     }
   } else {
@@ -705,6 +722,18 @@ const countSatisfying = <T,>(data: T[], predicate: (t: T) => boolean): number =>
     }
     return count;
   };
+
+const countBurndownMonths =
+    (ctx: Context, schedule: PaymentRecord[]): number => {
+      let assets = ctx.totalAssets - ctx.downPayment - ctx.closingCost;
+      for (const [i, record] of schedule.entries()) {
+        const data = record.data;
+        const due = d3.sum(keys.map((k) => data[k])) + ctx.monthlyDebt;
+        if (due >= assets) return i;
+        assets -= due;
+      }
+      return schedule.length;
+    };
 
 initFieldsFromUrl();
 attachListeners();

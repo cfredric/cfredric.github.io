@@ -66,6 +66,7 @@ var d3 = require("d3");
     var mortgageTermHintOutput = document.getElementById('mortgage-term-hint');
     var annualIncomeInput = document.getElementById('annual-income-input');
     var monthlyDebtInput = document.getElementById('monthly-debt-input');
+    var totalAssetsInput = document.getElementById('total-assets-input');
     var downPaymentHintOutput = document.getElementById('down-payment-hint');
     var loanAmountOutput = document.getElementById('loan-amount-output');
     var principalAndInterestOutput = document.getElementById('principal-and-interest-output');
@@ -75,6 +76,7 @@ var d3 = require("d3");
     var lifetimePaymentOutput = document.getElementById('lifetime-payment-output');
     var purchasePaymentOutput = document.getElementById('purchase-payment-output');
     var debtToIncomeOutput = document.getElementById('debt-to-income-ratio-output');
+    var firedTomorrowCountdownOutput = document.getElementById('fired-tomorrow-countdown-output');
     var keys = [
         'principal',
         'interest',
@@ -133,6 +135,7 @@ var d3 = require("d3");
         ['mortgage-term', mortgageTermInput],
         ['annual-income', annualIncomeInput],
         ['monthly-debt', monthlyDebtInput],
+        ['total_assets', totalAssetsInput],
     ]);
     var attachListeners = function () {
         var e_1, _a;
@@ -198,6 +201,7 @@ var d3 = require("d3");
             this.mortgageTerm = Math.max(0, orZero(mortgageTermInput)) || 30;
             this.annualIncome = Math.max(0, orZero(annualIncomeInput));
             this.monthlyDebt = Math.max(0, orZero(monthlyDebtInput));
+            this.totalAssets = Math.max(0, orZero(totalAssetsInput));
             this.n = 12 * this.mortgageTerm;
         }
         return Context;
@@ -240,6 +244,16 @@ var d3 = require("d3");
             else {
                 debtToIncomeOutput.innerText = '';
                 document.getElementById('debt-to-income-ratio-div').style.display =
+                    'none';
+            }
+            if (ctx.totalAssets && M) {
+                firedTomorrowCountdownOutput.innerText =
+                    "" + formatMonthNum(countBurndownMonths(ctx, schedule));
+                document.getElementById('fired-tomorrow-countdown-div').style.display =
+                    '';
+            }
+            else {
+                document.getElementById('fired-tomorrow-countdown-div').style.display =
                     'none';
             }
         }
@@ -605,6 +619,33 @@ var d3 = require("d3");
             finally { if (e_8) throw e_8.error; }
         }
         return count;
+    };
+    var countBurndownMonths = function (ctx, schedule) {
+        var e_9, _a;
+        var assets = ctx.totalAssets - ctx.downPayment - ctx.closingCost;
+        var _loop_1 = function (i, record) {
+            var data = record.data;
+            var due = d3.sum(keys.map(function (k) { return data[k]; })) + ctx.monthlyDebt;
+            if (due >= assets)
+                return { value: i };
+            assets -= due;
+        };
+        try {
+            for (var _b = __values(schedule.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
+                var _d = __read(_c.value, 2), i = _d[0], record = _d[1];
+                var state_1 = _loop_1(i, record);
+                if (typeof state_1 === "object")
+                    return state_1.value;
+            }
+        }
+        catch (e_9_1) { e_9 = { error: e_9_1 }; }
+        finally {
+            try {
+                if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+            }
+            finally { if (e_9) throw e_9.error; }
+        }
+        return schedule.length;
     };
     initFieldsFromUrl();
     attachListeners();
