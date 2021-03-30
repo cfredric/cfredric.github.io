@@ -36,6 +36,10 @@ var d3 = require("d3");
     var pctFmt = new Intl.NumberFormat('en-US', {
         style: 'percent',
     });
+    var hundredthsPctFmt = new Intl.NumberFormat('en-US', {
+        style: 'percent',
+        maximumFractionDigits: 2,
+    });
     var orZero = function (elt) {
         var num = Number.parseFloat(elt.value);
         return Number.isNaN(num) ? 0 : num;
@@ -51,6 +55,10 @@ var d3 = require("d3");
     var downPaymentPercentageInput = document.getElementById('down-payment-percentage-input');
     var downPaymentAbsoluteInput = document.getElementById('down-payment-absolute-input');
     var interestRateInput = document.getElementById('interest-rate-input');
+    var interestRateHintOutput = document.getElementById('interest-rate-hint');
+    var pointsPurchasedInput = document.getElementById('points-purchased-input');
+    var pointValueInput = document.getElementById('point-value-input');
+    var pointValueHintOutput = document.getElementById('point-value-hint');
     var mortgageInsuranceInput = document.getElementById('mortgage-insurance-input');
     var pmiEquityPercentageInput = document.getElementById('mortgage-insurance-equity-percentage-input');
     var pmiEquityPercentageHintOutput = document.getElementById('mortgage-insurance-equity-percent-hint');
@@ -124,6 +132,8 @@ var d3 = require("d3");
         ['down_payment', downPaymentPercentageInput],
         ['down_payment_amt', downPaymentAbsoluteInput],
         ['interest_rate', interestRateInput],
+        ['points_purchased', pointsPurchasedInput],
+        ['point_value', pointValueInput],
         ['mortgage_insurance', mortgageInsuranceInput],
         ['pmi_equity_pct', pmiEquityPercentageInput],
         ['property_tax', propertyTaxAbsoluteInput],
@@ -172,6 +182,11 @@ var d3 = require("d3");
             this.downPaymentPct = this.downPayment / this.price;
             this.interestRate =
                 clamp(orZero(interestRateInput), { min: 0, max: 100 }) / 100;
+            this.pointValue = Math.max(0, orZero(pointValueInput) / 100) || 0.0025;
+            this.pointsPurchased = Math.max(0, orZero(pointsPurchasedInput));
+            if (this.interestRate && this.pointsPurchased) {
+                this.interestRate = Math.max(0, this.interestRate - this.pointsPurchased * this.pointValue);
+            }
             this.pmi = this.downPaymentPct >= 0.2 ?
                 0 :
                 Math.max(0, orZero(mortgageInsuranceInput));
@@ -260,7 +275,8 @@ var d3 = require("d3");
         else {
             clearMonthlyPaymentOutputs();
         }
-        purchasePaymentOutput.innerText = "" + fmt.format(ctx.downPayment + ctx.closingCost);
+        purchasePaymentOutput.innerText = "" + fmt.format(ctx.downPayment + ctx.closingCost +
+            ctx.pointsPurchased * (ctx.price - ctx.downPayment) / 100);
     };
     var monthlyFormula = function (P, r, n) {
         return (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
@@ -301,6 +317,10 @@ var d3 = require("d3");
     var showAmountHints = function (ctx) {
         homeValueHintOutput.innerText = "(" + fmt.format(ctx.homeValue) + ")";
         downPaymentHintOutput.innerText = "(" + fmt.format(ctx.downPayment) + ")";
+        interestRateHintOutput.innerText =
+            "(" + hundredthsPctFmt.format(ctx.interestRate) + ")";
+        pointValueHintOutput.innerText =
+            "(" + hundredthsPctFmt.format(ctx.pointValue) + ")";
         pmiEquityPercentageHintOutput.innerText =
             "(" + pctFmt.format(ctx.pmiEquityPct) + ")";
         propertyTaxHintOutput.innerText = "(Effective " + fmt.format(ctx.propertyTax * 12 / ctx.homeValue * 1000) + " / $1000; " + fmt.format(ctx.propertyTax) + "/mo)";

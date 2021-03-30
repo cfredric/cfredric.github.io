@@ -8,6 +8,10 @@ const fmt = new Intl.NumberFormat('en-US', {
 const pctFmt = new Intl.NumberFormat('en-US', {
   style: 'percent',
 });
+const hundredthsPctFmt = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  maximumFractionDigits: 2,
+});
 const orZero = (elt: HTMLInputElement): number => {
   const num = Number.parseFloat(elt.value);
   return Number.isNaN(num) ? 0 : num;
@@ -27,6 +31,12 @@ const downPaymentAbsoluteInput =
     document.getElementById('down-payment-absolute-input') as HTMLInputElement;
 const interestRateInput =
     document.getElementById('interest-rate-input') as HTMLInputElement;
+const interestRateHintOutput = document.getElementById('interest-rate-hint')!;
+const pointsPurchasedInput =
+    document.getElementById('points-purchased-input') as HTMLInputElement;
+const pointValueInput =
+    document.getElementById('point-value-input') as HTMLInputElement;
+const pointValueHintOutput = document.getElementById('point-value-hint')!;
 const mortgageInsuranceInput = document.getElementById(
                                    'mortgage-insurance-input',
                                    ) as HTMLInputElement;
@@ -139,6 +149,8 @@ const urlParamMap = new Map<string, HTMLInputElement>([
   ['down_payment', downPaymentPercentageInput],
   ['down_payment_amt', downPaymentAbsoluteInput],
   ['interest_rate', interestRateInput],
+  ['points_purchased', pointsPurchasedInput],
+  ['point_value', pointValueInput],
   ['mortgage_insurance', mortgageInsuranceInput],
   ['pmi_equity_pct', pmiEquityPercentageInput],
   ['property_tax', propertyTaxAbsoluteInput],
@@ -179,6 +191,8 @@ class Context {
   readonly downPayment: number;
   readonly downPaymentPct: number;
   readonly interestRate: number;
+  readonly pointsPurchased: number;
+  readonly pointValue: number;
   readonly pmi: number;
   readonly pmiEquityPct: number;
   readonly propertyTax: number;
@@ -203,6 +217,12 @@ class Context {
     this.downPaymentPct = this.downPayment / this.price;
     this.interestRate =
         clamp(orZero(interestRateInput), {min: 0, max: 100}) / 100;
+    this.pointValue = Math.max(0, orZero(pointValueInput) / 100) || 0.0025;
+    this.pointsPurchased = Math.max(0, orZero(pointsPurchasedInput));
+    if (this.interestRate && this.pointsPurchased) {
+      this.interestRate = Math.max(
+          0, this.interestRate - this.pointsPurchased * this.pointValue);
+    }
     this.pmi = this.downPaymentPct >= 0.2 ?
         0 :
         Math.max(0, orZero(mortgageInsuranceInput));
@@ -316,7 +336,8 @@ const setContents = (ctx: Context): void => {
 
   purchasePaymentOutput.innerText = `${
       fmt.format(
-          ctx.downPayment + ctx.closingCost,
+          ctx.downPayment + ctx.closingCost +
+              ctx.pointsPurchased * (ctx.price - ctx.downPayment) / 100,
           )}`;
 };
 
@@ -362,6 +383,10 @@ const calculatePaymentSchedule =
 const showAmountHints = (ctx: Context): void => {
   homeValueHintOutput.innerText = `(${fmt.format(ctx.homeValue)})`;
   downPaymentHintOutput.innerText = `(${fmt.format(ctx.downPayment)})`;
+  interestRateHintOutput.innerText =
+      `(${hundredthsPctFmt.format(ctx.interestRate)})`;
+  pointValueHintOutput.innerText =
+      `(${hundredthsPctFmt.format(ctx.pointValue)})`;
   pmiEquityPercentageHintOutput.innerText =
       `(${pctFmt.format(ctx.pmiEquityPct)})`;
   propertyTaxHintOutput.innerText = `(Effective ${
