@@ -1,5 +1,11 @@
 import d3 = require('d3');
 
+// Typescript doesn't like having variables that are never read, but we want to
+// expose the payment schedule as a variable for the user to play around with in
+// the JS developer console, if they want to do some more complicated stuff.
+// @ts-ignore
+let data: PaymentRecord[] = [];
+
 (function() {
 const fmt = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -178,6 +184,13 @@ const attachListeners = (): void => {
   }
 };
 
+const console_prompt = () => {
+  console.log(
+      'Play around with the data! ' +
+      'The payment schedule is in a variable called `data`. ' +
+      'D3 is exposed as `d3`.');
+};
+
 class Context {
   // This class captures a snapshot of the input fields at construction, and
   // computes all the interesting values to be used in the payment schedule
@@ -291,6 +304,7 @@ const setContents = (ctx: Context): void => {
     document.getElementById('monthly-payment-pmi-div')!.style.display =
         showPmi ? '' : 'none';
     const schedule = calculatePaymentSchedule(ctx, M);
+    data = schedule;
     buildPaymentScheduleChart(schedule, keys);
     const pmiMonths =
         countSatisfying(schedule, payment => payment.data.pmi !== 0);
@@ -331,6 +345,7 @@ const setContents = (ctx: Context): void => {
           'none';
     }
   } else {
+    data = [];
     clearMonthlyPaymentOutputs();
   }
 
@@ -762,4 +777,5 @@ const countBurndownMonths =
 
 initFieldsFromUrl();
 attachListeners();
+console_prompt();
 })();

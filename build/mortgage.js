@@ -28,6 +28,7 @@ var __read = (this && this.__read) || function (o, n) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var d3 = require("d3");
+var data = [];
 (function () {
     var fmt = new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -170,6 +171,11 @@ var d3 = require("d3");
             finally { if (e_1) throw e_1.error; }
         }
     };
+    var console_prompt = function () {
+        console.log('Play around with the data! ' +
+            'The payment schedule is in a variable called `data`. ' +
+            'D3 is exposed as `d3`.');
+    };
     var Context = (function () {
         function Context() {
             this.price = Math.max(0, orZero(priceInput));
@@ -238,6 +244,7 @@ var d3 = require("d3");
             document.getElementById('monthly-payment-pmi-div').style.display =
                 showPmi ? '' : 'none';
             var schedule = calculatePaymentSchedule(ctx, M);
+            data = schedule;
             buildPaymentScheduleChart(schedule, keys);
             var pmiMonths = countSatisfying(schedule, function (payment) { return payment.data.pmi !== 0; });
             pmiPaymentTimelineOutput.innerText = formatMonthNum(pmiMonths) + " (" + fmt.format(pmiMonths * ctx.pmi) + " total)";
@@ -273,6 +280,7 @@ var d3 = require("d3");
             }
         }
         else {
+            data = [];
             clearMonthlyPaymentOutputs();
         }
         purchasePaymentOutput.innerText = "" + fmt.format(ctx.downPayment + ctx.closingCost +
@@ -644,8 +652,8 @@ var d3 = require("d3");
         var e_9, _a;
         var assets = ctx.totalAssets - ctx.downPayment - ctx.closingCost;
         var _loop_1 = function (i, record) {
-            var data = record.data;
-            var due = d3.sum(keys.map(function (k) { return data[k]; })) + ctx.monthlyDebt;
+            var data_2 = record.data;
+            var due = d3.sum(keys.map(function (k) { return data_2[k]; })) + ctx.monthlyDebt;
             if (due >= assets)
                 return { value: i };
             assets -= due;
@@ -669,4 +677,5 @@ var d3 = require("d3");
     };
     initFieldsFromUrl();
     attachListeners();
+    console_prompt();
 })();
