@@ -76,6 +76,8 @@ var data = [];
     var annualIncomeInput = document.getElementById('annual-income-input');
     var monthlyDebtInput = document.getElementById('monthly-debt-input');
     var totalAssetsInput = document.getElementById('total-assets-input');
+    var alreadyClosedInput = document.getElementById('already-closed-input');
+    var paymentsAlreadyMadeInput = document.getElementById('payments-already-made-input');
     var downPaymentHintOutput = document.getElementById('down-payment-hint');
     var loanAmountOutput = document.getElementById('loan-amount-output');
     var principalAndInterestOutput = document.getElementById('principal-and-interest-output');
@@ -147,6 +149,8 @@ var data = [];
         ['annual-income', annualIncomeInput],
         ['monthly-debt', monthlyDebtInput],
         ['total_assets', totalAssetsInput],
+        ['closed', alreadyClosedInput],
+        ['paid', paymentsAlreadyMadeInput],
     ]);
     var attachListeners = function () {
         var e_1, _a;
@@ -220,10 +224,13 @@ var data = [];
             this.homeownersInsurance = Math.max(0, orZero(homeownersInsuranceInput));
             this.closingCost = Math.max(0, orZero(closingCostInput));
             this.mortgageTerm = Math.max(0, orZero(mortgageTermInput)) || 30;
+            this.n = 12 * this.mortgageTerm;
             this.annualIncome = Math.max(0, orZero(annualIncomeInput));
             this.monthlyDebt = Math.max(0, orZero(monthlyDebtInput));
             this.totalAssets = Math.max(0, orZero(totalAssetsInput));
-            this.n = 12 * this.mortgageTerm;
+            this.alreadyClosed = alreadyClosedInput.checked;
+            this.paymentsAlreadyMade =
+                clamp(orZero(paymentsAlreadyMadeInput), { min: 0, max: this.n });
         }
         return Context;
     }());
@@ -546,9 +553,20 @@ var data = [];
         try {
             for (var _b = __values(urlParamMap.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
                 var _d = __read(_c.value, 2), name_1 = _d[0], elt = _d[1];
-                var value = url.searchParams.get(name_1);
-                elt.value = value !== null && value !== void 0 ? value : '';
-                hasValue = hasValue || value !== null;
+                switch (elt.type) {
+                    case 'text':
+                        var value = url.searchParams.get(name_1);
+                        elt.value = value !== null && value !== void 0 ? value : '';
+                        hasValue = hasValue || value !== null;
+                        break;
+                    case 'checkbox':
+                        var checked = url.searchParams.has(name_1);
+                        elt.checked = checked;
+                        hasValue = hasValue || checked;
+                        break;
+                    default:
+                        throw new Error('unreachable');
+                }
             }
         }
         catch (e_4_1) { e_4 = { error: e_4_1 }; }
@@ -570,11 +588,25 @@ var data = [];
         try {
             for (var _b = __values(urlParamMap.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
                 var _d = __read(_c.value, 2), name_2 = _d[0], elt = _d[1];
-                if (elt.value === '') {
-                    url.searchParams.delete(name_2);
+                var value = void 0;
+                var hasValue = void 0;
+                switch (elt.type) {
+                    case 'text':
+                        value = elt.value;
+                        hasValue = value !== '';
+                        break;
+                    case 'checkbox':
+                        value = '';
+                        hasValue = elt.checked;
+                        break;
+                    default:
+                        throw new Error('unreachable');
+                }
+                if (hasValue) {
+                    url.searchParams.set(name_2, value);
                 }
                 else {
-                    url.searchParams.set(name_2, elt.value);
+                    url.searchParams.delete(name_2);
                 }
             }
         }
@@ -650,8 +682,14 @@ var data = [];
     };
     var countBurndownMonths = function (ctx, schedule) {
         var e_9, _a;
-        var assets = ctx.totalAssets - ctx.downPayment - ctx.closingCost;
+        var assets = ctx.totalAssets;
+        if (!ctx.alreadyClosed) {
+            assets -= ctx.downPayment + ctx.closingCost;
+        }
         var _loop_1 = function (i, record) {
+            if (i < ctx.paymentsAlreadyMade) {
+                return "continue";
+            }
             var data_2 = record.data;
             var due = d3.sum(keys.map(function (k) { return data_2[k]; })) + ctx.monthlyDebt;
             if (due >= assets)

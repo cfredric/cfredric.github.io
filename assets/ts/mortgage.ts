@@ -25,6 +25,7 @@ const orZero = (elt: HTMLInputElement): number => {
 const clamp = (x: number, {min, max}: {min: number, max: number}): number =>
     Math.max(min, Math.min(max, x));
 
+// Inputs.
 const priceInput = document.getElementById('price-input') as HTMLInputElement;
 const homeValueInput =
     document.getElementById('home-value-input') as HTMLInputElement;
@@ -80,7 +81,12 @@ const monthlyDebtInput =
     document.getElementById('monthly-debt-input') as HTMLInputElement;
 const totalAssetsInput =
     document.getElementById('total-assets-input') as HTMLInputElement;
+const alreadyClosedInput =
+    document.getElementById('already-closed-input') as HTMLInputElement;
+const paymentsAlreadyMadeInput =
+    document.getElementById('payments-already-made-input') as HTMLInputElement;
 
+// Outputs.
 const downPaymentHintOutput = document.getElementById('down-payment-hint')!;
 const loanAmountOutput = document.getElementById('loan-amount-output')!;
 const principalAndInterestOutput =
@@ -169,6 +175,8 @@ const urlParamMap = new Map<string, HTMLInputElement>([
   ['annual-income', annualIncomeInput],
   ['monthly-debt', monthlyDebtInput],
   ['total_assets', totalAssetsInput],
+  ['closed', alreadyClosedInput],
+  ['paid', paymentsAlreadyMadeInput],
 ]);
 
 const attachListeners = (): void => {
@@ -216,6 +224,8 @@ class Context {
   readonly annualIncome: number;
   readonly monthlyDebt: number;
   readonly totalAssets: number;
+  readonly alreadyClosed: boolean;
+  readonly paymentsAlreadyMade: number;
 
   readonly n: number;
 
@@ -271,12 +281,14 @@ class Context {
     this.closingCost = Math.max(0, orZero(closingCostInput));
     // Assume a 30 year fixed loan.
     this.mortgageTerm = Math.max(0, orZero(mortgageTermInput)) || 30;
+    this.n = 12 * this.mortgageTerm;
     this.annualIncome = Math.max(0, orZero(annualIncomeInput));
     this.monthlyDebt = Math.max(0, orZero(monthlyDebtInput));
     this.totalAssets = Math.max(0, orZero(totalAssetsInput));
 
-    // For convenience.
-    this.n = 12 * this.mortgageTerm;
+    this.alreadyClosed = alreadyClosedInput.checked;
+    this.paymentsAlreadyMade =
+        clamp(orZero(paymentsAlreadyMadeInput), {min: 0, max: this.n});
   }
 }
 
@@ -710,9 +722,20 @@ const initFieldsFromUrl = (): void => {
   const url = new URL(location.href);
   let hasValue = false;
   for (const [name, elt] of urlParamMap.entries()) {
-    const value = url.searchParams.get(name);
-    elt.value = value ?? '';
-    hasValue = hasValue || value !== null;
+    switch (elt.type) {
+      case 'text':
+        const value = url.searchParams.get(name);
+        elt.value = value ?? '';
+        hasValue = hasValue || value !== null;
+        break;
+      case 'checkbox':
+        const checked = url.searchParams.has(name);
+        elt.checked = checked;
+        hasValue = hasValue || checked;
+        break;
+      default:
+        throw new Error('unreachable');
+    }
   }
   if (hasValue) {
     const ctx = new Context();
@@ -724,10 +747,24 @@ const initFieldsFromUrl = (): void => {
 const updateUrl = (): void => {
   const url = new URL(location.href);
   for (const [name, elt] of urlParamMap.entries()) {
-    if (elt.value === '') {
-      url.searchParams.delete(name);
+    let value;
+    let hasValue;
+    switch (elt.type) {
+      case 'text':
+        value = elt.value;
+        hasValue = value !== '';
+        break;
+      case 'checkbox':
+        value = '';
+        hasValue = elt.checked;
+        break;
+      default:
+        throw new Error('unreachable');
+    }
+    if (hasValue) {
+      url.searchParams.set(name, value);
     } else {
-      url.searchParams.set(name, elt.value);
+      url.searchParams.delete(name);
     }
   }
   history.pushState({}, '', url.toString());
@@ -765,8 +802,14 @@ const countSatisfying = <T,>(data: T[], predicate: (t: T) => boolean): number =>
 
 const countBurndownMonths =
     (ctx: Context, schedule: PaymentRecord[]): number => {
-      let assets = ctx.totalAssets - ctx.downPayment - ctx.closingCost;
+      let assets = ctx.totalAssets;
+      if (!ctx.alreadyClosed) {
+        assets -= ctx.downPayment + ctx.closingCost;
+      }
       for (const [i, record] of schedule.entries()) {
+        if (i < ctx.paymentsAlreadyMade) {
+          continue;
+        }
         const data = record.data;
         const due = d3.sum(keys.map((k) => data[k])) + ctx.monthlyDebt;
         if (due >= assets) return i;
