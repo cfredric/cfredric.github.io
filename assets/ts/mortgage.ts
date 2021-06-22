@@ -327,11 +327,29 @@ const setContents = (ctx: Context): void => {
     if (M) {
       const cumulativePaymentTypes: PaymentType[] =
           ['principal', 'interest', 'pmi'];
-      buildCumulativeChart(
-          cumulativeSumByFields(schedule, cumulativePaymentTypes),
-          cumulativePaymentTypes);
+      const cumulativeSums = cumulativeSumByFields(schedule, keys);
+      buildCumulativeChart(cumulativeSums, cumulativePaymentTypes);
       lifetimePaymentOutput.innerText =
           `${fmt.format(ctx.n * M + d3.sum(schedule, (d) => d.data.pmi))}`;
+
+      showConditionalOutput(
+          !!ctx.totalAssets, 'fired-tomorrow-countdown-div',
+          firedTomorrowCountdownOutput,
+          () => `${formatMonthNum(countBurndownMonths(ctx, schedule))}`)
+
+      showConditionalOutput(
+          !!ctx.paymentsAlreadyMade || ctx.alreadyClosed,
+          'total-paid-so-far-div', totalPaidSoFarOutput,
+          () => `${
+              fmt.format(
+                  (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
+                  (!!ctx.paymentsAlreadyMade ?
+                       (() => keys.reduce(
+                            (sum: number, key: PaymentType) => sum +
+                                cumulativeSums[ctx.paymentsAlreadyMade]!
+                                    .data[key],
+                            0))() :
+                       0))}`);
     } else {
       document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
       lifetimePaymentOutput.innerText = `${fmt.format(0)}`;
@@ -344,18 +362,6 @@ const setContents = (ctx: Context): void => {
                 (ctx.monthlyDebt + M + extras + ctx.pmi) / ctx.annualIncome *
                 12)}`);
 
-    showConditionalOutput(
-        !!ctx.totalAssets && !!M, 'fired-tomorrow-countdown-div',
-        firedTomorrowCountdownOutput,
-        () => `${formatMonthNum(countBurndownMonths(ctx, schedule))}`)
-
-    showConditionalOutput(
-        !!M && (!!ctx.paymentsAlreadyMade || ctx.alreadyClosed),
-        'total-paid-so-far-div', totalPaidSoFarOutput,
-        () => `${
-            fmt.format(
-                (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-                M * ctx.paymentsAlreadyMade)}`);
   } else {
     data = [];
     clearMonthlyPaymentOutputs();
@@ -787,25 +793,28 @@ const updateUrl = (): void => {
   history.pushState({}, '', url.toString());
 };
 
+// Returns an array where the ith element is an object with the amount paid of
+// each type before (and excluding) the ith month.
 const cumulativeSumByFields =
-    (data: PaymentRecord[], fields: PaymentType[]): PaymentRecord[] => {
-      const results = new Array<PaymentRecord>(data.length);
-      const carriedValue = (idx: number, key: PaymentType) => {
-        if (!fields.includes(key)) return data[idx]!.data[key];
-        if (idx === 0) return 0;
-        return results[idx - 1]!.data[key] + data[idx]!.data[key];
-      };
-      for (const [idx, datum] of data.entries()) {
-        results[idx] = {
-          month: datum.month,
-          data: {} as Record<PaymentType, number>
+    (data: PaymentRecord[], fields: readonly PaymentType[]):
+        PaymentRecord[] => {
+          const results = new Array<PaymentRecord>(data.length);
+          const carriedValue = (idx: number, key: PaymentType) => {
+            if (!fields.includes(key)) return data[idx]!.data[key];
+            if (idx === 0) return 0;
+            return results[idx - 1]!.data[key] + data[idx]!.data[key];
+          };
+          for (const [idx, datum] of data.entries()) {
+            results[idx] = {
+              month: datum.month,
+              data: {} as Record<PaymentType, number>
+            };
+            for (const field of fields) {
+              results[idx]!.data[field] = carriedValue(idx, field);
+            }
+          }
+          return results;
         };
-        for (const field of fields) {
-          results[idx]!.data[field] = carriedValue(idx, field);
-        }
-      }
-      return results;
-    };
 
 const countSatisfying = <T,>(data: T[], predicate: (t: T) => boolean): number => {
     let count = 0;

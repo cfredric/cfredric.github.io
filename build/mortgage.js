@@ -258,9 +258,17 @@ var data = [];
             pmiPaymentTimelineOutput.innerText = formatMonthNum(pmiMonths) + " (" + fmt.format(pmiMonths * ctx.pmi) + " total)";
             if (M_1) {
                 var cumulativePaymentTypes = ['principal', 'interest', 'pmi'];
-                buildCumulativeChart(cumulativeSumByFields(schedule_1, cumulativePaymentTypes), cumulativePaymentTypes);
+                var cumulativeSums_1 = cumulativeSumByFields(schedule_1, keys);
+                buildCumulativeChart(cumulativeSums_1, cumulativePaymentTypes);
                 lifetimePaymentOutput.innerText =
                     "" + fmt.format(ctx.n * M_1 + d3.sum(schedule_1, function (d) { return d.data.pmi; }));
+                showConditionalOutput(!!ctx.totalAssets, 'fired-tomorrow-countdown-div', firedTomorrowCountdownOutput, function () { return "" + formatMonthNum(countBurndownMonths(ctx, schedule_1)); });
+                showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-paid-so-far-div', totalPaidSoFarOutput, function () { return "" + fmt.format((ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
+                    (!!ctx.paymentsAlreadyMade ?
+                        (function () { return keys.reduce(function (sum, key) { return sum +
+                            cumulativeSums_1[ctx.paymentsAlreadyMade]
+                                .data[key]; }, 0); })() :
+                        0)); });
             }
             else {
                 (_a = document.querySelector('#cumulative_viz > svg:first-of-type')) === null || _a === void 0 ? void 0 : _a.remove();
@@ -268,9 +276,6 @@ var data = [];
             }
             showConditionalOutput(!!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput, function () { return "" + pctFmt.format((ctx.monthlyDebt + M_1 + extras_1 + ctx.pmi) / ctx.annualIncome *
                 12); });
-            showConditionalOutput(!!ctx.totalAssets && !!M_1, 'fired-tomorrow-countdown-div', firedTomorrowCountdownOutput, function () { return "" + formatMonthNum(countBurndownMonths(ctx, schedule_1)); });
-            showConditionalOutput(!!M_1 && (!!ctx.paymentsAlreadyMade || ctx.alreadyClosed), 'total-paid-so-far-div', totalPaidSoFarOutput, function () { return "" + fmt.format((ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-                M_1 * ctx.paymentsAlreadyMade); });
         }
         else {
             data = [];
