@@ -796,7 +796,7 @@ const updateUrl = (): void => {
 // Returns an array where the ith element is an object with the amount paid of
 // each type before (and excluding) the ith month.
 const cumulativeSumByFields =
-    (data: PaymentRecord[], fields: readonly PaymentType[]):
+    (data: readonly PaymentRecord[], fields: readonly PaymentType[]):
         PaymentRecord[] => {
           const results = new Array<PaymentRecord>(data.length);
           const carriedValue = (idx: number, key: PaymentType) => {
@@ -816,7 +816,7 @@ const cumulativeSumByFields =
           return results;
         };
 
-const countSatisfying = <T,>(data: T[], predicate: (t: T) => boolean): number => {
+const countSatisfying = <T,>(data: readonly T[], predicate: (t: T) => boolean): number => {
     let count = 0;
     for (const t of data) {
       if (predicate(t)) {
@@ -827,7 +827,7 @@ const countSatisfying = <T,>(data: T[], predicate: (t: T) => boolean): number =>
   };
 
 const countBurndownMonths =
-    (ctx: Context, schedule: PaymentRecord[]): number => {
+    (ctx: Context, schedule: readonly PaymentRecord[]): number => {
       let assets = ctx.totalAssets;
       if (!ctx.alreadyClosed) {
         assets -= ctx.downPayment + ctx.closingCost;
