@@ -105,6 +105,8 @@ const lifetimePaymentOutput = document.getElementById(
 const purchasePaymentOutput = document.getElementById(
     'purchase-payment-output',
     )!;
+const totalPaidSoFarOutput =
+    document.getElementById('total-paid-so-far-output')!;
 const debtToIncomeOutput =
     document.getElementById('debt-to-income-ratio-output')!;
 const firedTomorrowCountdownOutput =
@@ -355,6 +357,17 @@ const setContents = (ctx: Context): void => {
     } else {
       document.getElementById('fired-tomorrow-countdown-div')!.style.display =
           'none';
+    }
+
+    if (M && (ctx.paymentsAlreadyMade || ctx.alreadyClosed)) {
+      totalPaidSoFarOutput.innerText = `${
+          fmt.format(
+              (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
+              M * ctx.paymentsAlreadyMade)}`;
+      document.getElementById('total-paid-so-far-div')!.style.display = '';
+    } else {
+      totalPaidSoFarOutput.innerText = '';
+      document.getElementById('total-paid-so-far-div')!.style.display = 'none';
     }
   } else {
     data = [];

@@ -86,6 +86,7 @@ var data = [];
     var pmiPaymentTimelineOutput = document.getElementById('pmi-payment-timeline-output');
     var lifetimePaymentOutput = document.getElementById('lifetime-payment-output');
     var purchasePaymentOutput = document.getElementById('purchase-payment-output');
+    var totalPaidSoFarOutput = document.getElementById('total-paid-so-far-output');
     var debtToIncomeOutput = document.getElementById('debt-to-income-ratio-output');
     var firedTomorrowCountdownOutput = document.getElementById('fired-tomorrow-countdown-output');
     var keys = [
@@ -284,6 +285,15 @@ var data = [];
             else {
                 document.getElementById('fired-tomorrow-countdown-div').style.display =
                     'none';
+            }
+            if (M && (ctx.paymentsAlreadyMade || ctx.alreadyClosed)) {
+                totalPaidSoFarOutput.innerText = "" + fmt.format((ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
+                    M * ctx.paymentsAlreadyMade);
+                document.getElementById('total-paid-so-far-div').style.display = '';
+            }
+            else {
+                totalPaidSoFarOutput.innerText = '';
+                document.getElementById('total-paid-so-far-div').style.display = 'none';
             }
         }
         else {
