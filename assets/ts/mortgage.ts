@@ -337,38 +337,25 @@ const setContents = (ctx: Context): void => {
       lifetimePaymentOutput.innerText = `${fmt.format(0)}`;
     }
 
-    if (ctx.annualIncome) {
-      debtToIncomeOutput.innerText = `${
-          pctFmt.format(
-              (ctx.monthlyDebt + M + extras + ctx.pmi) / ctx.annualIncome *
-              12)}`;
-      document.getElementById('debt-to-income-ratio-div')!.style.display = '';
-    } else {
-      debtToIncomeOutput.innerText = '';
-      document.getElementById('debt-to-income-ratio-div')!.style.display =
-          'none';
-    }
+    showConditionalOutput(
+        !!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput,
+        () => `${
+            pctFmt.format(
+                (ctx.monthlyDebt + M + extras + ctx.pmi) / ctx.annualIncome *
+                12)}`);
 
-    if (ctx.totalAssets && M) {
-      firedTomorrowCountdownOutput.innerText =
-          `${formatMonthNum(countBurndownMonths(ctx, schedule))}`;
-      document.getElementById('fired-tomorrow-countdown-div')!.style.display =
-          '';
-    } else {
-      document.getElementById('fired-tomorrow-countdown-div')!.style.display =
-          'none';
-    }
+    showConditionalOutput(
+        !!ctx.totalAssets && !!M, 'fired-tomorrow-countdown-div',
+        firedTomorrowCountdownOutput,
+        () => `${formatMonthNum(countBurndownMonths(ctx, schedule))}`)
 
-    if (M && (ctx.paymentsAlreadyMade || ctx.alreadyClosed)) {
-      totalPaidSoFarOutput.innerText = `${
-          fmt.format(
-              (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-              M * ctx.paymentsAlreadyMade)}`;
-      document.getElementById('total-paid-so-far-div')!.style.display = '';
-    } else {
-      totalPaidSoFarOutput.innerText = '';
-      document.getElementById('total-paid-so-far-div')!.style.display = 'none';
-    }
+    showConditionalOutput(
+        !!M && (!!ctx.paymentsAlreadyMade || ctx.alreadyClosed),
+        'total-paid-so-far-div', totalPaidSoFarOutput,
+        () => `${
+            fmt.format(
+                (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
+                M * ctx.paymentsAlreadyMade)}`);
   } else {
     data = [];
     clearMonthlyPaymentOutputs();
@@ -395,6 +382,23 @@ interface Margin {
   left: number;
   right: number;
 }
+
+const showConditionalOutput =
+    (condition: boolean, containerName: string, outputElt: HTMLElement,
+     generateOutput: () => string) => {
+      const container = document.getElementById(containerName)!;
+      let text;
+      let display;
+      if (condition) {
+        text = generateOutput();
+        display = '';
+      } else {
+        text = '';
+        display = 'none';
+      }
+      outputElt.innerText = text;
+      container.style.display = display;
+    };
 
 const calculatePaymentSchedule =
     (ctx: Context, monthlyPayment: number): PaymentRecord[] => {

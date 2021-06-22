@@ -239,62 +239,38 @@ var data = [];
         var _a;
         loanAmountOutput.innerText = "" + fmt.format(ctx.price - ctx.downPayment);
         if (ctx.interestRate || ctx.downPayment === ctx.price) {
-            var M = ctx.downPayment === ctx.price ?
+            var M_1 = ctx.downPayment === ctx.price ?
                 0 :
                 monthlyFormula(ctx.price * (1 - ctx.downPaymentPct), ctx.interestRate / 12, ctx.n);
-            principalAndInterestOutput.innerText = "" + fmt.format(M);
-            var extras = ctx.hoa + ctx.propertyTax + ctx.homeownersInsurance;
-            monthlyPaymentAmountOutput.innerText = "" + fmt.format(M + extras);
-            monthlyPaymentPmiOutput.innerText = "" + fmt.format(M + extras + ctx.pmi);
+            principalAndInterestOutput.innerText = "" + fmt.format(M_1);
+            var extras_1 = ctx.hoa + ctx.propertyTax + ctx.homeownersInsurance;
+            monthlyPaymentAmountOutput.innerText = "" + fmt.format(M_1 + extras_1);
+            monthlyPaymentPmiOutput.innerText = "" + fmt.format(M_1 + extras_1 + ctx.pmi);
             var showPmi = ctx.pmi && ctx.downPaymentPct < ctx.pmiEquityPct;
             document
                 .getElementById('monthly-payment-without-pmi-span').style.display = showPmi ? '' : 'none';
             document.getElementById('monthly-payment-pmi-div').style.display =
                 showPmi ? '' : 'none';
-            var schedule = calculatePaymentSchedule(ctx, M);
-            data = schedule;
-            buildPaymentScheduleChart(schedule, keys);
-            var pmiMonths = countSatisfying(schedule, function (payment) { return payment.data.pmi !== 0; });
+            var schedule_1 = calculatePaymentSchedule(ctx, M_1);
+            data = schedule_1;
+            buildPaymentScheduleChart(schedule_1, keys);
+            var pmiMonths = countSatisfying(schedule_1, function (payment) { return payment.data.pmi !== 0; });
             pmiPaymentTimelineOutput.innerText = formatMonthNum(pmiMonths) + " (" + fmt.format(pmiMonths * ctx.pmi) + " total)";
-            if (M) {
+            if (M_1) {
                 var cumulativePaymentTypes = ['principal', 'interest', 'pmi'];
-                buildCumulativeChart(cumulativeSumByFields(schedule, cumulativePaymentTypes), cumulativePaymentTypes);
+                buildCumulativeChart(cumulativeSumByFields(schedule_1, cumulativePaymentTypes), cumulativePaymentTypes);
                 lifetimePaymentOutput.innerText =
-                    "" + fmt.format(ctx.n * M + d3.sum(schedule, function (d) { return d.data.pmi; }));
+                    "" + fmt.format(ctx.n * M_1 + d3.sum(schedule_1, function (d) { return d.data.pmi; }));
             }
             else {
                 (_a = document.querySelector('#cumulative_viz > svg:first-of-type')) === null || _a === void 0 ? void 0 : _a.remove();
                 lifetimePaymentOutput.innerText = "" + fmt.format(0);
             }
-            if (ctx.annualIncome) {
-                debtToIncomeOutput.innerText = "" + pctFmt.format((ctx.monthlyDebt + M + extras + ctx.pmi) / ctx.annualIncome *
-                    12);
-                document.getElementById('debt-to-income-ratio-div').style.display = '';
-            }
-            else {
-                debtToIncomeOutput.innerText = '';
-                document.getElementById('debt-to-income-ratio-div').style.display =
-                    'none';
-            }
-            if (ctx.totalAssets && M) {
-                firedTomorrowCountdownOutput.innerText =
-                    "" + formatMonthNum(countBurndownMonths(ctx, schedule));
-                document.getElementById('fired-tomorrow-countdown-div').style.display =
-                    '';
-            }
-            else {
-                document.getElementById('fired-tomorrow-countdown-div').style.display =
-                    'none';
-            }
-            if (M && (ctx.paymentsAlreadyMade || ctx.alreadyClosed)) {
-                totalPaidSoFarOutput.innerText = "" + fmt.format((ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-                    M * ctx.paymentsAlreadyMade);
-                document.getElementById('total-paid-so-far-div').style.display = '';
-            }
-            else {
-                totalPaidSoFarOutput.innerText = '';
-                document.getElementById('total-paid-so-far-div').style.display = 'none';
-            }
+            showConditionalOutput(!!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput, function () { return "" + pctFmt.format((ctx.monthlyDebt + M_1 + extras_1 + ctx.pmi) / ctx.annualIncome *
+                12); });
+            showConditionalOutput(!!ctx.totalAssets && !!M_1, 'fired-tomorrow-countdown-div', firedTomorrowCountdownOutput, function () { return "" + formatMonthNum(countBurndownMonths(ctx, schedule_1)); });
+            showConditionalOutput(!!M_1 && (!!ctx.paymentsAlreadyMade || ctx.alreadyClosed), 'total-paid-so-far-div', totalPaidSoFarOutput, function () { return "" + fmt.format((ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
+                M_1 * ctx.paymentsAlreadyMade); });
         }
         else {
             data = [];
@@ -305,6 +281,21 @@ var data = [];
     };
     var monthlyFormula = function (P, r, n) {
         return (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+    };
+    var showConditionalOutput = function (condition, containerName, outputElt, generateOutput) {
+        var container = document.getElementById(containerName);
+        var text;
+        var display;
+        if (condition) {
+            text = generateOutput();
+            display = '';
+        }
+        else {
+            text = '';
+            display = 'none';
+        }
+        outputElt.innerText = text;
+        container.style.display = display;
     };
     var calculatePaymentSchedule = function (ctx, monthlyPayment) {
         var e_2, _a;
