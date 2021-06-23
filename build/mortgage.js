@@ -269,16 +269,10 @@ var data = [];
             }
             showConditionalOutput(!!ctx.totalAssets, 'fired-tomorrow-countdown-div', firedTomorrowCountdownOutput, function () { return "" + formatMonthNum(countBurndownMonths(ctx, schedule_1)); });
             showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-paid-so-far-div', totalPaidSoFarOutput, function () { return "" + fmt.format((ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-                (!!ctx.paymentsAlreadyMade ?
-                    (function () { return keys.reduce(function (sum, key) { return sum +
-                        cumulativeSums_1[ctx.paymentsAlreadyMade]
-                            .data[key]; }, 0); })() :
-                    0)); });
+                (function () { return keys.reduce(function (sum, key) { return sum +
+                    cumulativeSums_1[ctx.paymentsAlreadyMade].data[key]; }, 0); })()); });
             showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'equity-owned-so-far-div', equityOwnedSoFarOutput, function () { return "" + pctFmt.format(((ctx.alreadyClosed ? ctx.downPayment : 0) +
-                (!!ctx.paymentsAlreadyMade ?
-                    cumulativeSums_1[ctx.paymentsAlreadyMade]
-                        .data['principal'] :
-                    0)) /
+                cumulativeSums_1[ctx.paymentsAlreadyMade].data['principal']) /
                 ctx.homeValue); });
             showConditionalOutput(!!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput, function () { return "" + pctFmt.format((ctx.monthlyDebt + M_1 + extras_1 + ctx.pmi) / ctx.annualIncome *
                 12); });

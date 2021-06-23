@@ -347,13 +347,10 @@ const setContents = (ctx: Context): void => {
         () => `${
             fmt.format(
                 (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-                (!!ctx.paymentsAlreadyMade ?
-                     (() => keys.reduce(
-                          (sum: number, key: PaymentType) => sum +
-                              cumulativeSums[ctx.paymentsAlreadyMade]!
-                                  .data[key],
-                          0))() :
-                     0))}`);
+                (() => keys.reduce(
+                     (sum: number, key: PaymentType) => sum +
+                         cumulativeSums[ctx.paymentsAlreadyMade]!.data[key],
+                     0))())}`);
 
     showConditionalOutput(
         !!ctx.paymentsAlreadyMade || ctx.alreadyClosed,
@@ -361,10 +358,7 @@ const setContents = (ctx: Context): void => {
         () => `${
             pctFmt.format(
                 ((ctx.alreadyClosed ? ctx.downPayment : 0) +
-                 (!!ctx.paymentsAlreadyMade ?
-                      cumulativeSums[ctx.paymentsAlreadyMade]!
-                          .data['principal'] :
-                      0)) /
+                 cumulativeSums[ctx.paymentsAlreadyMade]!.data['principal']) /
                 ctx.homeValue)}`);
 
     showConditionalOutput(
@@ -373,7 +367,6 @@ const setContents = (ctx: Context): void => {
             pctFmt.format(
                 (ctx.monthlyDebt + M + extras + ctx.pmi) / ctx.annualIncome *
                 12)}`);
-
   } else {
     data = [];
     clearMonthlyPaymentOutputs();
