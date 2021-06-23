@@ -107,6 +107,8 @@ const purchasePaymentOutput = document.getElementById(
     )!;
 const totalPaidSoFarOutput =
     document.getElementById('total-paid-so-far-output')!;
+const equityOwnedSoFarOutput =
+    document.getElementById('equity-owned-so-far-output')!;
 const debtToIncomeOutput =
     document.getElementById('debt-to-income-ratio-output')!;
 const firedTomorrowCountdownOutput =
@@ -324,36 +326,46 @@ const setContents = (ctx: Context): void => {
         countSatisfying(schedule, payment => payment.data.pmi !== 0);
     pmiPaymentTimelineOutput.innerText = `${formatMonthNum(pmiMonths)} (${
         fmt.format(pmiMonths * ctx.pmi)} total)`;
+    const cumulativeSums = cumulativeSumByFields(schedule, keys);
     if (M) {
-      const cumulativePaymentTypes: PaymentType[] =
-          ['principal', 'interest', 'pmi'];
-      const cumulativeSums = cumulativeSumByFields(schedule, keys);
-      buildCumulativeChart(cumulativeSums, cumulativePaymentTypes);
+      buildCumulativeChart(cumulativeSums, ['principal', 'interest', 'pmi']);
       lifetimePaymentOutput.innerText =
           `${fmt.format(ctx.n * M + d3.sum(schedule, (d) => d.data.pmi))}`;
-
-      showConditionalOutput(
-          !!ctx.totalAssets, 'fired-tomorrow-countdown-div',
-          firedTomorrowCountdownOutput,
-          () => `${formatMonthNum(countBurndownMonths(ctx, schedule))}`)
-
-      showConditionalOutput(
-          !!ctx.paymentsAlreadyMade || ctx.alreadyClosed,
-          'total-paid-so-far-div', totalPaidSoFarOutput,
-          () => `${
-              fmt.format(
-                  (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-                  (!!ctx.paymentsAlreadyMade ?
-                       (() => keys.reduce(
-                            (sum: number, key: PaymentType) => sum +
-                                cumulativeSums[ctx.paymentsAlreadyMade]!
-                                    .data[key],
-                            0))() :
-                       0))}`);
     } else {
       document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
       lifetimePaymentOutput.innerText = `${fmt.format(0)}`;
     }
+
+    showConditionalOutput(
+        !!ctx.totalAssets, 'fired-tomorrow-countdown-div',
+        firedTomorrowCountdownOutput,
+        () => `${formatMonthNum(countBurndownMonths(ctx, schedule))}`)
+
+    showConditionalOutput(
+        !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-paid-so-far-div',
+        totalPaidSoFarOutput,
+        () => `${
+            fmt.format(
+                (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
+                (!!ctx.paymentsAlreadyMade ?
+                     (() => keys.reduce(
+                          (sum: number, key: PaymentType) => sum +
+                              cumulativeSums[ctx.paymentsAlreadyMade]!
+                                  .data[key],
+                          0))() :
+                     0))}`);
+
+    showConditionalOutput(
+        !!ctx.paymentsAlreadyMade || ctx.alreadyClosed,
+        'equity-owned-so-far-div', equityOwnedSoFarOutput,
+        () => `${
+            pctFmt.format(
+                ((ctx.alreadyClosed ? ctx.downPayment : 0) +
+                 (!!ctx.paymentsAlreadyMade ?
+                      cumulativeSums[ctx.paymentsAlreadyMade]!
+                          .data['principal'] :
+                      0)) /
+                ctx.homeValue)}`);
 
     showConditionalOutput(
         !!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput,
