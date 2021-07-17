@@ -354,12 +354,13 @@ const setContents = (ctx: Context): void => {
 
     showConditionalOutput(
         !!ctx.paymentsAlreadyMade || ctx.alreadyClosed,
-        'equity-owned-so-far-div', equityOwnedSoFarOutput,
-        () => `${
-            pctFmt.format(
-                ((ctx.alreadyClosed ? ctx.downPayment : 0) +
-                 cumulativeSums[ctx.paymentsAlreadyMade]!.data['principal']) /
-                ctx.homeValue)}`);
+        'equity-owned-so-far-div', equityOwnedSoFarOutput, () => {
+          const absoluteEquityOwned =
+              (ctx.alreadyClosed ? ctx.downPayment : 0) +
+              cumulativeSums[ctx.paymentsAlreadyMade]!.data['principal'];
+          return `${pctFmt.format(absoluteEquityOwned / ctx.homeValue)} (${
+              fmt.format(absoluteEquityOwned)})`;
+        });
 
     showConditionalOutput(
         !!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput,

@@ -271,9 +271,11 @@ var data = [];
             showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-paid-so-far-div', totalPaidSoFarOutput, function () { return "" + fmt.format((ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
                 (function () { return keys.reduce(function (sum, key) { return sum +
                     cumulativeSums_1[ctx.paymentsAlreadyMade].data[key]; }, 0); })()); });
-            showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'equity-owned-so-far-div', equityOwnedSoFarOutput, function () { return "" + pctFmt.format(((ctx.alreadyClosed ? ctx.downPayment : 0) +
-                cumulativeSums_1[ctx.paymentsAlreadyMade].data['principal']) /
-                ctx.homeValue); });
+            showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'equity-owned-so-far-div', equityOwnedSoFarOutput, function () {
+                var absoluteEquityOwned = (ctx.alreadyClosed ? ctx.downPayment : 0) +
+                    cumulativeSums_1[ctx.paymentsAlreadyMade].data['principal'];
+                return pctFmt.format(absoluteEquityOwned / ctx.homeValue) + " (" + fmt.format(absoluteEquityOwned) + ")";
+            });
             showConditionalOutput(!!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput, function () { return "" + pctFmt.format((ctx.monthlyDebt + M_1 + extras_1 + ctx.pmi) / ctx.annualIncome *
                 12); });
         }
