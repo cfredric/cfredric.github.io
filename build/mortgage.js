@@ -98,6 +98,21 @@ var data = [];
         'homeowners_insurance',
         'pmi',
     ];
+    var COOKIE_PREFIX = '';
+    var COOKIE_ATTRIBUTES = [
+        'Secure',
+        'SameSite=Lax',
+        "Domain=" + window.location.hostname,
+        'Path=/Mortgage/',
+    ];
+    var COOKIE_SUFFIX = COOKIE_ATTRIBUTES
+        .concat([
+        "max-age=" + 60 * 60 * 24 * 365,
+    ])
+        .join(';');
+    var COOKIE_SUFFIX_DELETE = COOKIE_ATTRIBUTES.concat([
+        "max-age=0",
+    ]);
     var fieldColor = function (pt) {
         switch (pt) {
             case 'principal':
@@ -131,40 +146,44 @@ var data = [];
         }
     };
     var urlParamMap = new Map([
-        ['price', priceInput],
-        ['home_value', homeValueInput],
-        ['hoa', hoaInput],
-        ['down_payment', downPaymentPercentageInput],
-        ['down_payment_amt', downPaymentAbsoluteInput],
-        ['interest_rate', interestRateInput],
-        ['points_purchased', pointsPurchasedInput],
-        ['point_value', pointValueInput],
-        ['mortgage_insurance', mortgageInsuranceInput],
-        ['pmi_equity_pct', pmiEquityPercentageInput],
-        ['property_tax', propertyTaxAbsoluteInput],
-        ['property_tax_pct', propertyTaxPercentageInput],
-        ['resi_savings', residentialExemptionSavingsInput],
-        ['resi_deduction', residentialExemptionDeductionInput],
-        ['hoi', homeownersInsuranceInput],
-        ['closing_cost', closingCostInput],
-        ['mortgage-term', mortgageTermInput],
-        ['annual-income', annualIncomeInput],
-        ['monthly-debt', monthlyDebtInput],
-        ['total_assets', totalAssetsInput],
-        ['closed', alreadyClosedInput],
-        ['paid', paymentsAlreadyMadeInput],
+        ['price', { elt: priceInput }],
+        ['home_value', { elt: homeValueInput }],
+        ['hoa', { elt: hoaInput }],
+        ['down_payment', { elt: downPaymentPercentageInput }],
+        ['down_payment_amt', { elt: downPaymentAbsoluteInput }],
+        ['interest_rate', { elt: interestRateInput }],
+        ['points_purchased', { elt: pointsPurchasedInput }],
+        ['point_value', { elt: pointValueInput }],
+        ['mortgage_insurance', { elt: mortgageInsuranceInput }],
+        ['pmi_equity_pct', { elt: pmiEquityPercentageInput }],
+        ['property_tax', { elt: propertyTaxAbsoluteInput }],
+        ['property_tax_pct', { elt: propertyTaxPercentageInput }],
+        ['resi_savings', { elt: residentialExemptionSavingsInput }],
+        ['resi_deduction', { elt: residentialExemptionDeductionInput }],
+        ['hoi', { elt: homeownersInsuranceInput }],
+        ['closing_cost', { elt: closingCostInput }],
+        ['mortgage-term', { elt: mortgageTermInput }],
+        ['annual-income', { elt: annualIncomeInput, deprecated: true }],
+        ['monthly-debt', { elt: monthlyDebtInput }],
+        ['total_assets', { elt: totalAssetsInput, deprecated: true }],
+        ['closed', { elt: alreadyClosedInput }],
+        ['paid', { elt: paymentsAlreadyMadeInput }],
+    ]);
+    var cookieValueMap = new Map([
+        ['annual_income', { elt: annualIncomeInput }],
+        ['total_assets', { elt: totalAssetsInput }],
     ]);
     var attachListeners = function () {
         var e_1, _a;
         var onChange = function () {
             var ctx = new Context();
             showAmountHints(ctx);
-            updateUrl();
+            saveFields();
             setContents(ctx);
         };
         try {
             for (var _b = __values(urlParamMap.values()), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var elt = _c.value;
+                var elt = _c.value.elt;
                 elt.addEventListener('change', function () { return onChange(); });
                 elt.addEventListener('input', function () { return onChange(); });
             }
@@ -554,23 +573,27 @@ var data = [];
         (_a = document.querySelector('#schedule_viz > svg:first-of-type')) === null || _a === void 0 ? void 0 : _a.remove();
         (_b = document.querySelector('#cumulative_viz > svg:first-of-type')) === null || _b === void 0 ? void 0 : _b.remove();
     };
-    var initFieldsFromUrl = function () {
-        var e_4, _a;
+    var initFields = function () {
+        var e_4, _a, e_5, _b;
         var url = new URL(location.href);
         var hasValue = false;
         try {
-            for (var _b = __values(urlParamMap.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var _d = __read(_c.value, 2), name_1 = _d[0], elt = _d[1];
+            for (var _c = __values(urlParamMap.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
+                var _e = __read(_d.value, 2), name_1 = _e[0], elt = _e[1].elt;
                 switch (elt.type) {
                     case 'text':
                         var value = url.searchParams.get(name_1);
-                        elt.value = value !== null && value !== void 0 ? value : '';
                         hasValue = hasValue || value !== null;
+                        if (value !== null) {
+                            elt.value = value;
+                        }
                         break;
                     case 'checkbox':
                         var checked = url.searchParams.has(name_1);
-                        elt.checked = checked;
                         hasValue = hasValue || checked;
+                        if (checked) {
+                            elt.checked = checked;
+                        }
                         break;
                     default:
                         throw new Error('unreachable');
@@ -580,9 +603,48 @@ var data = [];
         catch (e_4_1) { e_4 = { error: e_4_1 }; }
         finally {
             try {
-                if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+                if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
             }
             finally { if (e_4) throw e_4.error; }
+        }
+        var cookies = document.cookie;
+        var _loop_1 = function (name_2, elt) {
+            var savedCookie = cookies.split(';')
+                .map(function (x) { return x.split('='); })
+                .find(function (_a) {
+                var _b = __read(_a, 1), cookieName = _b[0];
+                return "" + COOKIE_PREFIX + name_2 === (cookieName === null || cookieName === void 0 ? void 0 : cookieName.trim());
+            });
+            switch (elt.type) {
+                case 'text':
+                    hasValue = hasValue || savedCookie !== undefined;
+                    if (savedCookie !== undefined) {
+                        elt.value = savedCookie ? savedCookie[1] : '';
+                    }
+                    break;
+                case 'checkbox':
+                    var checked = !!savedCookie;
+                    hasValue = hasValue || checked;
+                    if (!!savedCookie) {
+                        elt.checked = checked;
+                    }
+                    break;
+                default:
+                    throw new Error('unreachable');
+            }
+        };
+        try {
+            for (var _f = __values(cookieValueMap.entries()), _g = _f.next(); !_g.done; _g = _f.next()) {
+                var _h = __read(_g.value, 2), name_2 = _h[0], elt = _h[1].elt;
+                _loop_1(name_2, elt);
+            }
+        }
+        catch (e_5_1) { e_5 = { error: e_5_1 }; }
+        finally {
+            try {
+                if (_g && !_g.done && (_b = _f.return)) _b.call(_f);
+            }
+            finally { if (e_5) throw e_5.error; }
         }
         if (hasValue) {
             var ctx = new Context();
@@ -590,12 +652,14 @@ var data = [];
             setContents(ctx);
         }
     };
-    var updateUrl = function () {
-        var e_5, _a;
+    var saveFields = function () {
+        var e_6, _a, e_7, _b;
         var url = new URL(location.href);
         try {
-            for (var _b = __values(urlParamMap.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var _d = __read(_c.value, 2), name_2 = _d[0], elt = _d[1];
+            for (var _c = __values(urlParamMap.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
+                var _e = __read(_d.value, 2), name_3 = _e[0], _f = _e[1], elt = _f.elt, deprecated = _f.deprecated;
+                if (deprecated)
+                    continue;
                 var value = void 0;
                 var hasValue = void 0;
                 switch (elt.type) {
@@ -611,24 +675,99 @@ var data = [];
                         throw new Error('unreachable');
                 }
                 if (hasValue) {
-                    url.searchParams.set(name_2, value);
+                    url.searchParams.set(name_3, value);
                 }
                 else {
-                    url.searchParams.delete(name_2);
+                    deleteParam(url, name_3);
                 }
             }
         }
-        catch (e_5_1) { e_5 = { error: e_5_1 }; }
+        catch (e_6_1) { e_6 = { error: e_6_1 }; }
         finally {
             try {
-                if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+                if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
             }
-            finally { if (e_5) throw e_5.error; }
+            finally { if (e_6) throw e_6.error; }
         }
         history.pushState({}, '', url.toString());
+        try {
+            for (var _g = __values(cookieValueMap.entries()), _h = _g.next(); !_h.done; _h = _g.next()) {
+                var _j = __read(_h.value, 2), name_4 = _j[0], _k = _j[1], elt = _k.elt, deprecated = _k.deprecated;
+                if (deprecated)
+                    continue;
+                var value = void 0;
+                var hasValue = void 0;
+                switch (elt.type) {
+                    case 'text':
+                        value = elt.value;
+                        hasValue = value !== '';
+                        break;
+                    case 'checkbox':
+                        value = '1';
+                        hasValue = elt.checked;
+                        break;
+                    default:
+                        throw new Error('unreachable');
+                }
+                if (hasValue) {
+                    document.cookie = "" + COOKIE_PREFIX + name_4 + "=" + value + ";" + COOKIE_SUFFIX;
+                }
+                else {
+                    deleteCookie(name_4);
+                }
+            }
+        }
+        catch (e_7_1) { e_7 = { error: e_7_1 }; }
+        finally {
+            try {
+                if (_h && !_h.done && (_b = _g.return)) _b.call(_g);
+            }
+            finally { if (e_7) throw e_7.error; }
+        }
+    };
+    var clearDeprecatedStorage = function () {
+        var e_8, _a, e_9, _b;
+        var url = new URL(location.href);
+        try {
+            for (var _c = __values(urlParamMap.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
+                var _e = __read(_d.value, 2), name_5 = _e[0], deprecated = _e[1].deprecated;
+                if (deprecated) {
+                    deleteParam(url, name_5);
+                }
+            }
+        }
+        catch (e_8_1) { e_8 = { error: e_8_1 }; }
+        finally {
+            try {
+                if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
+            }
+            finally { if (e_8) throw e_8.error; }
+        }
+        history.pushState({}, '', url.toString());
+        try {
+            for (var _f = __values(cookieValueMap.entries()), _g = _f.next(); !_g.done; _g = _f.next()) {
+                var _h = __read(_g.value, 2), name_6 = _h[0], deprecated = _h[1].deprecated;
+                if (deprecated) {
+                    deleteCookie(name_6);
+                }
+            }
+        }
+        catch (e_9_1) { e_9 = { error: e_9_1 }; }
+        finally {
+            try {
+                if (_g && !_g.done && (_b = _f.return)) _b.call(_f);
+            }
+            finally { if (e_9) throw e_9.error; }
+        }
+    };
+    var deleteParam = function (url, name) {
+        url.searchParams.delete(name);
+    };
+    var deleteCookie = function (name) {
+        document.cookie = "" + COOKIE_PREFIX + name + "=0;" + COOKIE_SUFFIX_DELETE;
     };
     var cumulativeSumByFields = function (data, fields) {
-        var e_6, _a, e_7, _b;
+        var e_10, _a, e_11, _b;
         var results = new Array(data.length);
         var carriedValue = function (idx, key) {
             if (!fields.includes(key))
@@ -645,31 +784,31 @@ var data = [];
                     data: {}
                 };
                 try {
-                    for (var fields_1 = (e_7 = void 0, __values(fields)), fields_1_1 = fields_1.next(); !fields_1_1.done; fields_1_1 = fields_1.next()) {
+                    for (var fields_1 = (e_11 = void 0, __values(fields)), fields_1_1 = fields_1.next(); !fields_1_1.done; fields_1_1 = fields_1.next()) {
                         var field = fields_1_1.value;
                         results[idx].data[field] = carriedValue(idx, field);
                     }
                 }
-                catch (e_7_1) { e_7 = { error: e_7_1 }; }
+                catch (e_11_1) { e_11 = { error: e_11_1 }; }
                 finally {
                     try {
                         if (fields_1_1 && !fields_1_1.done && (_b = fields_1.return)) _b.call(fields_1);
                     }
-                    finally { if (e_7) throw e_7.error; }
+                    finally { if (e_11) throw e_11.error; }
                 }
             }
         }
-        catch (e_6_1) { e_6 = { error: e_6_1 }; }
+        catch (e_10_1) { e_10 = { error: e_10_1 }; }
         finally {
             try {
                 if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
             }
-            finally { if (e_6) throw e_6.error; }
+            finally { if (e_10) throw e_10.error; }
         }
         return results;
     };
     var countSatisfying = function (data, predicate) {
-        var e_8, _a;
+        var e_12, _a;
         var count = 0;
         try {
             for (var data_1 = __values(data), data_1_1 = data_1.next(); !data_1_1.done; data_1_1 = data_1.next()) {
@@ -679,22 +818,22 @@ var data = [];
                 }
             }
         }
-        catch (e_8_1) { e_8 = { error: e_8_1 }; }
+        catch (e_12_1) { e_12 = { error: e_12_1 }; }
         finally {
             try {
                 if (data_1_1 && !data_1_1.done && (_a = data_1.return)) _a.call(data_1);
             }
-            finally { if (e_8) throw e_8.error; }
+            finally { if (e_12) throw e_12.error; }
         }
         return count;
     };
     var countBurndownMonths = function (ctx, schedule) {
-        var e_9, _a;
+        var e_13, _a;
         var assets = ctx.totalAssets;
         if (!ctx.alreadyClosed) {
             assets -= ctx.downPayment + ctx.closingCost;
         }
-        var _loop_1 = function (i, record) {
+        var _loop_2 = function (i, record) {
             if (i < ctx.paymentsAlreadyMade) {
                 return "continue";
             }
@@ -707,21 +846,23 @@ var data = [];
         try {
             for (var _b = __values(schedule.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
                 var _d = __read(_c.value, 2), i = _d[0], record = _d[1];
-                var state_1 = _loop_1(i, record);
+                var state_1 = _loop_2(i, record);
                 if (typeof state_1 === "object")
                     return state_1.value;
             }
         }
-        catch (e_9_1) { e_9 = { error: e_9_1 }; }
+        catch (e_13_1) { e_13 = { error: e_13_1 }; }
         finally {
             try {
                 if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
             }
-            finally { if (e_9) throw e_9.error; }
+            finally { if (e_13) throw e_13.error; }
         }
         return schedule.length;
     };
-    initFieldsFromUrl();
+    initFields();
+    saveFields();
+    clearDeprecatedStorage();
     attachListeners();
     console_prompt();
 })();

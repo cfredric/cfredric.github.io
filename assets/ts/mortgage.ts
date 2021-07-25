@@ -124,6 +124,24 @@ const keys = [
 ] as const;
 type PaymentType = typeof keys[number];
 
+const COOKIE_PREFIX = '';
+const COOKIE_ATTRIBUTES = [
+  'Secure',
+  'SameSite=Lax',
+  `Domain=${window.location.hostname}`,
+  'Path=/Mortgage/',
+];
+
+const COOKIE_SUFFIX = COOKIE_ATTRIBUTES
+                          .concat([
+                            `max-age=${60 * 60 * 24 * 365}`,
+                          ])
+                          .join(';');
+
+const COOKIE_SUFFIX_DELETE = COOKIE_ATTRIBUTES.concat([
+  `max-age=0`,
+])
+
 const fieldColor = (pt: PaymentType): string => {
   switch (pt) {
     case 'principal':
@@ -158,39 +176,49 @@ const fieldDisplay = (pt: PaymentType): string => {
   }
 };
 
-const urlParamMap = new Map<string, HTMLInputElement>([
-  ['price', priceInput],
-  ['home_value', homeValueInput],
-  ['hoa', hoaInput],
-  ['down_payment', downPaymentPercentageInput],
-  ['down_payment_amt', downPaymentAbsoluteInput],
-  ['interest_rate', interestRateInput],
-  ['points_purchased', pointsPurchasedInput],
-  ['point_value', pointValueInput],
-  ['mortgage_insurance', mortgageInsuranceInput],
-  ['pmi_equity_pct', pmiEquityPercentageInput],
-  ['property_tax', propertyTaxAbsoluteInput],
-  ['property_tax_pct', propertyTaxPercentageInput],
-  ['resi_savings', residentialExemptionSavingsInput],
-  ['resi_deduction', residentialExemptionDeductionInput],
-  ['hoi', homeownersInsuranceInput],
-  ['closing_cost', closingCostInput],
-  ['mortgage-term', mortgageTermInput],
-  ['annual-income', annualIncomeInput],
-  ['monthly-debt', monthlyDebtInput],
-  ['total_assets', totalAssetsInput],
-  ['closed', alreadyClosedInput],
-  ['paid', paymentsAlreadyMadeInput],
+interface InputEntry {
+  elt: HTMLInputElement;
+  deprecated?: boolean;
+}
+
+const urlParamMap = new Map<string, InputEntry>([
+  ['price', {elt: priceInput}],
+  ['home_value', {elt: homeValueInput}],
+  ['hoa', {elt: hoaInput}],
+  ['down_payment', {elt: downPaymentPercentageInput}],
+  ['down_payment_amt', {elt: downPaymentAbsoluteInput}],
+  ['interest_rate', {elt: interestRateInput}],
+  ['points_purchased', {elt: pointsPurchasedInput}],
+  ['point_value', {elt: pointValueInput}],
+  ['mortgage_insurance', {elt: mortgageInsuranceInput}],
+  ['pmi_equity_pct', {elt: pmiEquityPercentageInput}],
+  ['property_tax', {elt: propertyTaxAbsoluteInput}],
+  ['property_tax_pct', {elt: propertyTaxPercentageInput}],
+  ['resi_savings', {elt: residentialExemptionSavingsInput}],
+  ['resi_deduction', {elt: residentialExemptionDeductionInput}],
+  ['hoi', {elt: homeownersInsuranceInput}],
+  ['closing_cost', {elt: closingCostInput}],
+  ['mortgage-term', {elt: mortgageTermInput}],
+  ['annual-income', {elt: annualIncomeInput, deprecated: true}],
+  ['monthly-debt', {elt: monthlyDebtInput}],
+  ['total_assets', {elt: totalAssetsInput, deprecated: true}],
+  ['closed', {elt: alreadyClosedInput}],
+  ['paid', {elt: paymentsAlreadyMadeInput}],
+]);
+
+const cookieValueMap = new Map<string, InputEntry>([
+  ['annual_income', {elt: annualIncomeInput}],
+  ['total_assets', {elt: totalAssetsInput}],
 ]);
 
 const attachListeners = (): void => {
   const onChange = () => {
     const ctx = new Context();
     showAmountHints(ctx);
-    updateUrl();
+    saveFields();
     setContents(ctx);
   };
-  for (const elt of urlParamMap.values()) {
+  for (const {elt} of urlParamMap.values()) {
     elt.addEventListener('change', () => onChange());
     elt.addEventListener('input', () => onChange());
   }
@@ -747,20 +775,50 @@ const clearMonthlyPaymentOutputs = (): void => {
   document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
 };
 
-const initFieldsFromUrl = (): void => {
+// Reads fields from the URL and from cookies, and populates the UI accordingly.
+const initFields = (): void => {
   const url = new URL(location.href);
   let hasValue = false;
-  for (const [name, elt] of urlParamMap.entries()) {
+  for (const [name, {elt}] of urlParamMap.entries()) {
     switch (elt.type) {
       case 'text':
         const value = url.searchParams.get(name);
-        elt.value = value ?? '';
         hasValue = hasValue || value !== null;
+        if (value !== null) {
+          elt.value = value;
+        }
         break;
       case 'checkbox':
         const checked = url.searchParams.has(name);
-        elt.checked = checked;
         hasValue = hasValue || checked;
+        if (checked) {
+          elt.checked = checked;
+        }
+        break;
+      default:
+        throw new Error('unreachable');
+    }
+  }
+  const cookies = document.cookie;
+  for (const [name, {elt}] of cookieValueMap.entries()) {
+    const savedCookie = cookies.split(';')
+                            .map(x => x.split('='))
+                            .find(
+                                ([cookieName]) => `${COOKIE_PREFIX}${name}` ===
+                                    cookieName?.trim());
+    switch (elt.type) {
+      case 'text':
+        hasValue = hasValue || savedCookie !== undefined;
+        if (savedCookie !== undefined) {
+          elt.value = savedCookie ? savedCookie[1]! : '';
+        }
+        break;
+      case 'checkbox':
+        const checked = !!savedCookie;
+        hasValue = hasValue || checked;
+        if (!!savedCookie) {
+          elt.checked = checked;
+        }
         break;
       default:
         throw new Error('unreachable');
@@ -773,9 +831,11 @@ const initFieldsFromUrl = (): void => {
   }
 };
 
-const updateUrl = (): void => {
+// Saves fields to the URL and cookies.
+const saveFields = (): void => {
   const url = new URL(location.href);
-  for (const [name, elt] of urlParamMap.entries()) {
+  for (const [name, {elt, deprecated}] of urlParamMap.entries()) {
+    if (deprecated) continue;
     let value;
     let hasValue;
     switch (elt.type) {
@@ -793,10 +853,58 @@ const updateUrl = (): void => {
     if (hasValue) {
       url.searchParams.set(name, value);
     } else {
-      url.searchParams.delete(name);
+      deleteParam(url, name);
     }
   }
   history.pushState({}, '', url.toString());
+
+  for (const [name, {elt, deprecated}] of cookieValueMap.entries()) {
+    if (deprecated) continue;
+    let value;
+    let hasValue;
+    switch (elt.type) {
+      case 'text':
+        value = elt.value;
+        hasValue = value !== '';
+        break;
+      case 'checkbox':
+        value = '1';
+        hasValue = elt.checked;
+        break;
+      default:
+        throw new Error('unreachable');
+    }
+    if (hasValue) {
+      document.cookie = `${COOKIE_PREFIX}${name}=${value};${COOKIE_SUFFIX}`;
+    } else {
+      deleteCookie(name);
+    }
+  }
+};
+
+// Clears out deprecated URL params and cookies.
+const clearDeprecatedStorage = () => {
+  const url = new URL(location.href);
+  for (const [name, {deprecated}] of urlParamMap.entries()) {
+    if (deprecated) {
+      deleteParam(url, name);
+    }
+  }
+  history.pushState({}, '', url.toString());
+
+  for (const [name, {deprecated}] of cookieValueMap.entries()) {
+    if (deprecated) {
+      deleteCookie(name);
+    }
+  }
+};
+
+const deleteParam = (url: URL, name: string) => {
+  url.searchParams.delete(name);
+};
+
+const deleteCookie = (name: string) => {
+  document.cookie = `${COOKIE_PREFIX}${name}=0;${COOKIE_SUFFIX_DELETE}`;
 };
 
 // Returns an array where the ith element is an object with the amount paid of
@@ -850,7 +958,12 @@ const countBurndownMonths =
       return schedule.length;
     };
 
-initFieldsFromUrl();
+initFields();
+// To support URL param / cookie deprecations cleanly, we write out the UI
+// fields immediately after populating them. This "upgrades" fields that have
+// been moved from URL params to cookies (or vice versa).
+saveFields();
+clearDeprecatedStorage();
 attachListeners();
 console_prompt();
 })();
