@@ -175,17 +175,20 @@ var data = [];
     ]);
     var attachListeners = function () {
         var e_1, _a;
-        var onChange = function () {
+        var onChange = function (elt) {
             var ctx = new Context();
             showAmountHints(ctx);
-            saveFields();
+            saveFields(elt);
             setContents(ctx);
+        };
+        var _loop_1 = function (elt) {
+            elt.addEventListener('change', function () { return onChange(elt); });
+            elt.addEventListener('input', function () { return onChange(elt); });
         };
         try {
             for (var _b = __values(urlParamMap.values()), _c = _b.next(); !_c.done; _c = _b.next()) {
                 var elt = _c.value.elt;
-                elt.addEventListener('change', function () { return onChange(); });
-                elt.addEventListener('input', function () { return onChange(); });
+                _loop_1(elt);
             }
         }
         catch (e_1_1) { e_1 = { error: e_1_1 }; }
@@ -608,7 +611,7 @@ var data = [];
             finally { if (e_4) throw e_4.error; }
         }
         var cookies = document.cookie;
-        var _loop_1 = function (name_2, elt) {
+        var _loop_2 = function (name_2, elt) {
             var savedCookie = cookies.split(';')
                 .map(function (x) { return x.split('='); })
                 .find(function (_a) {
@@ -636,7 +639,7 @@ var data = [];
         try {
             for (var _f = __values(cookieValueMap.entries()), _g = _f.next(); !_g.done; _g = _f.next()) {
                 var _h = __read(_g.value, 2), name_2 = _h[0], elt = _h[1].elt;
-                _loop_1(name_2, elt);
+                _loop_2(name_2, elt);
             }
         }
         catch (e_5_1) { e_5 = { error: e_5_1 }; }
@@ -652,12 +655,14 @@ var data = [];
             setContents(ctx);
         }
     };
-    var saveFields = function () {
+    var saveFields = function (changed) {
         var e_6, _a, e_7, _b;
         var url = new URL(location.href);
         try {
             for (var _c = __values(urlParamMap.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
                 var _e = __read(_d.value, 2), name_3 = _e[0], _f = _e[1], elt = _f.elt, deprecated = _f.deprecated;
+                if (changed && changed !== elt)
+                    continue;
                 if (deprecated)
                     continue;
                 var value = void 0;
@@ -693,6 +698,8 @@ var data = [];
         try {
             for (var _g = __values(cookieValueMap.entries()), _h = _g.next(); !_h.done; _h = _g.next()) {
                 var _j = __read(_h.value, 2), name_4 = _j[0], _k = _j[1], elt = _k.elt, deprecated = _k.deprecated;
+                if (changed && changed !== elt)
+                    continue;
                 if (deprecated)
                     continue;
                 var value = void 0;
@@ -833,7 +840,7 @@ var data = [];
         if (!ctx.alreadyClosed) {
             assets -= ctx.downPayment + ctx.closingCost;
         }
-        var _loop_2 = function (i, record) {
+        var _loop_3 = function (i, record) {
             if (i < ctx.paymentsAlreadyMade) {
                 return "continue";
             }
@@ -846,7 +853,7 @@ var data = [];
         try {
             for (var _b = __values(schedule.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
                 var _d = __read(_c.value, 2), i = _d[0], record = _d[1];
-                var state_1 = _loop_2(i, record);
+                var state_1 = _loop_3(i, record);
                 if (typeof state_1 === "object")
                     return state_1.value;
             }

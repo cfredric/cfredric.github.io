@@ -212,15 +212,15 @@ const cookieValueMap = new Map<string, InputEntry>([
 ]);
 
 const attachListeners = (): void => {
-  const onChange = () => {
+  const onChange = (elt: HTMLInputElement) => {
     const ctx = new Context();
     showAmountHints(ctx);
-    saveFields();
+    saveFields(elt);
     setContents(ctx);
   };
   for (const {elt} of urlParamMap.values()) {
-    elt.addEventListener('change', () => onChange());
-    elt.addEventListener('input', () => onChange());
+    elt.addEventListener('change', () => onChange(elt));
+    elt.addEventListener('input', () => onChange(elt));
   }
 };
 
@@ -832,9 +832,10 @@ const initFields = (): void => {
 };
 
 // Saves fields to the URL and cookies.
-const saveFields = (): void => {
+const saveFields = (changed?: HTMLInputElement): void => {
   const url = new URL(location.href);
   for (const [name, {elt, deprecated}] of urlParamMap.entries()) {
+    if (changed && changed !== elt) continue;
     if (deprecated) continue;
     let value;
     let hasValue;
@@ -859,6 +860,7 @@ const saveFields = (): void => {
   history.pushState({}, '', url.toString());
 
   for (const [name, {elt, deprecated}] of cookieValueMap.entries()) {
+    if (changed && changed !== elt) continue;
     if (deprecated) continue;
     let value;
     let hasValue;
