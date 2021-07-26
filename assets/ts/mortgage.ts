@@ -833,46 +833,53 @@ const initFields = (): void => {
 // Saves fields to the URL and cookies.
 const saveFields = (changed?: HTMLInputElement): void => {
   const url = new URL(location.href);
-  if (changed && urlParamMap.has(changed)) {
-    updateURLParam(url, changed, urlParamMap.get(changed)!);
+  let urlChanged = false;
+  if (changed) {
+    if (urlParamMap.has(changed)) {
+      urlChanged =
+          urlChanged || updateURLParam(url, changed, urlParamMap.get(changed)!);
+    }
+    if (cookieValueMap.has(changed))
+      updateCookie(changed, cookieValueMap.get(changed)!);
   } else {
     for (const [elt, entry] of urlParamMap.entries()) {
-      updateURLParam(url, elt, entry);
+      urlChanged = urlChanged || updateURLParam(url, elt, entry);
     }
-  }
-  history.pushState({}, '', url.toString());
-
-  if (changed && cookieValueMap.has(changed)) {
-    updateCookie(changed, cookieValueMap.get(changed)!);
-  } else {
     for (const [elt, entry] of cookieValueMap.entries()) {
       updateCookie(elt, entry);
     }
   }
+  if (urlChanged) history.pushState({}, '', url.toString());
 };
 
-const updateURLParam = (url: URL, elt: HTMLInputElement, entry: InputEntry) => {
-  if (entry.deprecated) return;
-  let value;
-  let hasValue;
-  switch (elt.type) {
-    case 'text':
-      value = encodeURIComponent(elt.value);
-      hasValue = value !== '';
-      break;
-    case 'checkbox':
-      value = '';
-      hasValue = elt.checked;
-      break;
-    default:
-      throw new Error('unreachable');
-  }
-  if (hasValue) {
-    url.searchParams.set(entry.name, value);
-  } else {
-    deleteParam(url, entry.name);
-  }
-};
+const updateURLParam =
+    (url: URL, elt: HTMLInputElement, entry: InputEntry): boolean => {
+      if (entry.deprecated) return false;
+      let value;
+      let hasValue;
+      switch (elt.type) {
+        case 'text':
+          value = encodeURIComponent(elt.value);
+          hasValue = value !== '';
+          break;
+        case 'checkbox':
+          value = '';
+          hasValue = elt.checked;
+          break;
+        default:
+          throw new Error('unreachable');
+      }
+      let result;
+      if (hasValue) {
+        result = !url.searchParams.has(entry.name) ||
+            url.searchParams.get(entry.name) !== value;
+        url.searchParams.set(entry.name, value);
+      } else {
+        result = url.searchParams.has(entry.name);
+        deleteParam(url, entry.name);
+      }
+      return result;
+    };
 
 const updateCookie =
     (elt: HTMLInputElement, entry: InputEntry) => {

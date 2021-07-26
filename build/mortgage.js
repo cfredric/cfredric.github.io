@@ -659,14 +659,20 @@ var data = [];
     var saveFields = function (changed) {
         var e_6, _a, e_7, _b;
         var url = new URL(location.href);
-        if (changed && urlParamMap.has(changed)) {
-            updateURLParam(url, changed, urlParamMap.get(changed));
+        var urlChanged = false;
+        if (changed) {
+            if (urlParamMap.has(changed)) {
+                urlChanged =
+                    urlChanged || updateURLParam(url, changed, urlParamMap.get(changed));
+            }
+            if (cookieValueMap.has(changed))
+                updateCookie(changed, cookieValueMap.get(changed));
         }
         else {
             try {
                 for (var _c = __values(urlParamMap.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
                     var _e = __read(_d.value, 2), elt = _e[0], entry = _e[1];
-                    updateURLParam(url, elt, entry);
+                    urlChanged = urlChanged || updateURLParam(url, elt, entry);
                 }
             }
             catch (e_6_1) { e_6 = { error: e_6_1 }; }
@@ -676,12 +682,6 @@ var data = [];
                 }
                 finally { if (e_6) throw e_6.error; }
             }
-        }
-        history.pushState({}, '', url.toString());
-        if (changed && cookieValueMap.has(changed)) {
-            updateCookie(changed, cookieValueMap.get(changed));
-        }
-        else {
             try {
                 for (var _f = __values(cookieValueMap.entries()), _g = _f.next(); !_g.done; _g = _f.next()) {
                     var _h = __read(_g.value, 2), elt = _h[0], entry = _h[1];
@@ -696,10 +696,12 @@ var data = [];
                 finally { if (e_7) throw e_7.error; }
             }
         }
+        if (urlChanged)
+            history.pushState({}, '', url.toString());
     };
     var updateURLParam = function (url, elt, entry) {
         if (entry.deprecated)
-            return;
+            return false;
         var value;
         var hasValue;
         switch (elt.type) {
@@ -714,12 +716,17 @@ var data = [];
             default:
                 throw new Error('unreachable');
         }
+        var result;
         if (hasValue) {
+            result = !url.searchParams.has(entry.name) ||
+                url.searchParams.get(entry.name) !== value;
             url.searchParams.set(entry.name, value);
         }
         else {
+            result = url.searchParams.has(entry.name);
             deleteParam(url, entry.name);
         }
+        return result;
     };
     var updateCookie = function (elt, entry) {
         if (entry.deprecated)
