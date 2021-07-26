@@ -106,7 +106,7 @@ var data = [];
     ];
     var COOKIE_SUFFIX = COOKIE_ATTRIBUTES
         .concat([
-        "max-age=" + 60 * 60 * 24 * 365,
+        "max-age=" + 60 * 60 * 24 * 365 * 10,
     ])
         .join(';');
     var COOKIE_SUFFIX_DELETE = COOKIE_ATTRIBUTES.concat([

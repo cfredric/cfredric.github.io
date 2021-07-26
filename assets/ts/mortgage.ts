@@ -133,7 +133,7 @@ const COOKIE_ATTRIBUTES: Readonly<string[]> = [
 
 const COOKIE_SUFFIX = COOKIE_ATTRIBUTES
                           .concat([
-                            `max-age=${60 * 60 * 24 * 365}`,
+                            `max-age=${60 * 60 * 24 * 365 * 10}`,
                           ])
                           .join(';');
 
