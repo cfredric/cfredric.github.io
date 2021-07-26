@@ -835,54 +835,66 @@ const initFields = (): void => {
 const saveFields = (changed?: HTMLInputElement): void => {
   const url = new URL(location.href);
   for (const [name, {elt, deprecated}] of urlParamMap.entries()) {
-    if (changed && changed !== elt) continue;
-    if (deprecated) continue;
-    let value;
-    let hasValue;
-    switch (elt.type) {
-      case 'text':
-        value = elt.value;
-        hasValue = value !== '';
-        break;
-      case 'checkbox':
-        value = '';
-        hasValue = elt.checked;
-        break;
-      default:
-        throw new Error('unreachable');
-    }
-    if (hasValue) {
-      url.searchParams.set(name, value);
-    } else {
-      deleteParam(url, name);
-    }
+    updateURLParam(url, changed, name, elt, deprecated);
   }
   history.pushState({}, '', url.toString());
 
   for (const [name, {elt, deprecated}] of cookieValueMap.entries()) {
-    if (changed && changed !== elt) continue;
-    if (deprecated) continue;
-    let value;
-    let hasValue;
-    switch (elt.type) {
-      case 'text':
-        value = elt.value;
-        hasValue = value !== '';
-        break;
-      case 'checkbox':
-        value = '1';
-        hasValue = elt.checked;
-        break;
-      default:
-        throw new Error('unreachable');
-    }
-    if (hasValue) {
-      document.cookie = `${COOKIE_PREFIX}${name}=${value};${COOKIE_SUFFIX}`;
-    } else {
-      deleteCookie(name);
-    }
+    updateCookie(changed, name, elt, deprecated);
   }
 };
+
+const updateURLParam =
+    (url: URL, changed: HTMLInputElement|undefined, name: string,
+     elt: HTMLInputElement, deprecated: boolean|undefined) => {
+      if (changed && changed !== elt) return;
+      if (deprecated) return;
+      let value;
+      let hasValue;
+      switch (elt.type) {
+        case 'text':
+          value = elt.value;
+          hasValue = value !== '';
+          break;
+        case 'checkbox':
+          value = '';
+          hasValue = elt.checked;
+          break;
+        default:
+          throw new Error('unreachable');
+      }
+      if (hasValue) {
+        url.searchParams.set(name, value);
+      } else {
+        deleteParam(url, name);
+      }
+    };
+
+const updateCookie =
+    (changed: HTMLInputElement|undefined, name: string, elt: HTMLInputElement,
+     deprecated: boolean|undefined) => {
+      if (changed && changed !== elt) return;
+      if (deprecated) return;
+      let value;
+      let hasValue;
+      switch (elt.type) {
+        case 'text':
+          value = elt.value;
+          hasValue = value !== '';
+          break;
+        case 'checkbox':
+          value = '1';
+          hasValue = elt.checked;
+          break;
+        default:
+          throw new Error('unreachable');
+      }
+      if (hasValue) {
+        document.cookie = `${COOKIE_PREFIX}${name}=${value};${COOKIE_SUFFIX}`;
+      } else {
+        deleteCookie(name);
+      }
+    }
 
 // Clears out deprecated URL params and cookies.
 const clearDeprecatedStorage = () => {

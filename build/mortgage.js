@@ -661,30 +661,7 @@ var data = [];
         try {
             for (var _c = __values(urlParamMap.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
                 var _e = __read(_d.value, 2), name_3 = _e[0], _f = _e[1], elt = _f.elt, deprecated = _f.deprecated;
-                if (changed && changed !== elt)
-                    continue;
-                if (deprecated)
-                    continue;
-                var value = void 0;
-                var hasValue = void 0;
-                switch (elt.type) {
-                    case 'text':
-                        value = elt.value;
-                        hasValue = value !== '';
-                        break;
-                    case 'checkbox':
-                        value = '';
-                        hasValue = elt.checked;
-                        break;
-                    default:
-                        throw new Error('unreachable');
-                }
-                if (hasValue) {
-                    url.searchParams.set(name_3, value);
-                }
-                else {
-                    deleteParam(url, name_3);
-                }
+                updateURLParam(url, changed, name_3, elt, deprecated);
             }
         }
         catch (e_6_1) { e_6 = { error: e_6_1 }; }
@@ -698,30 +675,7 @@ var data = [];
         try {
             for (var _g = __values(cookieValueMap.entries()), _h = _g.next(); !_h.done; _h = _g.next()) {
                 var _j = __read(_h.value, 2), name_4 = _j[0], _k = _j[1], elt = _k.elt, deprecated = _k.deprecated;
-                if (changed && changed !== elt)
-                    continue;
-                if (deprecated)
-                    continue;
-                var value = void 0;
-                var hasValue = void 0;
-                switch (elt.type) {
-                    case 'text':
-                        value = elt.value;
-                        hasValue = value !== '';
-                        break;
-                    case 'checkbox':
-                        value = '1';
-                        hasValue = elt.checked;
-                        break;
-                    default:
-                        throw new Error('unreachable');
-                }
-                if (hasValue) {
-                    document.cookie = "" + COOKIE_PREFIX + name_4 + "=" + value + ";" + COOKIE_SUFFIX;
-                }
-                else {
-                    deleteCookie(name_4);
-                }
+                updateCookie(changed, name_4, elt, deprecated);
             }
         }
         catch (e_7_1) { e_7 = { error: e_7_1 }; }
@@ -730,6 +684,58 @@ var data = [];
                 if (_h && !_h.done && (_b = _g.return)) _b.call(_g);
             }
             finally { if (e_7) throw e_7.error; }
+        }
+    };
+    var updateURLParam = function (url, changed, name, elt, deprecated) {
+        if (changed && changed !== elt)
+            return;
+        if (deprecated)
+            return;
+        var value;
+        var hasValue;
+        switch (elt.type) {
+            case 'text':
+                value = elt.value;
+                hasValue = value !== '';
+                break;
+            case 'checkbox':
+                value = '';
+                hasValue = elt.checked;
+                break;
+            default:
+                throw new Error('unreachable');
+        }
+        if (hasValue) {
+            url.searchParams.set(name, value);
+        }
+        else {
+            deleteParam(url, name);
+        }
+    };
+    var updateCookie = function (changed, name, elt, deprecated) {
+        if (changed && changed !== elt)
+            return;
+        if (deprecated)
+            return;
+        var value;
+        var hasValue;
+        switch (elt.type) {
+            case 'text':
+                value = elt.value;
+                hasValue = value !== '';
+                break;
+            case 'checkbox':
+                value = '1';
+                hasValue = elt.checked;
+                break;
+            default:
+                throw new Error('unreachable');
+        }
+        if (hasValue) {
+            document.cookie = "" + COOKIE_PREFIX + name + "=" + value + ";" + COOKIE_SUFFIX;
+        }
+        else {
+            deleteCookie(name);
         }
     };
     var clearDeprecatedStorage = function () {
