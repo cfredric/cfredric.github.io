@@ -784,7 +784,7 @@ const initFields = (): void => {
         const value = url.searchParams.get(name);
         hasValue = hasValue || value !== null;
         if (value !== null) {
-          elt.value = value;
+          elt.value = decodeURIComponent(value);
         }
         break;
       case 'checkbox':
@@ -800,7 +800,7 @@ const initFields = (): void => {
   }
   const cookies = document.cookie.split(';').map(x => {
     const parts = x.split('=');
-    return {name: parts[0]?.trim(), value: parts[1]};
+    return {name: parts[0]?.trim(), value: decodeURIComponent(parts[1]!)};
   });
   for (const [elt, {name}] of cookieValueMap.entries()) {
     const savedCookie =
@@ -857,7 +857,7 @@ const updateURLParam = (url: URL, elt: HTMLInputElement, entry: InputEntry) => {
   let hasValue;
   switch (elt.type) {
     case 'text':
-      value = elt.value;
+      value = encodeURIComponent(elt.value);
       hasValue = value !== '';
       break;
     case 'checkbox':
@@ -892,7 +892,8 @@ const updateCookie =
           throw new Error('unreachable');
       }
       if (hasValue) {
-        document.cookie = `${entry.name}=${value};${COOKIE_SUFFIX}`;
+        document.cookie =
+            `${entry.name}=${encodeURIComponent(value)};${COOKIE_SUFFIX}`;
       } else {
         deleteCookie(entry.name);
       }

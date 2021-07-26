@@ -587,7 +587,7 @@ var data = [];
                         var value = url.searchParams.get(name_1);
                         hasValue = hasValue || value !== null;
                         if (value !== null) {
-                            elt.value = value;
+                            elt.value = decodeURIComponent(value);
                         }
                         break;
                     case 'checkbox':
@@ -612,7 +612,7 @@ var data = [];
         var cookies = document.cookie.split(';').map(function (x) {
             var _a;
             var parts = x.split('=');
-            return { name: (_a = parts[0]) === null || _a === void 0 ? void 0 : _a.trim(), value: parts[1] };
+            return { name: (_a = parts[0]) === null || _a === void 0 ? void 0 : _a.trim(), value: decodeURIComponent(parts[1]) };
         });
         var _loop_2 = function (elt, name_2) {
             var savedCookie = cookies.find(function (_a) {
@@ -704,7 +704,7 @@ var data = [];
         var hasValue;
         switch (elt.type) {
             case 'text':
-                value = elt.value;
+                value = encodeURIComponent(elt.value);
                 hasValue = value !== '';
                 break;
             case 'checkbox':
@@ -739,7 +739,8 @@ var data = [];
                 throw new Error('unreachable');
         }
         if (hasValue) {
-            document.cookie = entry.name + "=" + value + ";" + COOKIE_SUFFIX;
+            document.cookie =
+                entry.name + "=" + encodeURIComponent(value) + ";" + COOKIE_SUFFIX;
         }
         else {
             deleteCookie(entry.name);
