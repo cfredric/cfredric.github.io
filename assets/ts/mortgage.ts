@@ -124,7 +124,7 @@ const keys = [
 ] as const;
 type PaymentType = typeof keys[number];
 
-const COOKIE_ATTRIBUTES = [
+const COOKIE_ATTRIBUTES: Readonly<string[]> = [
   'Secure',
   'SameSite=Lax',
   `Domain=${window.location.hostname}`,
@@ -180,7 +180,7 @@ interface InputEntry {
   deprecated?: boolean;
 }
 
-const urlParamMap = new Map<HTMLInputElement, InputEntry>([
+const urlParamMap: Readonly<Map<HTMLInputElement, InputEntry>> = new Map([
   [priceInput, {name: 'price'}],
   [homeValueInput, {name: 'home_value'}],
   [hoaInput, {name: 'hoa'}],
@@ -205,7 +205,7 @@ const urlParamMap = new Map<HTMLInputElement, InputEntry>([
   [paymentsAlreadyMadeInput, {name: 'paid'}],
 ]);
 
-const cookieValueMap = new Map<HTMLInputElement, InputEntry>([
+const cookieValueMap: Readonly<Map<HTMLInputElement, InputEntry>> = new Map([
   [annualIncomeInput, {name: 'annual_income'}],
   [totalAssetsInput, {name: 'total_assets'}],
 ]);
