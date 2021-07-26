@@ -124,7 +124,6 @@ const keys = [
 ] as const;
 type PaymentType = typeof keys[number];
 
-const COOKIE_PREFIX = '';
 const COOKIE_ATTRIBUTES = [
   'Secure',
   'SameSite=Lax',
@@ -799,15 +798,18 @@ const initFields = (): void => {
         throw new Error('unreachable');
     }
   }
-  const cookies = document.cookie.split(';').map(x => x.split('='));
+  const cookies = document.cookie.split(';').map(x => {
+    const parts = x.split('=');
+    return {name: parts[0]?.trim(), value: parts[1]};
+  });
   for (const [elt, {name}] of cookieValueMap.entries()) {
-    const savedCookie = cookies.find(
-        ([cookieName]) => `${COOKIE_PREFIX}${name}` === cookieName?.trim());
+    const savedCookie =
+        cookies.find(({name: cookieName}) => name === cookieName);
     switch (elt.type) {
       case 'text':
         hasValue = hasValue || savedCookie !== undefined;
         if (savedCookie !== undefined) {
-          elt.value = savedCookie ? savedCookie[1]! : '';
+          elt.value = savedCookie ? savedCookie.value! : '';
         }
         break;
       case 'checkbox':
@@ -890,8 +892,7 @@ const updateCookie =
           throw new Error('unreachable');
       }
       if (hasValue) {
-        document.cookie =
-            `${COOKIE_PREFIX}${entry.name}=${value};${COOKIE_SUFFIX}`;
+        document.cookie = `${entry.name}=${value};${COOKIE_SUFFIX}`;
       } else {
         deleteCookie(entry.name);
       }
@@ -919,7 +920,7 @@ const deleteParam = (url: URL, name: string) => {
 };
 
 const deleteCookie = (name: string) => {
-  document.cookie = `${COOKIE_PREFIX}${name}=0;${COOKIE_SUFFIX_DELETE}`;
+  document.cookie = `${name}=0;${COOKIE_SUFFIX_DELETE}`;
 };
 
 // Returns an array where the ith element is an object with the amount paid of

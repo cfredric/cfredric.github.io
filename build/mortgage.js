@@ -98,7 +98,6 @@ var data = [];
         'homeowners_insurance',
         'pmi',
     ];
-    var COOKIE_PREFIX = '';
     var COOKIE_ATTRIBUTES = [
         'Secure',
         'SameSite=Lax',
@@ -610,17 +609,21 @@ var data = [];
             }
             finally { if (e_4) throw e_4.error; }
         }
-        var cookies = document.cookie.split(';').map(function (x) { return x.split('='); });
+        var cookies = document.cookie.split(';').map(function (x) {
+            var _a;
+            var parts = x.split('=');
+            return { name: (_a = parts[0]) === null || _a === void 0 ? void 0 : _a.trim(), value: parts[1] };
+        });
         var _loop_2 = function (elt, name_2) {
             var savedCookie = cookies.find(function (_a) {
-                var _b = __read(_a, 1), cookieName = _b[0];
-                return "" + COOKIE_PREFIX + name_2 === (cookieName === null || cookieName === void 0 ? void 0 : cookieName.trim());
+                var cookieName = _a.name;
+                return name_2 === cookieName;
             });
             switch (elt.type) {
                 case 'text':
                     hasValue = hasValue || savedCookie !== undefined;
                     if (savedCookie !== undefined) {
-                        elt.value = savedCookie ? savedCookie[1] : '';
+                        elt.value = savedCookie ? savedCookie.value : '';
                     }
                     break;
                 case 'checkbox':
@@ -736,8 +739,7 @@ var data = [];
                 throw new Error('unreachable');
         }
         if (hasValue) {
-            document.cookie =
-                "" + COOKIE_PREFIX + entry.name + "=" + value + ";" + COOKIE_SUFFIX;
+            document.cookie = entry.name + "=" + value + ";" + COOKIE_SUFFIX;
         }
         else {
             deleteCookie(entry.name);
@@ -782,7 +784,7 @@ var data = [];
         url.searchParams.delete(name);
     };
     var deleteCookie = function (name) {
-        document.cookie = "" + COOKIE_PREFIX + name + "=0;" + COOKIE_SUFFIX_DELETE;
+        document.cookie = name + "=0;" + COOKIE_SUFFIX_DELETE;
     };
     var cumulativeSumByFields = function (data, fields) {
         var e_10, _a, e_11, _b;
