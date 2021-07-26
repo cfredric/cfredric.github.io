@@ -146,32 +146,32 @@ var data = [];
         }
     };
     var urlParamMap = new Map([
-        ['price', { elt: priceInput }],
-        ['home_value', { elt: homeValueInput }],
-        ['hoa', { elt: hoaInput }],
-        ['down_payment', { elt: downPaymentPercentageInput }],
-        ['down_payment_amt', { elt: downPaymentAbsoluteInput }],
-        ['interest_rate', { elt: interestRateInput }],
-        ['points_purchased', { elt: pointsPurchasedInput }],
-        ['point_value', { elt: pointValueInput }],
-        ['mortgage_insurance', { elt: mortgageInsuranceInput }],
-        ['pmi_equity_pct', { elt: pmiEquityPercentageInput }],
-        ['property_tax', { elt: propertyTaxAbsoluteInput }],
-        ['property_tax_pct', { elt: propertyTaxPercentageInput }],
-        ['resi_savings', { elt: residentialExemptionSavingsInput }],
-        ['resi_deduction', { elt: residentialExemptionDeductionInput }],
-        ['hoi', { elt: homeownersInsuranceInput }],
-        ['closing_cost', { elt: closingCostInput }],
-        ['mortgage-term', { elt: mortgageTermInput }],
-        ['annual-income', { elt: annualIncomeInput, deprecated: true }],
-        ['monthly-debt', { elt: monthlyDebtInput }],
-        ['total_assets', { elt: totalAssetsInput, deprecated: true }],
-        ['closed', { elt: alreadyClosedInput }],
-        ['paid', { elt: paymentsAlreadyMadeInput }],
+        [priceInput, { name: 'price' }],
+        [homeValueInput, { name: 'home_value' }],
+        [hoaInput, { name: 'hoa' }],
+        [downPaymentPercentageInput, { name: 'down_payment' }],
+        [downPaymentAbsoluteInput, { name: 'down_payment_amt' }],
+        [interestRateInput, { name: 'interest_rate' }],
+        [pointsPurchasedInput, { name: 'points_purchased' }],
+        [pointValueInput, { name: 'point_value' }],
+        [mortgageInsuranceInput, { name: 'mortgage_insurance' }],
+        [pmiEquityPercentageInput, { name: 'pmi_equity_pct' }],
+        [propertyTaxAbsoluteInput, { name: 'property_tax' }],
+        [propertyTaxPercentageInput, { name: 'property_tax_pct' }],
+        [residentialExemptionSavingsInput, { name: 'resi_savings' }],
+        [residentialExemptionDeductionInput, { name: 'resi_deduction' }],
+        [homeownersInsuranceInput, { name: 'hoi' }],
+        [closingCostInput, { name: 'closing_cost' }],
+        [mortgageTermInput, { name: 'mortgage-term' }],
+        [annualIncomeInput, { name: 'annual-income', deprecated: true }],
+        [monthlyDebtInput, { name: 'monthly-debt' }],
+        [totalAssetsInput, { name: 'total_assets', deprecated: true }],
+        [alreadyClosedInput, { name: 'closed' }],
+        [paymentsAlreadyMadeInput, { name: 'paid' }],
     ]);
     var cookieValueMap = new Map([
-        ['annual_income', { elt: annualIncomeInput }],
-        ['total_assets', { elt: totalAssetsInput }],
+        [annualIncomeInput, { name: 'annual_income' }],
+        [totalAssetsInput, { name: 'total_assets' }],
     ]);
     var attachListeners = function () {
         var e_1, _a;
@@ -186,8 +186,8 @@ var data = [];
             elt.addEventListener('input', function () { return onChange(elt); });
         };
         try {
-            for (var _b = __values(urlParamMap.values()), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var elt = _c.value.elt;
+            for (var _b = __values(urlParamMap.keys()), _c = _b.next(); !_c.done; _c = _b.next()) {
+                var elt = _c.value;
                 _loop_1(elt);
             }
         }
@@ -582,7 +582,7 @@ var data = [];
         var hasValue = false;
         try {
             for (var _c = __values(urlParamMap.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
-                var _e = __read(_d.value, 2), name_1 = _e[0], elt = _e[1].elt;
+                var _e = __read(_d.value, 2), elt = _e[0], name_1 = _e[1].name;
                 switch (elt.type) {
                     case 'text':
                         var value = url.searchParams.get(name_1);
@@ -611,7 +611,7 @@ var data = [];
             finally { if (e_4) throw e_4.error; }
         }
         var cookies = document.cookie;
-        var _loop_2 = function (name_2, elt) {
+        var _loop_2 = function (elt, name_2) {
             var savedCookie = cookies.split(';')
                 .map(function (x) { return x.split('='); })
                 .find(function (_a) {
@@ -638,8 +638,8 @@ var data = [];
         };
         try {
             for (var _f = __values(cookieValueMap.entries()), _g = _f.next(); !_g.done; _g = _f.next()) {
-                var _h = __read(_g.value, 2), name_2 = _h[0], elt = _h[1].elt;
-                _loop_2(name_2, elt);
+                var _h = __read(_g.value, 2), elt = _h[0], name_2 = _h[1].name;
+                _loop_2(elt, name_2);
             }
         }
         catch (e_5_1) { e_5 = { error: e_5_1 }; }
@@ -660,7 +660,7 @@ var data = [];
         var url = new URL(location.href);
         try {
             for (var _c = __values(urlParamMap.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
-                var _e = __read(_d.value, 2), name_3 = _e[0], _f = _e[1], elt = _f.elt, deprecated = _f.deprecated;
+                var _e = __read(_d.value, 2), elt = _e[0], _f = _e[1], name_3 = _f.name, deprecated = _f.deprecated;
                 updateURLParam(url, changed, name_3, elt, deprecated);
             }
         }
@@ -674,7 +674,7 @@ var data = [];
         history.pushState({}, '', url.toString());
         try {
             for (var _g = __values(cookieValueMap.entries()), _h = _g.next(); !_h.done; _h = _g.next()) {
-                var _j = __read(_h.value, 2), name_4 = _j[0], _k = _j[1], elt = _k.elt, deprecated = _k.deprecated;
+                var _j = __read(_h.value, 2), elt = _j[0], _k = _j[1], name_4 = _k.name, deprecated = _k.deprecated;
                 updateCookie(changed, name_4, elt, deprecated);
             }
         }
@@ -742,8 +742,8 @@ var data = [];
         var e_8, _a, e_9, _b;
         var url = new URL(location.href);
         try {
-            for (var _c = __values(urlParamMap.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
-                var _e = __read(_d.value, 2), name_5 = _e[0], deprecated = _e[1].deprecated;
+            for (var _c = __values(urlParamMap.values()), _d = _c.next(); !_d.done; _d = _c.next()) {
+                var _e = _d.value, name_5 = _e.name, deprecated = _e.deprecated;
                 if (deprecated) {
                     deleteParam(url, name_5);
                 }
@@ -758,8 +758,8 @@ var data = [];
         }
         history.pushState({}, '', url.toString());
         try {
-            for (var _f = __values(cookieValueMap.entries()), _g = _f.next(); !_g.done; _g = _f.next()) {
-                var _h = __read(_g.value, 2), name_6 = _h[0], deprecated = _h[1].deprecated;
+            for (var _f = __values(cookieValueMap.values()), _g = _f.next(); !_g.done; _g = _f.next()) {
+                var _h = _g.value, name_6 = _h.name, deprecated = _h.deprecated;
                 if (deprecated) {
                     deleteCookie(name_6);
                 }

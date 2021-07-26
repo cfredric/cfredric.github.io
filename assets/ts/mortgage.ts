@@ -177,38 +177,38 @@ const fieldDisplay = (pt: PaymentType): string => {
 };
 
 interface InputEntry {
-  elt: HTMLInputElement;
+  name: string;
   deprecated?: boolean;
 }
 
-const urlParamMap = new Map<string, InputEntry>([
-  ['price', {elt: priceInput}],
-  ['home_value', {elt: homeValueInput}],
-  ['hoa', {elt: hoaInput}],
-  ['down_payment', {elt: downPaymentPercentageInput}],
-  ['down_payment_amt', {elt: downPaymentAbsoluteInput}],
-  ['interest_rate', {elt: interestRateInput}],
-  ['points_purchased', {elt: pointsPurchasedInput}],
-  ['point_value', {elt: pointValueInput}],
-  ['mortgage_insurance', {elt: mortgageInsuranceInput}],
-  ['pmi_equity_pct', {elt: pmiEquityPercentageInput}],
-  ['property_tax', {elt: propertyTaxAbsoluteInput}],
-  ['property_tax_pct', {elt: propertyTaxPercentageInput}],
-  ['resi_savings', {elt: residentialExemptionSavingsInput}],
-  ['resi_deduction', {elt: residentialExemptionDeductionInput}],
-  ['hoi', {elt: homeownersInsuranceInput}],
-  ['closing_cost', {elt: closingCostInput}],
-  ['mortgage-term', {elt: mortgageTermInput}],
-  ['annual-income', {elt: annualIncomeInput, deprecated: true}],
-  ['monthly-debt', {elt: monthlyDebtInput}],
-  ['total_assets', {elt: totalAssetsInput, deprecated: true}],
-  ['closed', {elt: alreadyClosedInput}],
-  ['paid', {elt: paymentsAlreadyMadeInput}],
+const urlParamMap = new Map<HTMLInputElement, InputEntry>([
+  [priceInput, {name: 'price'}],
+  [homeValueInput, {name: 'home_value'}],
+  [hoaInput, {name: 'hoa'}],
+  [downPaymentPercentageInput, {name: 'down_payment'}],
+  [downPaymentAbsoluteInput, {name: 'down_payment_amt'}],
+  [interestRateInput, {name: 'interest_rate'}],
+  [pointsPurchasedInput, {name: 'points_purchased'}],
+  [pointValueInput, {name: 'point_value'}],
+  [mortgageInsuranceInput, {name: 'mortgage_insurance'}],
+  [pmiEquityPercentageInput, {name: 'pmi_equity_pct'}],
+  [propertyTaxAbsoluteInput, {name: 'property_tax'}],
+  [propertyTaxPercentageInput, {name: 'property_tax_pct'}],
+  [residentialExemptionSavingsInput, {name: 'resi_savings'}],
+  [residentialExemptionDeductionInput, {name: 'resi_deduction'}],
+  [homeownersInsuranceInput, {name: 'hoi'}],
+  [closingCostInput, {name: 'closing_cost'}],
+  [mortgageTermInput, {name: 'mortgage-term'}],
+  [annualIncomeInput, {name: 'annual-income', deprecated: true}],
+  [monthlyDebtInput, {name: 'monthly-debt'}],
+  [totalAssetsInput, {name: 'total_assets', deprecated: true}],
+  [alreadyClosedInput, {name: 'closed'}],
+  [paymentsAlreadyMadeInput, {name: 'paid'}],
 ]);
 
-const cookieValueMap = new Map<string, InputEntry>([
-  ['annual_income', {elt: annualIncomeInput}],
-  ['total_assets', {elt: totalAssetsInput}],
+const cookieValueMap = new Map<HTMLInputElement, InputEntry>([
+  [annualIncomeInput, {name: 'annual_income'}],
+  [totalAssetsInput, {name: 'total_assets'}],
 ]);
 
 const attachListeners = (): void => {
@@ -218,7 +218,7 @@ const attachListeners = (): void => {
     saveFields(elt);
     setContents(ctx);
   };
-  for (const {elt} of urlParamMap.values()) {
+  for (const elt of urlParamMap.keys()) {
     elt.addEventListener('change', () => onChange(elt));
     elt.addEventListener('input', () => onChange(elt));
   }
@@ -779,7 +779,7 @@ const clearMonthlyPaymentOutputs = (): void => {
 const initFields = (): void => {
   const url = new URL(location.href);
   let hasValue = false;
-  for (const [name, {elt}] of urlParamMap.entries()) {
+  for (const [elt, {name}] of urlParamMap.entries()) {
     switch (elt.type) {
       case 'text':
         const value = url.searchParams.get(name);
@@ -800,7 +800,7 @@ const initFields = (): void => {
     }
   }
   const cookies = document.cookie;
-  for (const [name, {elt}] of cookieValueMap.entries()) {
+  for (const [elt, {name}] of cookieValueMap.entries()) {
     const savedCookie = cookies.split(';')
                             .map(x => x.split('='))
                             .find(
@@ -834,12 +834,12 @@ const initFields = (): void => {
 // Saves fields to the URL and cookies.
 const saveFields = (changed?: HTMLInputElement): void => {
   const url = new URL(location.href);
-  for (const [name, {elt, deprecated}] of urlParamMap.entries()) {
+  for (const [elt, {name, deprecated}] of urlParamMap.entries()) {
     updateURLParam(url, changed, name, elt, deprecated);
   }
   history.pushState({}, '', url.toString());
 
-  for (const [name, {elt, deprecated}] of cookieValueMap.entries()) {
+  for (const [elt, {name, deprecated}] of cookieValueMap.entries()) {
     updateCookie(changed, name, elt, deprecated);
   }
 };
@@ -899,14 +899,14 @@ const updateCookie =
 // Clears out deprecated URL params and cookies.
 const clearDeprecatedStorage = () => {
   const url = new URL(location.href);
-  for (const [name, {deprecated}] of urlParamMap.entries()) {
+  for (const {name, deprecated} of urlParamMap.values()) {
     if (deprecated) {
       deleteParam(url, name);
     }
   }
   history.pushState({}, '', url.toString());
 
-  for (const [name, {deprecated}] of cookieValueMap.entries()) {
+  for (const {name, deprecated} of cookieValueMap.values()) {
     if (deprecated) {
       deleteCookie(name);
     }
