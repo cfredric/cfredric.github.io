@@ -799,13 +799,10 @@ const initFields = (): void => {
         throw new Error('unreachable');
     }
   }
-  const cookies = document.cookie;
+  const cookies = document.cookie.split(';').map(x => x.split('='));
   for (const [elt, {name}] of cookieValueMap.entries()) {
-    const savedCookie = cookies.split(';')
-                            .map(x => x.split('='))
-                            .find(
-                                ([cookieName]) => `${COOKIE_PREFIX}${name}` ===
-                                    cookieName?.trim());
+    const savedCookie = cookies.find(
+        ([cookieName]) => `${COOKIE_PREFIX}${name}` === cookieName?.trim());
     switch (elt.type) {
       case 'text':
         hasValue = hasValue || savedCookie !== undefined;

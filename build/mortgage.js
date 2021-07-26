@@ -610,11 +610,9 @@ var data = [];
             }
             finally { if (e_4) throw e_4.error; }
         }
-        var cookies = document.cookie;
+        var cookies = document.cookie.split(';').map(function (x) { return x.split('='); });
         var _loop_2 = function (elt, name_2) {
-            var savedCookie = cookies.split(';')
-                .map(function (x) { return x.split('='); })
-                .find(function (_a) {
+            var savedCookie = cookies.find(function (_a) {
                 var _b = __read(_a, 1), cookieName = _b[0];
                 return "" + COOKIE_PREFIX + name_2 === (cookieName === null || cookieName === void 0 ? void 0 : cookieName.trim());
             });
