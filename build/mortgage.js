@@ -658,38 +658,46 @@ var data = [];
     var saveFields = function (changed) {
         var e_6, _a, e_7, _b;
         var url = new URL(location.href);
-        try {
-            for (var _c = __values(urlParamMap.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
-                var _e = __read(_d.value, 2), elt = _e[0], _f = _e[1], name_3 = _f.name, deprecated = _f.deprecated;
-                updateURLParam(url, changed, name_3, elt, deprecated);
-            }
+        if (changed && urlParamMap.has(changed)) {
+            updateURLParam(url, changed, urlParamMap.get(changed));
         }
-        catch (e_6_1) { e_6 = { error: e_6_1 }; }
-        finally {
+        else {
             try {
-                if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
+                for (var _c = __values(urlParamMap.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
+                    var _e = __read(_d.value, 2), elt = _e[0], entry = _e[1];
+                    updateURLParam(url, elt, entry);
+                }
             }
-            finally { if (e_6) throw e_6.error; }
+            catch (e_6_1) { e_6 = { error: e_6_1 }; }
+            finally {
+                try {
+                    if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
+                }
+                finally { if (e_6) throw e_6.error; }
+            }
         }
         history.pushState({}, '', url.toString());
-        try {
-            for (var _g = __values(cookieValueMap.entries()), _h = _g.next(); !_h.done; _h = _g.next()) {
-                var _j = __read(_h.value, 2), elt = _j[0], _k = _j[1], name_4 = _k.name, deprecated = _k.deprecated;
-                updateCookie(changed, name_4, elt, deprecated);
-            }
+        if (changed && cookieValueMap.has(changed)) {
+            updateCookie(changed, cookieValueMap.get(changed));
         }
-        catch (e_7_1) { e_7 = { error: e_7_1 }; }
-        finally {
+        else {
             try {
-                if (_h && !_h.done && (_b = _g.return)) _b.call(_g);
+                for (var _f = __values(cookieValueMap.entries()), _g = _f.next(); !_g.done; _g = _f.next()) {
+                    var _h = __read(_g.value, 2), elt = _h[0], entry = _h[1];
+                    updateCookie(elt, entry);
+                }
             }
-            finally { if (e_7) throw e_7.error; }
+            catch (e_7_1) { e_7 = { error: e_7_1 }; }
+            finally {
+                try {
+                    if (_g && !_g.done && (_b = _f.return)) _b.call(_f);
+                }
+                finally { if (e_7) throw e_7.error; }
+            }
         }
     };
-    var updateURLParam = function (url, changed, name, elt, deprecated) {
-        if (changed && changed !== elt)
-            return;
-        if (deprecated)
+    var updateURLParam = function (url, elt, entry) {
+        if (entry.deprecated)
             return;
         var value;
         var hasValue;
@@ -706,16 +714,14 @@ var data = [];
                 throw new Error('unreachable');
         }
         if (hasValue) {
-            url.searchParams.set(name, value);
+            url.searchParams.set(entry.name, value);
         }
         else {
-            deleteParam(url, name);
+            deleteParam(url, entry.name);
         }
     };
-    var updateCookie = function (changed, name, elt, deprecated) {
-        if (changed && changed !== elt)
-            return;
-        if (deprecated)
+    var updateCookie = function (elt, entry) {
+        if (entry.deprecated)
             return;
         var value;
         var hasValue;
@@ -732,10 +738,11 @@ var data = [];
                 throw new Error('unreachable');
         }
         if (hasValue) {
-            document.cookie = "" + COOKIE_PREFIX + name + "=" + value + ";" + COOKIE_SUFFIX;
+            document.cookie =
+                "" + COOKIE_PREFIX + entry.name + "=" + value + ";" + COOKIE_SUFFIX;
         }
         else {
-            deleteCookie(name);
+            deleteCookie(entry.name);
         }
     };
     var clearDeprecatedStorage = function () {
@@ -743,9 +750,9 @@ var data = [];
         var url = new URL(location.href);
         try {
             for (var _c = __values(urlParamMap.values()), _d = _c.next(); !_d.done; _d = _c.next()) {
-                var _e = _d.value, name_5 = _e.name, deprecated = _e.deprecated;
+                var _e = _d.value, name_3 = _e.name, deprecated = _e.deprecated;
                 if (deprecated) {
-                    deleteParam(url, name_5);
+                    deleteParam(url, name_3);
                 }
             }
         }
@@ -759,9 +766,9 @@ var data = [];
         history.pushState({}, '', url.toString());
         try {
             for (var _f = __values(cookieValueMap.values()), _g = _f.next(); !_g.done; _g = _f.next()) {
-                var _h = _g.value, name_6 = _h.name, deprecated = _h.deprecated;
+                var _h = _g.value, name_4 = _h.name, deprecated = _h.deprecated;
                 if (deprecated) {
-                    deleteCookie(name_6);
+                    deleteCookie(name_4);
                 }
             }
         }

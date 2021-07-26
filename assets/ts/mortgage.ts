@@ -834,47 +834,50 @@ const initFields = (): void => {
 // Saves fields to the URL and cookies.
 const saveFields = (changed?: HTMLInputElement): void => {
   const url = new URL(location.href);
-  for (const [elt, {name, deprecated}] of urlParamMap.entries()) {
-    updateURLParam(url, changed, name, elt, deprecated);
+  if (changed && urlParamMap.has(changed)) {
+    updateURLParam(url, changed, urlParamMap.get(changed)!);
+  } else {
+    for (const [elt, entry] of urlParamMap.entries()) {
+      updateURLParam(url, elt, entry);
+    }
   }
   history.pushState({}, '', url.toString());
 
-  for (const [elt, {name, deprecated}] of cookieValueMap.entries()) {
-    updateCookie(changed, name, elt, deprecated);
+  if (changed && cookieValueMap.has(changed)) {
+    updateCookie(changed, cookieValueMap.get(changed)!);
+  } else {
+    for (const [elt, entry] of cookieValueMap.entries()) {
+      updateCookie(elt, entry);
+    }
   }
 };
 
-const updateURLParam =
-    (url: URL, changed: HTMLInputElement|undefined, name: string,
-     elt: HTMLInputElement, deprecated: boolean|undefined) => {
-      if (changed && changed !== elt) return;
-      if (deprecated) return;
-      let value;
-      let hasValue;
-      switch (elt.type) {
-        case 'text':
-          value = elt.value;
-          hasValue = value !== '';
-          break;
-        case 'checkbox':
-          value = '';
-          hasValue = elt.checked;
-          break;
-        default:
-          throw new Error('unreachable');
-      }
-      if (hasValue) {
-        url.searchParams.set(name, value);
-      } else {
-        deleteParam(url, name);
-      }
-    };
+const updateURLParam = (url: URL, elt: HTMLInputElement, entry: InputEntry) => {
+  if (entry.deprecated) return;
+  let value;
+  let hasValue;
+  switch (elt.type) {
+    case 'text':
+      value = elt.value;
+      hasValue = value !== '';
+      break;
+    case 'checkbox':
+      value = '';
+      hasValue = elt.checked;
+      break;
+    default:
+      throw new Error('unreachable');
+  }
+  if (hasValue) {
+    url.searchParams.set(entry.name, value);
+  } else {
+    deleteParam(url, entry.name);
+  }
+};
 
 const updateCookie =
-    (changed: HTMLInputElement|undefined, name: string, elt: HTMLInputElement,
-     deprecated: boolean|undefined) => {
-      if (changed && changed !== elt) return;
-      if (deprecated) return;
+    (elt: HTMLInputElement, entry: InputEntry) => {
+      if (entry.deprecated) return;
       let value;
       let hasValue;
       switch (elt.type) {
@@ -890,9 +893,10 @@ const updateCookie =
           throw new Error('unreachable');
       }
       if (hasValue) {
-        document.cookie = `${COOKIE_PREFIX}${name}=${value};${COOKIE_SUFFIX}`;
+        document.cookie =
+            `${COOKIE_PREFIX}${entry.name}=${value};${COOKIE_SUFFIX}`;
       } else {
-        deleteCookie(name);
+        deleteCookie(entry.name);
       }
     }
 
