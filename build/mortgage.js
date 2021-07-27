@@ -181,7 +181,6 @@ var data = [];
             setContents(ctx);
         };
         var _loop_1 = function (elt) {
-            elt.addEventListener('change', function () { return onChange(elt); });
             elt.addEventListener('input', function () { return onChange(elt); });
         };
         try {

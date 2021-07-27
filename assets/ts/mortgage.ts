@@ -218,7 +218,6 @@ const attachListeners = (): void => {
     setContents(ctx);
   };
   for (const elt of urlParamMap.keys()) {
-    elt.addEventListener('change', () => onChange(elt));
     elt.addEventListener('input', () => onChange(elt));
   }
 };
