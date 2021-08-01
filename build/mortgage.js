@@ -526,15 +526,13 @@ var data = [];
                 .join('path')
                 .attr('fill', 'white')
                 .attr('stroke', 'black');
-            var text = g.selectAll('text').data([null]).join('text').call(function (text) {
-                return text.selectAll('tspan')
-                    .data((value + '').split(/\n/))
-                    .join('tspan')
-                    .attr('x', 0)
-                    .attr('y', function (_, i) { return i * 1.1 + "em"; })
-                    .style('font-weight', function (_, i) { return i === paymentTypeIdx ? 'bold' : null; })
-                    .text(function (d) { return d; });
-            });
+            var text = g.selectAll('text').data([null]).join('text').call(function (text) { return text.selectAll('tspan')
+                .data((value + '').split(/\n/))
+                .join('tspan')
+                .attr('x', 0)
+                .attr('y', function (_, i) { return i * 1.1 + "em"; })
+                .style('font-weight', function (_, i) { return i === paymentTypeIdx ? 'bold' : null; })
+                .text(function (d) { return d; }); });
             var _a = text.node().getBBox(), y = _a.y, w = _a.width, h = _a.height;
             text.attr('transform', "translate(" + -w / 2 + "," + (15 - y) + ")");
             path.attr('d', "M" + (-w / 2 - 10) + ",5H-5l5,-5l5,5H" + (w / 2 + 10) + "v" + (h + 20) + "h-" + (w + 20) + "z");

@@ -356,7 +356,7 @@ const setContents = (ctx: Context): void => {
     if (M) {
       buildCumulativeChart(cumulativeSums, ['principal', 'interest', 'pmi']);
       lifetimePaymentOutput.innerText =
-          `${fmt.format(ctx.n * M + d3.sum(schedule, (d) => d.data.pmi))}`;
+          `${fmt.format(ctx.n * M + d3.sum(schedule, d => d.data.pmi))}`;
     } else {
       document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
       lifetimePaymentOutput.innerText = `${fmt.format(0)}`;
@@ -520,13 +520,13 @@ const buildPaymentScheduleChart =
                         .offset(d3.stackOffsetNone)
                         .value((d, key) => d.data[key])(schedule))
               .join('path')
-              .style('fill', (d) => fieldColor(d.key))
+              .style('fill', d => fieldColor(d.key))
               .attr(
                   'd',
                   d3.area<d3.SeriesPoint<PaymentRecord>>()
-                      .x((d) => x(d.data.month))
-                      .y0((d) => y(d['0']))
-                      .y1((d) => y(d['1'])),
+                      .x(d => x(d.data.month))
+                      .y0(d => y(d['0']))
+                      .y1(d => y(d['1'])),
               );
 
           makeTooltip(svg, schedule, keys, x, (mouseY, datum) => {
@@ -541,7 +541,7 @@ const buildPaymentScheduleChart =
             return keys.length - 1;
           });
 
-          makeLegend(svg, width, (d) => fieldColor(d), keys);
+          makeLegend(svg, width, d => fieldColor(d), keys);
         };
 
 const buildCumulativeChart =
@@ -565,28 +565,28 @@ const buildCumulativeChart =
 
       const area = d3.area<{month: number, value: number}>()
                        .curve(d3.curveMonotoneX)
-                       .x((d) => x(d.month))
+                       .x(d => x(d.month))
                        .y0(y(0))
-                       .y1((d) => y(d.value));
+                       .y1(d => y(d.value));
 
       svg.selectAll('.area')
-          .data(keys.map((key) => ({
+          .data(keys.map(key => ({
                            key,
-                           values: data.map((datum) => ({
+                           values: data.map(datum => ({
                                               month: datum.month,
                                               value: datum.data[key],
                                             })),
                          })))
           .enter()
           .append('g')
-          .attr('class', (d) => `area ${d.key}`)
+          .attr('class', d => `area ${d.key}`)
           .append('path')
-          .attr('d', (d) => area(d.values))
-          .style('fill', (d) => transparent(fieldColor(d.key)));
+          .attr('d', d => area(d.values))
+          .style('fill', d => transparent(fieldColor(d.key)));
 
       makeTooltip(svg, data, keys, x, (mouseY, datum) => {
         const yTarget = y.invert(mouseY);
-        const sorted = keys.map((key) => ({key, value: datum.data[key]}))
+        const sorted = keys.map(key => ({key, value: datum.data[key]}))
                            .sort((a, b) => a.value - b.value);
         const elt = sorted.find(
             (elt, idx, arr) => yTarget <= elt.value &&
@@ -596,7 +596,7 @@ const buildCumulativeChart =
         return keys.indexOf(elt.key);
       });
 
-      makeLegend(svg, width, (d) => transparent(fieldColor(d)), keys);
+      makeLegend(svg, width, d => transparent(fieldColor(d)), keys);
     };
 
 const transparent = (color: string): string => `${color}aa`;
@@ -625,7 +625,7 @@ const makeAxes =
       y: d3.ScaleLinear<number, number, never>,
     } => {
       // Add X axis
-      const ext = d3.extent(data, (d) => d.month) as [number, number];
+      const ext = d3.extent(data, d => d.month) as [number, number];
       const x = d3.scaleLinear().domain(ext).range([
         0,
         width,
@@ -644,8 +644,7 @@ const makeAxes =
           d3.scaleLinear()
               .domain([
                 0,
-                d3.max(
-                    data, (d) => yDomainFn(keys.map((k) => d.data[k])) * 1.25)!,
+                d3.max(data, d => yDomainFn(keys.map(k => d.data[k])) * 1.25)!,
               ])
               .range([height, 0]);
       svg.append('g').call(d3.axisLeft(y));
@@ -678,7 +677,7 @@ const makeTooltip =
 
         const value =
             keys.map(
-                    (k) => `${fieldDisplay(k)}: ${fmt.format(datum.data[k])}` +
+                    k => `${fieldDisplay(k)}: ${fmt.format(datum.data[k])}` +
                         '\n')
                 .join('') +
             `Month: ${formatMonthNum(datum.month)}`;
@@ -707,17 +706,16 @@ const makeTooltip =
                              .attr('stroke', 'black');
 
             const text = g.selectAll('text').data([null]).join('text').call(
-                (text) =>
-                    text.selectAll('tspan')
-                        .data((value + '').split(/\n/))
-                        .join('tspan')
-                        .attr('x', 0)
-                        .attr('y', (_, i) => `${i * 1.1}em`)
-                        .style(
-                            'font-weight',
-                            (_, i) => i === paymentTypeIdx ? 'bold' : null,
-                            )
-                        .text((d) => d),
+                text => text.selectAll('tspan')
+                            .data((value + '').split(/\n/))
+                            .join('tspan')
+                            .attr('x', 0)
+                            .attr('y', (_, i) => `${i * 1.1}em`)
+                            .style(
+                                'font-weight',
+                                (_, i) => i === paymentTypeIdx ? 'bold' : null,
+                                )
+                            .text(d => d),
             );
 
             const {y, width: w, height: h} =
@@ -753,7 +751,7 @@ const makeLegend =
           .data(keys)
           .enter()
           .append('text')
-          .text((d) => fieldDisplay(d))
+          .text(d => fieldDisplay(d))
           .attr('x', 18)
           .attr('y', (_, i) => i * 18)
           .attr('text-anchor', 'start')
@@ -974,7 +972,7 @@ const countBurndownMonths =
           continue;
         }
         const data = record.data;
-        const due = d3.sum(keys.map((k) => data[k])) + ctx.monthlyDebt;
+        const due = d3.sum(keys.map(k => data[k])) + ctx.monthlyDebt;
         if (due >= assets) return i;
         assets -= due;
       }
