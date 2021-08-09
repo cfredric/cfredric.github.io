@@ -109,6 +109,9 @@ const totalPaidSoFarOutput =
     document.getElementById('total-paid-so-far-output')!;
 const equityOwnedSoFarOutput =
     document.getElementById('equity-owned-so-far-output')!;
+const totalLoanOwedOutput = document.getElementById('total-loan-owed-output')!;
+const remainingEquityOutput =
+    document.getElementById('remaining-equity-to-pay-for-output')!;
 const debtToIncomeOutput =
     document.getElementById('debt-to-income-ratio-output')!;
 const firedTomorrowCountdownOutput =
@@ -373,20 +376,38 @@ const setContents = (ctx: Context): void => {
         () => `${
             fmt.format(
                 (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-                (() => keys.reduce(
-                     (sum: number, key: PaymentType) => sum +
-                         cumulativeSums[ctx.paymentsAlreadyMade]!.data[key],
-                     0))())}`);
+                sumAtIndex(cumulativeSums, keys, ctx.paymentsAlreadyMade))}`);
 
+    const absoluteEquityOwned = (ctx.alreadyClosed ? ctx.downPayment : 0) +
+        cumulativeSums[ctx.paymentsAlreadyMade]!.data['principal'];
     showConditionalOutput(
         !!ctx.paymentsAlreadyMade || ctx.alreadyClosed,
         'equity-owned-so-far-div', equityOwnedSoFarOutput, () => {
-          const absoluteEquityOwned =
-              (ctx.alreadyClosed ? ctx.downPayment : 0) +
-              cumulativeSums[ctx.paymentsAlreadyMade]!.data['principal'];
           return `${pctFmt.format(absoluteEquityOwned / ctx.homeValue)} (${
               fmt.format(absoluteEquityOwned)})`;
         });
+
+    showConditionalOutput(
+        !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-loan-owed-div',
+        totalLoanOwedOutput, () => {
+          const totalPrincipalAndInterestPaid =
+              (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
+              sumAtIndex(
+                  cumulativeSums, ['principal', 'interest'],
+                  ctx.paymentsAlreadyMade);
+          const totalPrincipalAndInterestToPay = ctx.closingCost +
+              sumAtIndex(cumulativeSums, ['principal', 'interest'],
+                         cumulativeSums.length - 1);
+          return `${
+              fmt.format(
+                  totalPrincipalAndInterestToPay -
+                  totalPrincipalAndInterestPaid)}`;
+        });
+
+    showConditionalOutput(
+        !!ctx.paymentsAlreadyMade || ctx.alreadyClosed,
+        'remaining-equity-to-pay-for-div', remainingEquityOutput,
+        () => `${fmt.format(ctx.price - absoluteEquityOwned)}`);
 
     showConditionalOutput(
         !!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput,
@@ -405,6 +426,12 @@ const setContents = (ctx: Context): void => {
               ctx.pointsPurchased * (ctx.price - ctx.downPayment) / 100,
           )}`;
 };
+
+const sumAtIndex =
+    (data: readonly PaymentRecord[], keys: readonly PaymentType[],
+     idx: number) =>
+        keys.reduce(
+            (sum: number, key: PaymentType) => sum + data[idx]!.data[key], 0);
 
 const monthlyFormula = (P: number, r: number, n: number): number =>
     (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
@@ -933,19 +960,19 @@ const deleteCookie = (name: string) => {
 const cumulativeSumByFields =
     (data: readonly PaymentRecord[], fields: readonly PaymentType[]):
         PaymentRecord[] => {
-          const results = new Array<PaymentRecord>(data.length);
-          const carriedValue = (idx: number, key: PaymentType) => {
-            if (!fields.includes(key)) return data[idx]!.data[key];
-            if (idx === 0) return 0;
-            return results[idx - 1]!.data[key] + data[idx]!.data[key];
-          };
+          const results = new Array<PaymentRecord>(data.length + 1);
+          results[0] = {month: 0, data: {} as Record<PaymentType, number>};
+          for (const k of fields) {
+            results[0].data[k] = 0;
+          }
           for (const [idx, datum] of data.entries()) {
-            results[idx] = {
+            results[idx + 1] = {
               month: datum.month,
               data: {} as Record<PaymentType, number>
             };
             for (const field of fields) {
-              results[idx]!.data[field] = carriedValue(idx, field);
+              results[idx + 1]!.data[field] =
+                  data[idx]!.data[field] + results[idx]!.data[field];
             }
           }
           return results;

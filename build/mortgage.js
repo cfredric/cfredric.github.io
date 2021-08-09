@@ -88,6 +88,8 @@ var data = [];
     var purchasePaymentOutput = document.getElementById('purchase-payment-output');
     var totalPaidSoFarOutput = document.getElementById('total-paid-so-far-output');
     var equityOwnedSoFarOutput = document.getElementById('equity-owned-so-far-output');
+    var totalLoanOwedOutput = document.getElementById('total-loan-owed-output');
+    var remainingEquityOutput = document.getElementById('remaining-equity-to-pay-for-output');
     var debtToIncomeOutput = document.getElementById('debt-to-income-ratio-output');
     var firedTomorrowCountdownOutput = document.getElementById('fired-tomorrow-countdown-output');
     var keys = [
@@ -289,13 +291,21 @@ var data = [];
             }
             showConditionalOutput(!!ctx.totalAssets, 'fired-tomorrow-countdown-div', firedTomorrowCountdownOutput, function () { return "" + formatMonthNum(countBurndownMonths(ctx, schedule_1)); });
             showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-paid-so-far-div', totalPaidSoFarOutput, function () { return "" + fmt.format((ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-                (function () { return keys.reduce(function (sum, key) { return sum +
-                    cumulativeSums_1[ctx.paymentsAlreadyMade].data[key]; }, 0); })()); });
+                sumAtIndex(cumulativeSums_1, keys, ctx.paymentsAlreadyMade)); });
+            var absoluteEquityOwned_1 = (ctx.alreadyClosed ? ctx.downPayment : 0) +
+                cumulativeSums_1[ctx.paymentsAlreadyMade].data['principal'];
             showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'equity-owned-so-far-div', equityOwnedSoFarOutput, function () {
-                var absoluteEquityOwned = (ctx.alreadyClosed ? ctx.downPayment : 0) +
-                    cumulativeSums_1[ctx.paymentsAlreadyMade].data['principal'];
-                return pctFmt.format(absoluteEquityOwned / ctx.homeValue) + " (" + fmt.format(absoluteEquityOwned) + ")";
+                return pctFmt.format(absoluteEquityOwned_1 / ctx.homeValue) + " (" + fmt.format(absoluteEquityOwned_1) + ")";
             });
+            showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-loan-owed-div', totalLoanOwedOutput, function () {
+                var totalPrincipalAndInterestPaid = (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
+                    sumAtIndex(cumulativeSums_1, ['principal', 'interest'], ctx.paymentsAlreadyMade);
+                var totalPrincipalAndInterestToPay = ctx.closingCost +
+                    sumAtIndex(cumulativeSums_1, ['principal', 'interest'], cumulativeSums_1.length - 1);
+                return "" + fmt.format(totalPrincipalAndInterestToPay -
+                    totalPrincipalAndInterestPaid);
+            });
+            showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'remaining-equity-to-pay-for-div', remainingEquityOutput, function () { return "" + fmt.format(ctx.price - absoluteEquityOwned_1); });
             showConditionalOutput(!!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput, function () { return "" + pctFmt.format((ctx.monthlyDebt + M_1 + extras_1 + ctx.pmi) / ctx.annualIncome *
                 12); });
         }
@@ -305,6 +315,9 @@ var data = [];
         }
         purchasePaymentOutput.innerText = "" + fmt.format(ctx.downPayment + ctx.closingCost +
             ctx.pointsPurchased * (ctx.price - ctx.downPayment) / 100);
+    };
+    var sumAtIndex = function (data, keys, idx) {
+        return keys.reduce(function (sum, key) { return sum + data[idx].data[key]; }, 0);
     };
     var monthlyFormula = function (P, r, n) {
         return (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
@@ -792,48 +805,56 @@ var data = [];
         document.cookie = name + "=0;" + COOKIE_SUFFIX_DELETE;
     };
     var cumulativeSumByFields = function (data, fields) {
-        var e_10, _a, e_11, _b;
-        var results = new Array(data.length);
-        var carriedValue = function (idx, key) {
-            if (!fields.includes(key))
-                return data[idx].data[key];
-            if (idx === 0)
-                return 0;
-            return results[idx - 1].data[key] + data[idx].data[key];
-        };
+        var e_10, _a, e_11, _b, e_12, _c;
+        var results = new Array(data.length + 1);
+        results[0] = { month: 0, data: {} };
         try {
-            for (var _c = __values(data.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
-                var _e = __read(_d.value, 2), idx = _e[0], datum = _e[1];
-                results[idx] = {
-                    month: datum.month,
-                    data: {}
-                };
-                try {
-                    for (var fields_1 = (e_11 = void 0, __values(fields)), fields_1_1 = fields_1.next(); !fields_1_1.done; fields_1_1 = fields_1.next()) {
-                        var field = fields_1_1.value;
-                        results[idx].data[field] = carriedValue(idx, field);
-                    }
-                }
-                catch (e_11_1) { e_11 = { error: e_11_1 }; }
-                finally {
-                    try {
-                        if (fields_1_1 && !fields_1_1.done && (_b = fields_1.return)) _b.call(fields_1);
-                    }
-                    finally { if (e_11) throw e_11.error; }
-                }
+            for (var fields_1 = __values(fields), fields_1_1 = fields_1.next(); !fields_1_1.done; fields_1_1 = fields_1.next()) {
+                var k = fields_1_1.value;
+                results[0].data[k] = 0;
             }
         }
         catch (e_10_1) { e_10 = { error: e_10_1 }; }
         finally {
             try {
-                if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
+                if (fields_1_1 && !fields_1_1.done && (_a = fields_1.return)) _a.call(fields_1);
             }
             finally { if (e_10) throw e_10.error; }
+        }
+        try {
+            for (var _d = __values(data.entries()), _e = _d.next(); !_e.done; _e = _d.next()) {
+                var _f = __read(_e.value, 2), idx = _f[0], datum = _f[1];
+                results[idx + 1] = {
+                    month: datum.month,
+                    data: {}
+                };
+                try {
+                    for (var fields_2 = (e_12 = void 0, __values(fields)), fields_2_1 = fields_2.next(); !fields_2_1.done; fields_2_1 = fields_2.next()) {
+                        var field = fields_2_1.value;
+                        results[idx + 1].data[field] =
+                            data[idx].data[field] + results[idx].data[field];
+                    }
+                }
+                catch (e_12_1) { e_12 = { error: e_12_1 }; }
+                finally {
+                    try {
+                        if (fields_2_1 && !fields_2_1.done && (_c = fields_2.return)) _c.call(fields_2);
+                    }
+                    finally { if (e_12) throw e_12.error; }
+                }
+            }
+        }
+        catch (e_11_1) { e_11 = { error: e_11_1 }; }
+        finally {
+            try {
+                if (_e && !_e.done && (_b = _d.return)) _b.call(_d);
+            }
+            finally { if (e_11) throw e_11.error; }
         }
         return results;
     };
     var countSatisfying = function (data, predicate) {
-        var e_12, _a;
+        var e_13, _a;
         var count = 0;
         try {
             for (var data_1 = __values(data), data_1_1 = data_1.next(); !data_1_1.done; data_1_1 = data_1.next()) {
@@ -843,17 +864,17 @@ var data = [];
                 }
             }
         }
-        catch (e_12_1) { e_12 = { error: e_12_1 }; }
+        catch (e_13_1) { e_13 = { error: e_13_1 }; }
         finally {
             try {
                 if (data_1_1 && !data_1_1.done && (_a = data_1.return)) _a.call(data_1);
             }
-            finally { if (e_12) throw e_12.error; }
+            finally { if (e_13) throw e_13.error; }
         }
         return count;
     };
     var countBurndownMonths = function (ctx, schedule) {
-        var e_13, _a;
+        var e_14, _a;
         var assets = ctx.totalAssets;
         if (!ctx.alreadyClosed) {
             assets -= ctx.downPayment + ctx.closingCost;
@@ -876,12 +897,12 @@ var data = [];
                     return state_1.value;
             }
         }
-        catch (e_13_1) { e_13 = { error: e_13_1 }; }
+        catch (e_14_1) { e_14 = { error: e_14_1 }; }
         finally {
             try {
                 if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
             }
-            finally { if (e_13) throw e_13.error; }
+            finally { if (e_14) throw e_14.error; }
         }
         return schedule.length;
     };
