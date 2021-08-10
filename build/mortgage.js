@@ -49,49 +49,61 @@ var data = [];
         var min = _a.min, max = _a.max;
         return Math.max(min, Math.min(max, x));
     };
-    var priceInput = document.getElementById('price-input');
-    var homeValueInput = document.getElementById('home-value-input');
-    var homeValueHintOutput = document.getElementById('home-value-hint');
-    var hoaInput = document.getElementById('hoa-input');
-    var downPaymentPercentageInput = document.getElementById('down-payment-percentage-input');
-    var downPaymentAbsoluteInput = document.getElementById('down-payment-absolute-input');
-    var interestRateInput = document.getElementById('interest-rate-input');
-    var interestRateHintOutput = document.getElementById('interest-rate-hint');
-    var pointsPurchasedInput = document.getElementById('points-purchased-input');
-    var pointValueInput = document.getElementById('point-value-input');
-    var pointValueHintOutput = document.getElementById('point-value-hint');
-    var mortgageInsuranceInput = document.getElementById('mortgage-insurance-input');
-    var pmiEquityPercentageInput = document.getElementById('mortgage-insurance-equity-percentage-input');
-    var pmiEquityPercentageHintOutput = document.getElementById('mortgage-insurance-equity-percent-hint');
-    var propertyTaxAbsoluteInput = document.getElementById('property-tax-absolute-input');
-    var propertyTaxPercentageInput = document.getElementById('property-tax-percentage-input');
-    var propertyTaxHintOutput = document.getElementById('property-tax-percentage-hint');
-    var residentialExemptionSavingsInput = document.getElementById('residential-exemption-savings-input');
-    var residentialExemptionDeductionInput = document.getElementById('residential-exemption-deduction-input');
-    var residentialExemptionHintOutput = document.getElementById('residential-exemption-hint');
-    var homeownersInsuranceInput = document.getElementById('homeowners-insurance-input');
-    var closingCostInput = document.getElementById('closing-cost-input');
-    var mortgageTermInput = document.getElementById('mortgage-term-input');
-    var mortgageTermHintOutput = document.getElementById('mortgage-term-hint');
-    var annualIncomeInput = document.getElementById('annual-income-input');
-    var monthlyDebtInput = document.getElementById('monthly-debt-input');
-    var totalAssetsInput = document.getElementById('total-assets-input');
-    var alreadyClosedInput = document.getElementById('already-closed-input');
-    var paymentsAlreadyMadeInput = document.getElementById('payments-already-made-input');
-    var downPaymentHintOutput = document.getElementById('down-payment-hint');
-    var loanAmountOutput = document.getElementById('loan-amount-output');
-    var principalAndInterestOutput = document.getElementById('principal-and-interest-output');
-    var monthlyPaymentAmountOutput = document.getElementById('monthly-payment-output');
-    var monthlyPaymentPmiOutput = document.getElementById('monthly-payment-pmi-output');
-    var pmiPaymentTimelineOutput = document.getElementById('pmi-payment-timeline-output');
-    var lifetimePaymentOutput = document.getElementById('lifetime-payment-output');
-    var purchasePaymentOutput = document.getElementById('purchase-payment-output');
-    var totalPaidSoFarOutput = document.getElementById('total-paid-so-far-output');
-    var equityOwnedSoFarOutput = document.getElementById('equity-owned-so-far-output');
-    var totalLoanOwedOutput = document.getElementById('total-loan-owed-output');
-    var remainingEquityOutput = document.getElementById('remaining-equity-to-pay-for-output');
-    var debtToIncomeOutput = document.getElementById('debt-to-income-ratio-output');
-    var firedTomorrowCountdownOutput = document.getElementById('fired-tomorrow-countdown-output');
+    var getInputElt = function (id) {
+        var elt = document.getElementById(id);
+        if (!(elt instanceof HTMLInputElement))
+            throw new Error(id + " element is not an HTMLInputElement");
+        return elt;
+    };
+    var getOutputElt = function (id) {
+        var elt = document.getElementById(id);
+        if (!(elt instanceof HTMLElement))
+            throw new Error(id + " element is not an HTMLElement");
+        return elt;
+    };
+    var priceInput = getInputElt('price-input');
+    var homeValueInput = getInputElt('home-value-input');
+    var hoaInput = getInputElt('hoa-input');
+    var downPaymentPercentageInput = getInputElt('down-payment-percentage-input');
+    var downPaymentAbsoluteInput = getInputElt('down-payment-absolute-input');
+    var interestRateInput = getInputElt('interest-rate-input');
+    var pointsPurchasedInput = getInputElt('points-purchased-input');
+    var pointValueInput = getInputElt('point-value-input');
+    var mortgageInsuranceInput = getInputElt('mortgage-insurance-input');
+    var pmiEquityPercentageInput = getInputElt('mortgage-insurance-equity-percentage-input');
+    var propertyTaxAbsoluteInput = getInputElt('property-tax-absolute-input');
+    var propertyTaxPercentageInput = getInputElt('property-tax-percentage-input');
+    var residentialExemptionSavingsInput = getInputElt('residential-exemption-savings-input');
+    var residentialExemptionDeductionInput = getInputElt('residential-exemption-deduction-input');
+    var homeownersInsuranceInput = getInputElt('homeowners-insurance-input');
+    var closingCostInput = getInputElt('closing-cost-input');
+    var mortgageTermInput = getInputElt('mortgage-term-input');
+    var annualIncomeInput = getInputElt('annual-income-input');
+    var monthlyDebtInput = getInputElt('monthly-debt-input');
+    var totalAssetsInput = getInputElt('total-assets-input');
+    var alreadyClosedInput = getInputElt('already-closed-input');
+    var paymentsAlreadyMadeInput = getInputElt('payments-already-made-input');
+    var homeValueHintOutput = getOutputElt('home-value-hint');
+    var interestRateHintOutput = getOutputElt('interest-rate-hint');
+    var pointValueHintOutput = getOutputElt('point-value-hint');
+    var pmiEquityPercentageHintOutput = getOutputElt('mortgage-insurance-equity-percent-hint');
+    var propertyTaxHintOutput = getOutputElt('property-tax-percentage-hint');
+    var residentialExemptionHintOutput = getOutputElt('residential-exemption-hint');
+    var mortgageTermHintOutput = getOutputElt('mortgage-term-hint');
+    var downPaymentHintOutput = getOutputElt('down-payment-hint');
+    var loanAmountOutput = getOutputElt('loan-amount-output');
+    var principalAndInterestOutput = getOutputElt('principal-and-interest-output');
+    var monthlyPaymentAmountOutput = getOutputElt('monthly-payment-output');
+    var monthlyPaymentPmiOutput = getOutputElt('monthly-payment-pmi-output');
+    var pmiPaymentTimelineOutput = getOutputElt('pmi-payment-timeline-output');
+    var lifetimePaymentOutput = getOutputElt('lifetime-payment-output');
+    var purchasePaymentOutput = getOutputElt('purchase-payment-output');
+    var totalPaidSoFarOutput = getOutputElt('total-paid-so-far-output');
+    var equityOwnedSoFarOutput = getOutputElt('equity-owned-so-far-output');
+    var totalLoanOwedOutput = getOutputElt('total-loan-owed-output');
+    var remainingEquityOutput = getOutputElt('remaining-equity-to-pay-for-output');
+    var debtToIncomeOutput = getOutputElt('debt-to-income-ratio-output');
+    var firedTomorrowCountdownOutput = getOutputElt('fired-tomorrow-countdown-output');
     var keys = [
         'principal',
         'interest',
@@ -270,9 +282,9 @@ var data = [];
             monthlyPaymentAmountOutput.innerText = "" + fmt.format(M_1 + extras_1);
             monthlyPaymentPmiOutput.innerText = "" + fmt.format(M_1 + extras_1 + ctx.pmi);
             var showPmi = ctx.pmi && ctx.downPaymentPct < ctx.pmiEquityPct;
-            document
-                .getElementById('monthly-payment-without-pmi-span').style.display = showPmi ? '' : 'none';
-            document.getElementById('monthly-payment-pmi-div').style.display =
+            getOutputElt('monthly-payment-without-pmi-span')
+                .style.display = showPmi ? '' : 'none';
+            getOutputElt('monthly-payment-pmi-div').style.display =
                 showPmi ? '' : 'none';
             var schedule_1 = calculatePaymentSchedule(ctx, M_1);
             data = schedule_1;
@@ -323,7 +335,7 @@ var data = [];
         return (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
     };
     var showConditionalOutput = function (condition, containerName, outputElt, generateOutput) {
-        var container = document.getElementById(containerName);
+        var container = getOutputElt(containerName);
         var text;
         var display;
         if (condition) {
@@ -581,7 +593,7 @@ var data = [];
         monthlyPaymentPmiOutput.innerText = '';
         lifetimePaymentOutput.innerText = '';
         debtToIncomeOutput.innerText = '';
-        document.getElementById('debt-to-income-ratio-div').style.display = 'none';
+        getOutputElt('debt-to-income-ratio-div').style.display = 'none';
         (_a = document.querySelector('#schedule_viz > svg:first-of-type')) === null || _a === void 0 ? void 0 : _a.remove();
         (_b = document.querySelector('#cumulative_viz > svg:first-of-type')) === null || _b === void 0 ? void 0 : _b.remove();
     };
