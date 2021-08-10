@@ -838,7 +838,7 @@ var data = [];
                 try {
                     for (var fields_2 = (e_12 = void 0, __values(fields)), fields_2_1 = fields_2.next(); !fields_2_1.done; fields_2_1 = fields_2.next()) {
                         var field = fields_2_1.value;
-                        newData[field] = data[idx].data[field] + results[idx].data[field];
+                        newData[field] = datum.data[field] + results[idx].data[field];
                     }
                 }
                 catch (e_12_1) { e_12 = { error: e_12_1 }; }

@@ -943,25 +943,25 @@ const deleteCookie = (name: string) => {
 // Returns an array where the ith element is an object with the amount paid of
 // each type before (and excluding) the ith month.
 const cumulativeSumByFields =
-    (data: readonly PaymentRecord[],
-     fields: readonly PaymentType[]): PaymentRecord[] => {
-      const results = new Array<PaymentRecord>(data.length + 1);
-      results[0] = {month: 0, data: {} as Record<PaymentType, number>};
-      for (const k of fields) {
-        results[0].data[k] = 0;
-      }
-      for (const [idx, datum] of data.entries()) {
-        const newData = {} as Record<PaymentType, number>;
-        for (const field of fields) {
-          newData[field] = data[idx]!.data[field] + results[idx]!.data[field];
-        }
-        results[idx + 1] = {
-          data: newData,
-          month: datum.month,
+    (data: readonly PaymentRecord[], fields: readonly PaymentType[]):
+        PaymentRecord[] => {
+          const results = new Array<PaymentRecord>(data.length + 1);
+          results[0] = {month: 0, data: {} as Record<PaymentType, number>};
+          for (const k of fields) {
+            results[0].data[k] = 0;
+          }
+          for (const [idx, datum] of data.entries()) {
+            const newData = {} as Record<PaymentType, number>;
+            for (const field of fields) {
+              newData[field] = datum.data[field] + results[idx]!.data[field];
+            }
+            results[idx + 1] = {
+              data: newData,
+              month: datum.month,
+            };
+          }
+          return results;
         };
-      }
-      return results;
-    };
 
 const countSatisfying = <T,>(data: readonly T[], predicate: (t: T) => boolean): number => {
     let count = 0;
