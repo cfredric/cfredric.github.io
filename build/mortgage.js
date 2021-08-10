@@ -824,15 +824,11 @@ var data = [];
         try {
             for (var _d = __values(data.entries()), _e = _d.next(); !_e.done; _e = _d.next()) {
                 var _f = __read(_e.value, 2), idx = _f[0], datum = _f[1];
-                results[idx + 1] = {
-                    month: datum.month,
-                    data: {}
-                };
+                var newData = {};
                 try {
                     for (var fields_2 = (e_12 = void 0, __values(fields)), fields_2_1 = fields_2.next(); !fields_2_1.done; fields_2_1 = fields_2.next()) {
                         var field = fields_2_1.value;
-                        results[idx + 1].data[field] =
-                            data[idx].data[field] + results[idx].data[field];
+                        newData[field] = data[idx].data[field] + results[idx].data[field];
                     }
                 }
                 catch (e_12_1) { e_12 = { error: e_12_1 }; }
@@ -842,6 +838,10 @@ var data = [];
                     }
                     finally { if (e_12) throw e_12.error; }
                 }
+                results[idx + 1] = {
+                    data: newData,
+                    month: datum.month,
+                };
             }
         }
         catch (e_11_1) { e_11 = { error: e_11_1 }; }
