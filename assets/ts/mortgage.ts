@@ -377,14 +377,12 @@ const setContents = (ctx: Context): void => {
     showConditionalOutput(
         !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-loan-owed-div',
         totalLoanOwedOutput, () => {
-          const totalPrincipalAndInterestPaid =
-              (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-              sumAtIndex(
-                  cumulativeSums, ['principal', 'interest'],
-                  ctx.paymentsAlreadyMade);
-          const totalPrincipalAndInterestToPay = ctx.closingCost +
-              sumAtIndex(cumulativeSums, ['principal', 'interest'],
-                         cumulativeSums.length - 1);
+          const totalPrincipalAndInterestPaid = sumAtIndex(
+              cumulativeSums, ['principal', 'interest'],
+              ctx.paymentsAlreadyMade);
+          const totalPrincipalAndInterestToPay = sumAtIndex(
+              cumulativeSums, ['principal', 'interest'],
+              cumulativeSums.length - 1);
           return `${
               fmt.format(
                   totalPrincipalAndInterestToPay -

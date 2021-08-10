@@ -310,10 +310,8 @@ var data = [];
                 return pctFmt.format(absoluteEquityOwned_1 / ctx.homeValue) + " (" + fmt.format(absoluteEquityOwned_1) + ")";
             });
             showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-loan-owed-div', totalLoanOwedOutput, function () {
-                var totalPrincipalAndInterestPaid = (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-                    sumAtIndex(cumulativeSums_1, ['principal', 'interest'], ctx.paymentsAlreadyMade);
-                var totalPrincipalAndInterestToPay = ctx.closingCost +
-                    sumAtIndex(cumulativeSums_1, ['principal', 'interest'], cumulativeSums_1.length - 1);
+                var totalPrincipalAndInterestPaid = sumAtIndex(cumulativeSums_1, ['principal', 'interest'], ctx.paymentsAlreadyMade);
+                var totalPrincipalAndInterestToPay = sumAtIndex(cumulativeSums_1, ['principal', 'interest'], cumulativeSums_1.length - 1);
                 return "" + fmt.format(totalPrincipalAndInterestToPay -
                     totalPrincipalAndInterestPaid);
             });
