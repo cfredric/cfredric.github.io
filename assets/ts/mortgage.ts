@@ -414,9 +414,7 @@ const setContents = (ctx: Context): void => {
 
 const sumAtIndex =
     (data: readonly PaymentRecord[], keys: readonly PaymentType[],
-     idx: number) =>
-        keys.reduce(
-            (sum: number, key: PaymentType) => sum + data[idx]!.data[key], 0);
+     idx: number) => d3.sum(keys.map(key => data[idx]!.data[key]));
 
 const monthlyFormula = (P: number, r: number, n: number): number =>
     (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
@@ -632,7 +630,7 @@ const makeAxes =
     (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
      data: readonly PaymentRecord[], keys: readonly PaymentType[],
      width: number, height: number, margin: Margin, yLabel: string,
-     yDomainFn: (ys: number[]) => number): {
+     yDomainFn: (ys: readonly number[]) => number): {
       x: d3.ScaleLinear<number, number, never>,
       y: d3.ScaleLinear<number, number, never>,
     } => {

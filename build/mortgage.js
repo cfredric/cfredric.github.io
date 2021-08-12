@@ -326,9 +326,7 @@ var data = [];
         purchasePaymentOutput.innerText = "" + fmt.format(ctx.downPayment + ctx.closingCost +
             ctx.pointsPurchased * (ctx.price - ctx.downPayment) / 100);
     };
-    var sumAtIndex = function (data, keys, idx) {
-        return keys.reduce(function (sum, key) { return sum + data[idx].data[key]; }, 0);
-    };
+    var sumAtIndex = function (data, keys, idx) { return d3.sum(keys.map(function (key) { return data[idx].data[key]; })); };
     var monthlyFormula = function (P, r, n) {
         return (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
     };
