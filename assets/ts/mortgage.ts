@@ -37,6 +37,8 @@ const getOutputElt = (id: string): HTMLElement => {
   return elt;
 };
 
+const clearInputsButton = document.getElementById('clear-inputs-button')!;
+
 // Inputs.
 const priceInput = getInputElt('price-input');
 const homeValueInput = getInputElt('home-value-input');
@@ -118,7 +120,7 @@ const COOKIE_ATTRIBUTES: Readonly<string[]> = [
   'Secure',
   'SameSite=Lax',
   `Domain=${window.location.hostname}`,
-  'Path=/Mortgage/',
+  'Path=/Mortgage',
 ];
 
 const COOKIE_SUFFIX = COOKIE_ATTRIBUTES
@@ -201,6 +203,7 @@ const cookieValueMap: Readonly<Map<HTMLInputElement, InputEntry>> = new Map([
 ]);
 
 const attachListeners = (): void => {
+  clearInputsButton.addEventListener('click', () => void clearInputs());
   const onChange = (elt: HTMLInputElement) => {
     const ctx = new Context();
     showAmountHints(ctx);
@@ -859,6 +862,20 @@ const saveFields = (changed?: HTMLInputElement): void => {
   if (urlChanged) history.pushState({}, '', url.toString());
 };
 
+const clearInputs = () => {
+  const url = new URL(location.href);
+  let urlChanged = false;
+  for (const [elt, entry] of urlParamMap.entries()) {
+    elt.value = '';
+    urlChanged = deleteParam(url, entry.name) || urlChanged;
+  }
+  if (urlChanged) history.pushState({}, '', url.toString());
+  for (const [elt, entry] of cookieValueMap.entries()) {
+    elt.value = '';
+    deleteCookie(entry.name);
+  }
+};
+
 const updateURLParam =
     (url: URL, elt: HTMLInputElement, entry: InputEntry): boolean => {
       if (entry.deprecated) return false;
@@ -876,16 +893,13 @@ const updateURLParam =
         default:
           throw new Error('unreachable');
       }
-      let result;
       if (hasValue) {
-        result = !url.searchParams.has(entry.name) ||
+        const result = !url.searchParams.has(entry.name) ||
             url.searchParams.get(entry.name) !== value;
         url.searchParams.set(entry.name, value);
-      } else {
-        result = url.searchParams.has(entry.name);
-        deleteParam(url, entry.name);
+        return result;
       }
-      return result;
+      return deleteParam(url, entry.name);
     };
 
 const updateCookie =
@@ -906,8 +920,7 @@ const updateCookie =
           throw new Error('unreachable');
       }
       if (hasValue) {
-        document.cookie =
-            `${entry.name}=${encodeURIComponent(value)};${COOKIE_SUFFIX}`;
+        setCookie(entry.name, value);
       } else {
         deleteCookie(entry.name);
       }
@@ -930,8 +943,15 @@ const clearDeprecatedStorage = () => {
   }
 };
 
-const deleteParam = (url: URL, name: string) => {
+
+const deleteParam = (url: URL, name: string): boolean => {
+  const hadValue = url.searchParams.has(name);
   url.searchParams.delete(name);
+  return hadValue;
+};
+
+const setCookie = (name: string, value: string) => {
+  document.cookie = `${name}=${encodeURIComponent(value)};${COOKIE_SUFFIX}`;
 };
 
 const deleteCookie = (name: string) => {

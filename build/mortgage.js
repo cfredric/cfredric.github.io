@@ -61,6 +61,7 @@ var data = [];
             throw new Error(id + " element is not an HTMLElement");
         return elt;
     };
+    var clearInputsButton = document.getElementById('clear-inputs-button');
     var priceInput = getInputElt('price-input');
     var homeValueInput = getInputElt('home-value-input');
     var hoaInput = getInputElt('hoa-input');
@@ -116,7 +117,7 @@ var data = [];
         'Secure',
         'SameSite=Lax',
         "Domain=" + window.location.hostname,
-        'Path=/Mortgage/',
+        'Path=/Mortgage',
     ];
     var COOKIE_SUFFIX = COOKIE_ATTRIBUTES
         .concat([
@@ -188,6 +189,7 @@ var data = [];
     ]);
     var attachListeners = function () {
         var e_1, _a;
+        clearInputsButton.addEventListener('click', function () { return void clearInputs(); });
         var onChange = function (elt) {
             var ctx = new Context();
             showAmountHints(ctx);
@@ -717,6 +719,41 @@ var data = [];
         if (urlChanged)
             history.pushState({}, '', url.toString());
     };
+    var clearInputs = function () {
+        var e_8, _a, e_9, _b;
+        var url = new URL(location.href);
+        var urlChanged = false;
+        try {
+            for (var _c = __values(urlParamMap.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
+                var _e = __read(_d.value, 2), elt = _e[0], entry = _e[1];
+                elt.value = '';
+                urlChanged = deleteParam(url, entry.name) || urlChanged;
+            }
+        }
+        catch (e_8_1) { e_8 = { error: e_8_1 }; }
+        finally {
+            try {
+                if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
+            }
+            finally { if (e_8) throw e_8.error; }
+        }
+        if (urlChanged)
+            history.pushState({}, '', url.toString());
+        try {
+            for (var _f = __values(cookieValueMap.entries()), _g = _f.next(); !_g.done; _g = _f.next()) {
+                var _h = __read(_g.value, 2), elt = _h[0], entry = _h[1];
+                elt.value = '';
+                deleteCookie(entry.name);
+            }
+        }
+        catch (e_9_1) { e_9 = { error: e_9_1 }; }
+        finally {
+            try {
+                if (_g && !_g.done && (_b = _f.return)) _b.call(_f);
+            }
+            finally { if (e_9) throw e_9.error; }
+        }
+    };
     var updateURLParam = function (url, elt, entry) {
         if (entry.deprecated)
             return false;
@@ -734,17 +771,13 @@ var data = [];
             default:
                 throw new Error('unreachable');
         }
-        var result;
         if (hasValue) {
-            result = !url.searchParams.has(entry.name) ||
+            var result = !url.searchParams.has(entry.name) ||
                 url.searchParams.get(entry.name) !== value;
             url.searchParams.set(entry.name, value);
+            return result;
         }
-        else {
-            result = url.searchParams.has(entry.name);
-            deleteParam(url, entry.name);
-        }
-        return result;
+        return deleteParam(url, entry.name);
     };
     var updateCookie = function (elt, entry) {
         if (entry.deprecated)
@@ -764,15 +797,14 @@ var data = [];
                 throw new Error('unreachable');
         }
         if (hasValue) {
-            document.cookie =
-                entry.name + "=" + encodeURIComponent(value) + ";" + COOKIE_SUFFIX;
+            setCookie(entry.name, value);
         }
         else {
             deleteCookie(entry.name);
         }
     };
     var clearDeprecatedStorage = function () {
-        var e_8, _a, e_9, _b;
+        var e_10, _a, e_11, _b;
         var url = new URL(location.href);
         try {
             for (var _c = __values(urlParamMap.values()), _d = _c.next(); !_d.done; _d = _c.next()) {
@@ -782,12 +814,12 @@ var data = [];
                 }
             }
         }
-        catch (e_8_1) { e_8 = { error: e_8_1 }; }
+        catch (e_10_1) { e_10 = { error: e_10_1 }; }
         finally {
             try {
                 if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
             }
-            finally { if (e_8) throw e_8.error; }
+            finally { if (e_10) throw e_10.error; }
         }
         history.pushState({}, '', url.toString());
         try {
@@ -798,22 +830,27 @@ var data = [];
                 }
             }
         }
-        catch (e_9_1) { e_9 = { error: e_9_1 }; }
+        catch (e_11_1) { e_11 = { error: e_11_1 }; }
         finally {
             try {
                 if (_g && !_g.done && (_b = _f.return)) _b.call(_f);
             }
-            finally { if (e_9) throw e_9.error; }
+            finally { if (e_11) throw e_11.error; }
         }
     };
     var deleteParam = function (url, name) {
+        var hadValue = url.searchParams.has(name);
         url.searchParams.delete(name);
+        return hadValue;
+    };
+    var setCookie = function (name, value) {
+        document.cookie = name + "=" + encodeURIComponent(value) + ";" + COOKIE_SUFFIX;
     };
     var deleteCookie = function (name) {
         document.cookie = name + "=0;" + COOKIE_SUFFIX_DELETE;
     };
     var cumulativeSumByFields = function (data, fields) {
-        var e_10, _a, e_11, _b, e_12, _c;
+        var e_12, _a, e_13, _b, e_14, _c;
         var results = new Array(data.length + 1);
         results[0] = { month: 0, data: {} };
         try {
@@ -822,29 +859,29 @@ var data = [];
                 results[0].data[k] = 0;
             }
         }
-        catch (e_10_1) { e_10 = { error: e_10_1 }; }
+        catch (e_12_1) { e_12 = { error: e_12_1 }; }
         finally {
             try {
                 if (fields_1_1 && !fields_1_1.done && (_a = fields_1.return)) _a.call(fields_1);
             }
-            finally { if (e_10) throw e_10.error; }
+            finally { if (e_12) throw e_12.error; }
         }
         try {
             for (var _d = __values(data.entries()), _e = _d.next(); !_e.done; _e = _d.next()) {
                 var _f = __read(_e.value, 2), idx = _f[0], datum = _f[1];
                 var newData = {};
                 try {
-                    for (var fields_2 = (e_12 = void 0, __values(fields)), fields_2_1 = fields_2.next(); !fields_2_1.done; fields_2_1 = fields_2.next()) {
+                    for (var fields_2 = (e_14 = void 0, __values(fields)), fields_2_1 = fields_2.next(); !fields_2_1.done; fields_2_1 = fields_2.next()) {
                         var field = fields_2_1.value;
                         newData[field] = datum.data[field] + results[idx].data[field];
                     }
                 }
-                catch (e_12_1) { e_12 = { error: e_12_1 }; }
+                catch (e_14_1) { e_14 = { error: e_14_1 }; }
                 finally {
                     try {
                         if (fields_2_1 && !fields_2_1.done && (_c = fields_2.return)) _c.call(fields_2);
                     }
-                    finally { if (e_12) throw e_12.error; }
+                    finally { if (e_14) throw e_14.error; }
                 }
                 results[idx + 1] = {
                     data: newData,
@@ -852,17 +889,17 @@ var data = [];
                 };
             }
         }
-        catch (e_11_1) { e_11 = { error: e_11_1 }; }
+        catch (e_13_1) { e_13 = { error: e_13_1 }; }
         finally {
             try {
                 if (_e && !_e.done && (_b = _d.return)) _b.call(_d);
             }
-            finally { if (e_11) throw e_11.error; }
+            finally { if (e_13) throw e_13.error; }
         }
         return results;
     };
     var countSatisfying = function (data, predicate) {
-        var e_13, _a;
+        var e_15, _a;
         var count = 0;
         try {
             for (var data_1 = __values(data), data_1_1 = data_1.next(); !data_1_1.done; data_1_1 = data_1.next()) {
@@ -872,17 +909,17 @@ var data = [];
                 }
             }
         }
-        catch (e_13_1) { e_13 = { error: e_13_1 }; }
+        catch (e_15_1) { e_15 = { error: e_15_1 }; }
         finally {
             try {
                 if (data_1_1 && !data_1_1.done && (_a = data_1.return)) _a.call(data_1);
             }
-            finally { if (e_13) throw e_13.error; }
+            finally { if (e_15) throw e_15.error; }
         }
         return count;
     };
     var countBurndownMonths = function (ctx, schedule) {
-        var e_14, _a;
+        var e_16, _a;
         var assets = ctx.totalAssets;
         if (!ctx.alreadyClosed) {
             assets -= ctx.downPayment + ctx.closingCost;
@@ -905,12 +942,12 @@ var data = [];
                     return state_1.value;
             }
         }
-        catch (e_14_1) { e_14 = { error: e_14_1 }; }
+        catch (e_16_1) { e_16 = { error: e_16_1 }; }
         finally {
             try {
                 if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
             }
-            finally { if (e_14) throw e_14.error; }
+            finally { if (e_16) throw e_16.error; }
         }
         return schedule.length;
     };
