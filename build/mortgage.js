@@ -212,6 +212,7 @@ var data = [];
             }
             finally { if (e_1) throw e_1.error; }
         }
+        window.onpopstate = function () { return void populateFields(); };
     };
     var console_prompt = function () {
         console.log('Play around with the data! ' +
@@ -595,7 +596,7 @@ var data = [];
         (_a = document.querySelector('#schedule_viz > svg:first-of-type')) === null || _a === void 0 ? void 0 : _a.remove();
         (_b = document.querySelector('#cumulative_viz > svg:first-of-type')) === null || _b === void 0 ? void 0 : _b.remove();
     };
-    var initFields = function () {
+    var populateFields = function () {
         var e_4, _a, e_5, _b;
         var url = new URL(location.href);
         var hasValue = false;
@@ -606,16 +607,12 @@ var data = [];
                     case 'text':
                         var value = url.searchParams.get(name_1);
                         hasValue = hasValue || value !== null;
-                        if (value !== null) {
-                            elt.value = decodeURIComponent(value);
-                        }
+                        elt.value = value ? decodeURIComponent(value) : '';
                         break;
                     case 'checkbox':
                         var checked = url.searchParams.has(name_1);
                         hasValue = hasValue || checked;
-                        if (checked) {
-                            elt.checked = checked;
-                        }
+                        elt.checked = checked;
                         break;
                     default:
                         throw new Error('unreachable');
@@ -642,16 +639,12 @@ var data = [];
             switch (elt.type) {
                 case 'text':
                     hasValue = hasValue || savedCookie !== undefined;
-                    if (savedCookie !== undefined) {
-                        elt.value = savedCookie ? savedCookie.value : '';
-                    }
+                    elt.value = savedCookie ? savedCookie.value : '';
                     break;
                 case 'checkbox':
                     var checked = !!savedCookie;
                     hasValue = hasValue || checked;
-                    if (!!savedCookie) {
-                        elt.checked = checked;
-                    }
+                    elt.checked = checked;
                     break;
                 default:
                     throw new Error('unreachable');
@@ -951,7 +944,7 @@ var data = [];
         }
         return schedule.length;
     };
-    initFields();
+    populateFields();
     saveFields();
     clearDeprecatedStorage();
     attachListeners();

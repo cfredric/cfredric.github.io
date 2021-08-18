@@ -213,6 +213,7 @@ const attachListeners = (): void => {
   for (const elt of urlParamMap.keys()) {
     elt.addEventListener('input', () => onChange(elt));
   }
+  window.onpopstate = () => void populateFields();
 };
 
 const console_prompt = () => {
@@ -785,7 +786,7 @@ const clearMonthlyPaymentOutputs = (): void => {
 };
 
 // Reads fields from the URL and from cookies, and populates the UI accordingly.
-const initFields = (): void => {
+const populateFields = (): void => {
   const url = new URL(location.href);
   let hasValue = false;
   for (const [elt, {name}] of urlParamMap.entries()) {
@@ -793,16 +794,12 @@ const initFields = (): void => {
       case 'text':
         const value = url.searchParams.get(name);
         hasValue = hasValue || value !== null;
-        if (value !== null) {
-          elt.value = decodeURIComponent(value);
-        }
+        elt.value = value ? decodeURIComponent(value) : '';
         break;
       case 'checkbox':
         const checked = url.searchParams.has(name);
         hasValue = hasValue || checked;
-        if (checked) {
-          elt.checked = checked;
-        }
+        elt.checked = checked;
         break;
       default:
         throw new Error('unreachable');
@@ -818,16 +815,12 @@ const initFields = (): void => {
     switch (elt.type) {
       case 'text':
         hasValue = hasValue || savedCookie !== undefined;
-        if (savedCookie !== undefined) {
-          elt.value = savedCookie ? savedCookie.value! : '';
-        }
+        elt.value = savedCookie ? savedCookie.value! : '';
         break;
       case 'checkbox':
         const checked = !!savedCookie;
         hasValue = hasValue || checked;
-        if (!!savedCookie) {
-          elt.checked = checked;
-        }
+        elt.checked = checked;
         break;
       default:
         throw new Error('unreachable');
@@ -1009,7 +1002,7 @@ const countBurndownMonths =
       return schedule.length;
     };
 
-initFields();
+populateFields();
 // To support URL param / cookie deprecations cleanly, we write out the UI
 // fields immediately after populating them. This "upgrades" fields that have
 // been moved from URL params to cookies (or vice versa).
