@@ -30,14 +30,14 @@ const getInputElt = (id: string): HTMLInputElement => {
     throw new Error(`${id} element is not an HTMLInputElement`);
   return elt;
 };
-const getOutputElt = (id: string): HTMLElement => {
+const getHtmlElt = (id: string): HTMLElement => {
   const elt = document.getElementById(id);
   if (!(elt instanceof HTMLElement))
     throw new Error(`${id} element is not an HTMLElement`);
   return elt;
 };
 
-const clearInputsButton = document.getElementById('clear-inputs-button')!;
+const clearInputsButton = getHtmlElt('clear-inputs-button');
 
 // Inputs.
 const priceInput = getInputElt('price-input');
@@ -48,9 +48,7 @@ const downPaymentAbsoluteInput = getInputElt('down-payment-absolute-input');
 const interestRateInput = getInputElt('interest-rate-input');
 const pointsPurchasedInput = getInputElt('points-purchased-input');
 const pointValueInput = getInputElt('point-value-input');
-const mortgageInsuranceInput = getInputElt(
-    'mortgage-insurance-input',
-);
+const mortgageInsuranceInput = getInputElt('mortgage-insurance-input');
 const pmiEquityPercentageInput =
     getInputElt('mortgage-insurance-equity-percentage-input');
 const propertyTaxAbsoluteInput = getInputElt('property-tax-absolute-input');
@@ -59,9 +57,7 @@ const residentialExemptionSavingsInput =
     getInputElt('residential-exemption-savings-input');
 const residentialExemptionDeductionInput =
     getInputElt('residential-exemption-deduction-input');
-const homeownersInsuranceInput = getInputElt(
-    'homeowners-insurance-input',
-);
+const homeownersInsuranceInput = getInputElt('homeowners-insurance-input');
 const closingCostInput = getInputElt('closing-cost-input');
 const mortgageTermInput = getInputElt('mortgage-term-input');
 const annualIncomeInput = getInputElt('annual-income-input');
@@ -71,40 +67,29 @@ const alreadyClosedInput = getInputElt('already-closed-input');
 const paymentsAlreadyMadeInput = getInputElt('payments-already-made-input');
 
 // Outputs.
-const homeValueHintOutput = getOutputElt('home-value-hint');
-const interestRateHintOutput = getOutputElt('interest-rate-hint');
-const pointValueHintOutput = getOutputElt('point-value-hint');
+const homeValueHintOutput = getHtmlElt('home-value-hint');
+const interestRateHintOutput = getHtmlElt('interest-rate-hint');
+const pointValueHintOutput = getHtmlElt('point-value-hint');
 const pmiEquityPercentageHintOutput =
-    getOutputElt('mortgage-insurance-equity-percent-hint');
-const propertyTaxHintOutput = getOutputElt('property-tax-percentage-hint');
-const residentialExemptionHintOutput =
-    getOutputElt('residential-exemption-hint');
-const mortgageTermHintOutput = getOutputElt('mortgage-term-hint');
-const downPaymentHintOutput = getOutputElt('down-payment-hint');
-const loanAmountOutput = getOutputElt('loan-amount-output');
-const principalAndInterestOutput =
-    getOutputElt('principal-and-interest-output');
-const monthlyPaymentAmountOutput = getOutputElt(
-    'monthly-payment-output',
-);
-const monthlyPaymentPmiOutput = getOutputElt(
-    'monthly-payment-pmi-output',
-);
-const pmiPaymentTimelineOutput = getOutputElt('pmi-payment-timeline-output');
-const lifetimePaymentOutput = getOutputElt(
-    'lifetime-payment-output',
-);
-const purchasePaymentOutput = getOutputElt(
-    'purchase-payment-output',
-);
-const totalPaidSoFarOutput = getOutputElt('total-paid-so-far-output');
-const equityOwnedSoFarOutput = getOutputElt('equity-owned-so-far-output');
-const totalLoanOwedOutput = getOutputElt('total-loan-owed-output');
-const remainingEquityOutput =
-    getOutputElt('remaining-equity-to-pay-for-output');
-const debtToIncomeOutput = getOutputElt('debt-to-income-ratio-output');
+    getHtmlElt('mortgage-insurance-equity-percent-hint');
+const propertyTaxHintOutput = getHtmlElt('property-tax-percentage-hint');
+const residentialExemptionHintOutput = getHtmlElt('residential-exemption-hint');
+const mortgageTermHintOutput = getHtmlElt('mortgage-term-hint');
+const downPaymentHintOutput = getHtmlElt('down-payment-hint');
+const loanAmountOutput = getHtmlElt('loan-amount-output');
+const principalAndInterestOutput = getHtmlElt('principal-and-interest-output');
+const monthlyPaymentAmountOutput = getHtmlElt('monthly-payment-output');
+const monthlyPaymentPmiOutput = getHtmlElt('monthly-payment-pmi-output');
+const pmiPaymentTimelineOutput = getHtmlElt('pmi-payment-timeline-output');
+const lifetimePaymentOutput = getHtmlElt('lifetime-payment-output');
+const purchasePaymentOutput = getHtmlElt('purchase-payment-output');
+const totalPaidSoFarOutput = getHtmlElt('total-paid-so-far-output');
+const equityOwnedSoFarOutput = getHtmlElt('equity-owned-so-far-output');
+const totalLoanOwedOutput = getHtmlElt('total-loan-owed-output');
+const remainingEquityOutput = getHtmlElt('remaining-equity-to-pay-for-output');
+const debtToIncomeOutput = getHtmlElt('debt-to-income-ratio-output');
 const firedTomorrowCountdownOutput =
-    getOutputElt('fired-tomorrow-countdown-output');
+    getHtmlElt('fired-tomorrow-countdown-output');
 
 const keys = [
   'principal',
@@ -335,12 +320,9 @@ const setContents = (ctx: Context): void => {
     monthlyPaymentAmountOutput.innerText = `${fmt.format(M + extras)}`;
     monthlyPaymentPmiOutput.innerText = `${fmt.format(M + extras + ctx.pmi)}`;
     const showPmi = ctx.pmi && ctx.downPaymentPct < ctx.pmiEquityPct;
-    getOutputElt(
-        'monthly-payment-without-pmi-span',
-        )
-        .style.display = showPmi ? '' : 'none';
-    getOutputElt('monthly-payment-pmi-div').style.display =
+    getHtmlElt('monthly-payment-without-pmi-span').style.display =
         showPmi ? '' : 'none';
+    getHtmlElt('monthly-payment-pmi-div').style.display = showPmi ? '' : 'none';
     const schedule = calculatePaymentSchedule(ctx, M);
     data = schedule;
     buildPaymentScheduleChart(schedule, keys);
@@ -444,7 +426,7 @@ interface Margin {
 const showConditionalOutput =
     (condition: boolean, containerName: string, outputElt: HTMLElement,
      generateOutput: () => string) => {
-      const container = getOutputElt(containerName);
+      const container = getHtmlElt(containerName);
       let text;
       let display;
       if (condition) {
@@ -786,7 +768,7 @@ const clearMonthlyPaymentOutputs = (): void => {
   lifetimePaymentOutput.innerText = '';
 
   debtToIncomeOutput.innerText = '';
-  getOutputElt('debt-to-income-ratio-div').style.display = 'none';
+  getHtmlElt('debt-to-income-ratio-div').style.display = 'none';
 
   document.querySelector('#schedule_viz > svg:first-of-type')?.remove();
   document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
