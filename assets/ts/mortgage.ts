@@ -18,18 +18,23 @@ const hundredthsPctFmt = new Intl.NumberFormat('en-US', {
   style: 'percent',
   maximumFractionDigits: 2,
 });
+// Returns the numeric value of the input element, or 0 if the input was empty.
 const orZero = (elt: HTMLInputElement): number => {
   const num = Number.parseFloat(elt.value);
   return Number.isNaN(num) ? 0 : num;
 };
+// Clamps the input to within the interval [min, max] (inclusive on each end).
 const clamp = (x: number, {min, max}: {min: number, max: number}): number =>
     Math.max(min, Math.min(max, x));
+// Returns the HTMLInputElement with the given ID, or throws an informative
+// error.
 const getInputElt = (id: string): HTMLInputElement => {
   const elt = document.getElementById(id);
   if (!(elt instanceof HTMLInputElement))
     throw new Error(`${id} element is not an HTMLInputElement`);
   return elt;
 };
+// Returns the HTMLElement with the given ID, or throws an informative error.
 const getHtmlElt = (id: string): HTMLElement => {
   const elt = document.getElementById(id);
   if (!(elt instanceof HTMLElement))
@@ -189,6 +194,7 @@ const cookieValueMap: Readonly<Map<HTMLInputElement, InputEntry>> = new Map([
   [totalAssetsInput, {name: 'total_assets'}],
 ]);
 
+// Attaches listeners to react to user input, URL changes.
 const attachListeners = (): void => {
   clearInputsButton.addEventListener('click', () => void clearInputs());
   const onChange = (elt: HTMLInputElement) => {
@@ -303,6 +309,7 @@ class Context {
   }
 }
 
+// Set the contents of all the outputs based on the `ctx`.
 const setContents = (ctx: Context): void => {
   loanAmountOutput.innerText = `${fmt.format(ctx.price - ctx.downPayment)}`;
 
@@ -403,9 +410,11 @@ const setContents = (ctx: Context): void => {
           )}`;
 };
 
+// Sums the given types of payments in a record.
 const sumOfTypes = (data: PaymentRecord, keys: readonly PaymentType[]) =>
     d3.sum(keys.map(key => data[key]));
 
+// Computes the sum of principal + interest to be paid each month of the loan.
 const monthlyFormula = (P: number, r: number, n: number): number =>
     (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
 
@@ -423,6 +432,7 @@ interface Margin {
   right: number;
 }
 
+// Conditionally shows or hides an output.
 const showConditionalOutput =
     (condition: boolean, containerName: string, outputElt: HTMLElement,
      generateOutput: () => string) => {
@@ -440,6 +450,7 @@ const showConditionalOutput =
       container.style.display = display;
     };
 
+// Computes the payment for each month of the loan.
 const calculatePaymentSchedule =
     (ctx: Context, monthlyPayment: number): PaymentRecordWithMonth[] => {
       let equity = ctx.downPayment;
@@ -464,6 +475,7 @@ const calculatePaymentSchedule =
       return schedule;
     };
 
+// Updates the "hints"/previews displayed alongside the input fields.
 const showAmountHints = (ctx: Context): void => {
   homeValueHintOutput.innerText = `(${fmt.format(ctx.homeValue)})`;
   downPaymentHintOutput.innerText = `(${fmt.format(ctx.downPayment)})`;
@@ -481,6 +493,8 @@ const showAmountHints = (ctx: Context): void => {
   mortgageTermHintOutput.innerText = `(${ctx.mortgageTerm} yrs)`;
 };
 
+// Given the X axis and an X mouse coordinate, finds the month that is being
+// hovered over.
 const bisectMonth =
     (data: readonly PaymentRecordWithMonth[], x: d3.ScaleLinear<number, number>,
      mouseX: number): PaymentRecordWithMonth => {
@@ -492,6 +506,7 @@ const bisectMonth =
       return b && month - a.month > b.month - month ? b : a;
     };
 
+// Builds the chart of monthly payments over time.
 const buildPaymentScheduleChart =
     (schedule: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[]):
         void => {
@@ -546,6 +561,7 @@ const buildPaymentScheduleChart =
           makeLegend(svg, width, d => fieldColor(d), keys);
         };
 
+// Builds the chart of cumulative payments over time.
 const buildCumulativeChart =
     (data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[]):
         void => {
@@ -602,11 +618,15 @@ const buildCumulativeChart =
           makeLegend(svg, width, d => transparent(fieldColor(d)), keys);
         };
 
+// Adds an alpha channel to a hex color string to make it translucent.
 const transparent = (color: string): string => `${color}aa`;
 
+// Formats a number of months into an integral number of years and integral
+// number of months.
 const formatMonthNum = (m: number): string =>
     (m >= 12 ? `${Math.floor(m / 12)}y ` : '') + `${m % 12}mo`;
 
+// Creates a figure.
 const makeSvg =
     (divId: string, width: number, height: number, margin: Margin):
         d3.Selection<SVGGElement, unknown, HTMLElement, unknown> => {
@@ -619,6 +639,7 @@ const makeSvg =
           .attr('transform', `translate(${margin.left}, ${margin.top})`);
     };
 
+// Creates axes for the given figure.
 const makeAxes =
     (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
      data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[],
@@ -664,6 +685,7 @@ const makeAxes =
       return {x, y};
     };
 
+// Creates a tooltip for the given figure.
 const makeTooltip =
     (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
      data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[],
@@ -733,6 +755,8 @@ const makeTooltip =
           };
     };
 
+// Creates a legend for the given figure, with the given payment types and
+// corresponding colors.
 const makeLegend =
     (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
      width: number, color: (d: PaymentType) => string,
@@ -761,6 +785,7 @@ const makeLegend =
           .attr('dominant-baseline', 'hanging');
     };
 
+// Clears output elements associated with monthly payments.
 const clearMonthlyPaymentOutputs = (): void => {
   principalAndInterestOutput.innerText = '';
   monthlyPaymentAmountOutput.innerText = '';
@@ -844,6 +869,7 @@ const saveFields = (changed?: HTMLInputElement): void => {
   if (urlChanged) history.pushState({}, '', url.toString());
 };
 
+// Clears all parameters from the `url`, and clears all cookies.
 const clearInputs = () => {
   const url = new URL(location.href);
   let urlChanged = false;
@@ -858,6 +884,7 @@ const clearInputs = () => {
   }
 };
 
+// Updates the value of the given URL parameter in `url`.
 const updateURLParam =
     (url: URL, elt: HTMLInputElement, entry: InputEntry): boolean => {
       if (entry.deprecated) return false;
@@ -884,6 +911,7 @@ const updateURLParam =
       return deleteParam(url, entry.name);
     };
 
+// Updates the value of the given cookie.
 const updateCookie =
     (elt: HTMLInputElement, entry: InputEntry) => {
       if (entry.deprecated) return;
@@ -911,31 +939,35 @@ const updateCookie =
 // Clears out deprecated URL params and cookies.
 const clearDeprecatedStorage = () => {
   const url = new URL(location.href);
-  for (const {name, deprecated} of urlParamMap.values()) {
-    if (deprecated) {
-      deleteParam(url, name);
-    }
-  }
-  history.pushState({}, '', url.toString());
+  let modified = false;
+  for (const {name, deprecated} of urlParamMap.values())
+    if (deprecated)
+      modified = deleteParam(url, name) || modified;
 
-  for (const {name, deprecated} of cookieValueMap.values()) {
-    if (deprecated) {
+  if (modified)
+    history.pushState({}, '', url.toString());
+
+  for (const {name, deprecated} of cookieValueMap.values())
+    if (deprecated)
       deleteCookie(name);
-    }
-  }
 };
 
-
+// Deletes the given parameter in `url`, if it exists. Returns true if `url` was
+// modified.
 const deleteParam = (url: URL, name: string): boolean => {
   const hadValue = url.searchParams.has(name);
   url.searchParams.delete(name);
   return hadValue;
 };
 
+// Sets the value of the cookie with the given name.
 const setCookie = (name: string, value: string) => {
   document.cookie = `${name}=${encodeURIComponent(value)};${COOKIE_SUFFIX}`;
 };
 
+// "Deletes" the cookie with the given name. This doesn't seem to really delete
+// the cookie; it just makes it a session cookie, so that it won't be present in
+// the next session of the browser.
 const deleteCookie = (name: string) => {
   document.cookie = `${name}=0;${COOKIE_SUFFIX_DELETE}`;
 };
@@ -964,13 +996,12 @@ const cumulativeSumByFields =
           return results;
         };
 
+// Counts the number of elements of `data` which satisfy `predicate`.
 const countSatisfying = <T,>(data: readonly T[], predicate: (t: T) => boolean): number => {
     let count = 0;
-    for (const t of data) {
-      if (predicate(t)) {
+    for (const t of data)
+      if (predicate(t))
         ++count;
-      }
-    }
     return count;
   };
 

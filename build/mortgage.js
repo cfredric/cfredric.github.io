@@ -802,12 +802,12 @@ var data = [];
     var clearDeprecatedStorage = function () {
         var e_10, _a, e_11, _b;
         var url = new URL(location.href);
+        var modified = false;
         try {
             for (var _c = __values(urlParamMap.values()), _d = _c.next(); !_d.done; _d = _c.next()) {
                 var _e = _d.value, name_3 = _e.name, deprecated = _e.deprecated;
-                if (deprecated) {
-                    deleteParam(url, name_3);
-                }
+                if (deprecated)
+                    modified = deleteParam(url, name_3) || modified;
             }
         }
         catch (e_10_1) { e_10 = { error: e_10_1 }; }
@@ -817,13 +817,13 @@ var data = [];
             }
             finally { if (e_10) throw e_10.error; }
         }
-        history.pushState({}, '', url.toString());
+        if (modified)
+            history.pushState({}, '', url.toString());
         try {
             for (var _f = __values(cookieValueMap.values()), _g = _f.next(); !_g.done; _g = _f.next()) {
                 var _h = _g.value, name_4 = _h.name, deprecated = _h.deprecated;
-                if (deprecated) {
+                if (deprecated)
                     deleteCookie(name_4);
-                }
             }
         }
         catch (e_11_1) { e_11 = { error: e_11_1 }; }
@@ -901,9 +901,8 @@ var data = [];
         try {
             for (var data_1 = __values(data), data_1_1 = data_1.next(); !data_1_1.done; data_1_1 = data_1.next()) {
                 var t = data_1_1.value;
-                if (predicate(t)) {
+                if (predicate(t))
                     ++count;
-                }
             }
         }
         catch (e_15_1) { e_15 = { error: e_15_1 }; }
