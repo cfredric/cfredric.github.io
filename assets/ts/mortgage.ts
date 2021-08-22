@@ -964,13 +964,13 @@ const cumulativeSumByFields =
     (data: readonly PaymentRecordWithMonth[], fields: readonly PaymentType[]):
         PaymentRecordWithMonth[] => {
           const results = new Array<PaymentRecordWithMonth>(data.length + 1);
-          const record = {month: 0, data: {} as Record<PaymentType, number>};
+          const record = {month: 0, data: {} as PaymentRecord};
           for (const k of fields) {
             record.data[k] = 0;
           }
           results[0] = record;
           for (const [idx, datum] of data.entries()) {
-            const newData = {} as Record<PaymentType, number>;
+            const newData = {} as PaymentRecord;
             for (const field of fields) {
               newData[field] = datum.data[field] + results[idx]!.data[field];
             }
