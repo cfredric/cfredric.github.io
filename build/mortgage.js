@@ -304,17 +304,17 @@ var data = [];
                 (_a = document.querySelector('#cumulative_viz > svg:first-of-type')) === null || _a === void 0 ? void 0 : _a.remove();
                 lifetimePaymentOutput.innerText = "" + fmt.format(0);
             }
-            showConditionalOutput(!!ctx.totalAssets, 'fired-tomorrow-countdown-div', firedTomorrowCountdownOutput, function () { return "" + formatMonthNum(countBurndownMonths(ctx, schedule_1)); });
+            showConditionalOutput(!!ctx.totalAssets, 'fired-tomorrow-countdown-div', firedTomorrowCountdownOutput, function () { return "" + formatMonthNum(countBurndownMonths(ctx, schedule_1.map(function (d) { return d.data; }))); });
             showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-paid-so-far-div', totalPaidSoFarOutput, function () { return "" + fmt.format((ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-                sumAtIndex(cumulativeSums_1, keys, ctx.paymentsAlreadyMade)); });
+                sumOfTypes(cumulativeSums_1[ctx.paymentsAlreadyMade].data, keys)); });
             var absoluteEquityOwned_1 = (ctx.alreadyClosed ? ctx.downPayment : 0) +
                 cumulativeSums_1[ctx.paymentsAlreadyMade].data['principal'];
             showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'equity-owned-so-far-div', equityOwnedSoFarOutput, function () {
                 return pctFmt.format(absoluteEquityOwned_1 / ctx.homeValue) + " (" + fmt.format(absoluteEquityOwned_1) + ")";
             });
             showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-loan-owed-div', totalLoanOwedOutput, function () {
-                var totalPrincipalAndInterestPaid = sumAtIndex(cumulativeSums_1, ['principal', 'interest'], ctx.paymentsAlreadyMade);
-                var totalPrincipalAndInterestToPay = sumAtIndex(cumulativeSums_1, ['principal', 'interest'], cumulativeSums_1.length - 1);
+                var totalPrincipalAndInterestPaid = sumOfTypes(cumulativeSums_1[ctx.paymentsAlreadyMade].data, ['principal', 'interest']);
+                var totalPrincipalAndInterestToPay = sumOfTypes(cumulativeSums_1[cumulativeSums_1.length - 1].data, ['principal', 'interest']);
                 return "" + fmt.format(totalPrincipalAndInterestToPay -
                     totalPrincipalAndInterestPaid);
             });
@@ -329,7 +329,9 @@ var data = [];
         purchasePaymentOutput.innerText = "" + fmt.format(ctx.downPayment + ctx.closingCost +
             ctx.pointsPurchased * (ctx.price - ctx.downPayment) / 100);
     };
-    var sumAtIndex = function (data, keys, idx) { return d3.sum(keys.map(function (key) { return data[idx].data[key]; })); };
+    var sumOfTypes = function (data, keys) {
+        return d3.sum(keys.map(function (key) { return data[key]; }));
+    };
     var monthlyFormula = function (P, r, n) {
         return (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
     };
@@ -397,7 +399,8 @@ var data = [];
     };
     var bisectMonth = function (data, x, mouseX) {
         var month = x.invert(mouseX);
-        var index = d3.bisector(function (d) { return d.month; }).left(data, month, 1);
+        var index = d3.bisector(function (d) { return d.month; })
+            .left(data, month, 1);
         var a = data[index - 1];
         var b = data[index];
         return b && month - a.month > b.month - month ? b : a;
@@ -428,10 +431,10 @@ var data = [];
             try {
                 for (var _b = __values(keys.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
                     var _d = __read(_c.value, 2), idx = _d[0], key = _d[1];
-                    if (cumulative + datum.data[key] >= yTarget) {
+                    if (cumulative + datum[key] >= yTarget) {
                         return idx;
                     }
-                    cumulative += datum.data[key];
+                    cumulative += datum[key];
                 }
             }
             catch (e_3_1) { e_3 = { error: e_3_1 }; }
@@ -473,7 +476,7 @@ var data = [];
         makeTooltip(svg, data, keys, x, function (mouseY, datum) {
             var _a;
             var yTarget = y.invert(mouseY);
-            var sorted = keys.map(function (key) { return ({ key: key, value: datum.data[key] }); })
+            var sorted = keys.map(function (key) { return ({ key: key, value: datum[key] }); })
                 .sort(function (a, b) { return a.value - b.value; });
             var elt = (_a = sorted.find(function (elt, idx, arr) { return yTarget <= elt.value &&
                 (idx === arr.length - 1 || arr[idx + 1].value >= yTarget); })) !== null && _a !== void 0 ? _a : sorted[sorted.length - 1];
@@ -528,7 +531,7 @@ var data = [];
         svg.on('touchmove mousemove', function (event) {
             var pointer = d3.pointer(event, this);
             var datum = bisectMonth(data, x, pointer[0]);
-            var paymentTypeIdx = identifyPaymentType(pointer[1], datum);
+            var paymentTypeIdx = identifyPaymentType(pointer[1], datum.data);
             var value = keys.map(function (k) { return fieldDisplay(k) + ": " + fmt.format(datum.data[k]) +
                 '\n'; })
                 .join('') +
@@ -845,11 +848,11 @@ var data = [];
     var cumulativeSumByFields = function (data, fields) {
         var e_12, _a, e_13, _b, e_14, _c;
         var results = new Array(data.length + 1);
-        results[0] = { month: 0, data: {} };
+        var record = { month: 0, data: {} };
         try {
             for (var fields_1 = __values(fields), fields_1_1 = fields_1.next(); !fields_1_1.done; fields_1_1 = fields_1.next()) {
                 var k = fields_1_1.value;
-                results[0].data[k] = 0;
+                record.data[k] = 0;
             }
         }
         catch (e_12_1) { e_12 = { error: e_12_1 }; }
@@ -859,6 +862,7 @@ var data = [];
             }
             finally { if (e_12) throw e_12.error; }
         }
+        results[0] = record;
         try {
             for (var _d = __values(data.entries()), _e = _d.next(); !_e.done; _e = _d.next()) {
                 var _f = __read(_e.value, 2), idx = _f[0], datum = _f[1];
@@ -917,11 +921,10 @@ var data = [];
         if (!ctx.alreadyClosed) {
             assets -= ctx.downPayment + ctx.closingCost;
         }
-        var _loop_3 = function (i, record) {
+        var _loop_3 = function (i, data_2) {
             if (i < ctx.paymentsAlreadyMade) {
                 return "continue";
             }
-            var data_2 = record.data;
             var due = d3.sum(keys.map(function (k) { return data_2[k]; })) + ctx.monthlyDebt;
             if (due >= assets)
                 return { value: i };
@@ -929,8 +932,8 @@ var data = [];
         };
         try {
             for (var _b = __values(schedule.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var _d = __read(_c.value, 2), i = _d[0], record = _d[1];
-                var state_1 = _loop_3(i, record);
+                var _d = __read(_c.value, 2), i = _d[0], data_2 = _d[1];
+                var state_1 = _loop_3(i, data_2);
                 if (typeof state_1 === "object")
                     return state_1.value;
             }

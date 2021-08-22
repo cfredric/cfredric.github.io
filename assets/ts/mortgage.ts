@@ -359,7 +359,9 @@ const setContents = (ctx: Context): void => {
     showConditionalOutput(
         !!ctx.totalAssets, 'fired-tomorrow-countdown-div',
         firedTomorrowCountdownOutput,
-        () => `${formatMonthNum(countBurndownMonths(ctx, schedule))}`)
+        () => `${
+            formatMonthNum(
+                countBurndownMonths(ctx, schedule.map(d => d.data)))}`)
 
     showConditionalOutput(
         !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-paid-so-far-div',
@@ -367,7 +369,8 @@ const setContents = (ctx: Context): void => {
         () => `${
             fmt.format(
                 (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-                sumAtIndex(cumulativeSums, keys, ctx.paymentsAlreadyMade))}`);
+                sumOfTypes(
+                    cumulativeSums[ctx.paymentsAlreadyMade]!.data, keys))}`);
 
     const absoluteEquityOwned = (ctx.alreadyClosed ? ctx.downPayment : 0) +
         cumulativeSums[ctx.paymentsAlreadyMade]!.data['principal'];
@@ -381,12 +384,12 @@ const setContents = (ctx: Context): void => {
     showConditionalOutput(
         !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-loan-owed-div',
         totalLoanOwedOutput, () => {
-          const totalPrincipalAndInterestPaid = sumAtIndex(
-              cumulativeSums, ['principal', 'interest'],
-              ctx.paymentsAlreadyMade);
-          const totalPrincipalAndInterestToPay = sumAtIndex(
-              cumulativeSums, ['principal', 'interest'],
-              cumulativeSums.length - 1);
+          const totalPrincipalAndInterestPaid = sumOfTypes(
+              cumulativeSums[ctx.paymentsAlreadyMade]!.data,
+              ['principal', 'interest']);
+          const totalPrincipalAndInterestToPay = sumOfTypes(
+              cumulativeSums[cumulativeSums.length - 1]!.data,
+              ['principal', 'interest']);
           return `${
               fmt.format(
                   totalPrincipalAndInterestToPay -
@@ -416,17 +419,18 @@ const setContents = (ctx: Context): void => {
           )}`;
 };
 
-const sumAtIndex =
-    (data: readonly PaymentRecord[], keys: readonly PaymentType[],
-     idx: number) => d3.sum(keys.map(key => data[idx]!.data[key]));
+const sumOfTypes = (data: PaymentRecord, keys: readonly PaymentType[]) =>
+    d3.sum(keys.map(key => data[key]));
 
 const monthlyFormula = (P: number, r: number, n: number): number =>
     (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
 
-interface PaymentRecord {
+interface PaymentRecordWithMonth {
   month: number;
-  data: Record<PaymentType, number>;
+  data: PaymentRecord;
 }
+
+type PaymentRecord = Record<PaymentType, number>;
 
 interface Margin {
   top: number;
@@ -453,9 +457,9 @@ const showConditionalOutput =
     };
 
 const calculatePaymentSchedule =
-    (ctx: Context, monthlyPayment: number): PaymentRecord[] => {
+    (ctx: Context, monthlyPayment: number): PaymentRecordWithMonth[] => {
       let equity = ctx.downPayment;
-      const schedule: PaymentRecord[] = [];
+      const schedule: PaymentRecordWithMonth[] = [];
       for (const month of d3.range(ctx.n)) {
         const principal = ctx.price - equity;
         const interestPayment = (ctx.interestRate / 12) * principal;
@@ -494,18 +498,18 @@ const showAmountHints = (ctx: Context): void => {
 };
 
 const bisectMonth =
-    (data: readonly PaymentRecord[], x: d3.ScaleLinear<number, number>,
-     mouseX: number): PaymentRecord => {
+    (data: readonly PaymentRecordWithMonth[], x: d3.ScaleLinear<number, number>,
+     mouseX: number): PaymentRecordWithMonth => {
       const month = x.invert(mouseX);
-      const index =
-          d3.bisector((d: PaymentRecord) => d.month).left(data, month, 1);
+      const index = d3.bisector((d: PaymentRecordWithMonth) => d.month)
+                        .left(data, month, 1);
       const a = data[index - 1]!;
       const b = data[index];
       return b && month - a.month > b.month - month ? b : a;
     };
 
 const buildPaymentScheduleChart =
-    (schedule: readonly PaymentRecord[], keys: readonly PaymentType[]):
+    (schedule: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[]):
         void => {
           // set the dimensions and margins of the graph
           const margin = {top: 50, right: 100, bottom: 120, left: 100};
@@ -528,7 +532,7 @@ const buildPaymentScheduleChart =
           // Add the area
           svg.append('g')
               .selectAll('path')
-              .data(d3.stack<unknown, PaymentRecord, PaymentType>()
+              .data(d3.stack<unknown, PaymentRecordWithMonth, PaymentType>()
                         .keys(keys)
                         .order(d3.stackOrderNone)
                         .offset(d3.stackOffsetNone)
@@ -537,7 +541,7 @@ const buildPaymentScheduleChart =
               .style('fill', d => fieldColor(d.key))
               .attr(
                   'd',
-                  d3.area<d3.SeriesPoint<PaymentRecord>>()
+                  d3.area<d3.SeriesPoint<PaymentRecordWithMonth>>()
                       .x(d => x(d.data.month))
                       .y0(d => y(d['0']))
                       .y1(d => y(d['1'])),
@@ -547,10 +551,10 @@ const buildPaymentScheduleChart =
             const yTarget = y.invert(mouseY);
             let cumulative = 0;
             for (const [idx, key] of keys.entries()) {
-              if (cumulative + datum.data[key] >= yTarget) {
+              if (cumulative + datum[key] >= yTarget) {
                 return idx;
               }
-              cumulative += datum.data[key];
+              cumulative += datum[key];
             }
             return keys.length - 1;
           });
@@ -559,59 +563,60 @@ const buildPaymentScheduleChart =
         };
 
 const buildCumulativeChart =
-    (data: readonly PaymentRecord[], keys: readonly PaymentType[]): void => {
-      const margin = {top: 50, right: 100, bottom: 120, left: 100};
-      const width = 900 - margin.left - margin.right;
-      const height = 450 - margin.top - margin.bottom;
+    (data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[]):
+        void => {
+          const margin = {top: 50, right: 100, bottom: 120, left: 100};
+          const width = 900 - margin.left - margin.right;
+          const height = 450 - margin.top - margin.bottom;
 
-      const svg = makeSvg('cumulative_viz', width, height, margin);
+          const svg = makeSvg('cumulative_viz', width, height, margin);
 
-      const {x, y} = makeAxes(
-          svg,
-          data,
-          keys,
-          width,
-          height,
-          margin,
-          'Cumulative Payment',
-          d3.max,
-      );
+          const {x, y} = makeAxes(
+              svg,
+              data,
+              keys,
+              width,
+              height,
+              margin,
+              'Cumulative Payment',
+              d3.max,
+          );
 
-      const area = d3.area<{month: number, value: number}>()
-                       .curve(d3.curveMonotoneX)
-                       .x(d => x(d.month))
-                       .y0(y(0))
-                       .y1(d => y(d.value));
+          const area = d3.area<{month: number, value: number}>()
+                           .curve(d3.curveMonotoneX)
+                           .x(d => x(d.month))
+                           .y0(y(0))
+                           .y1(d => y(d.value));
 
-      svg.selectAll('.area')
-          .data(keys.map(key => ({
-                           key,
-                           values: data.map(datum => ({
-                                              month: datum.month,
-                                              value: datum.data[key],
-                                            })),
-                         })))
-          .enter()
-          .append('g')
-          .attr('class', d => `area ${d.key}`)
-          .append('path')
-          .attr('d', d => area(d.values))
-          .style('fill', d => transparent(fieldColor(d.key)));
+          svg.selectAll('.area')
+              .data(keys.map(key => ({
+                               key,
+                               values: data.map(datum => ({
+                                                  month: datum.month,
+                                                  value: datum.data[key],
+                                                })),
+                             })))
+              .enter()
+              .append('g')
+              .attr('class', d => `area ${d.key}`)
+              .append('path')
+              .attr('d', d => area(d.values))
+              .style('fill', d => transparent(fieldColor(d.key)));
 
-      makeTooltip(svg, data, keys, x, (mouseY, datum) => {
-        const yTarget = y.invert(mouseY);
-        const sorted = keys.map(key => ({key, value: datum.data[key]}))
-                           .sort((a, b) => a.value - b.value);
-        const elt = sorted.find(
-            (elt, idx, arr) => yTarget <= elt.value &&
-                (idx === arr.length - 1 || arr[idx + 1]!.value >= yTarget),
-            ) ??
-            sorted[sorted.length - 1]!;
-        return keys.indexOf(elt.key);
-      });
+          makeTooltip(svg, data, keys, x, (mouseY, datum) => {
+            const yTarget = y.invert(mouseY);
+            const sorted = keys.map(key => ({key, value: datum[key]}))
+                               .sort((a, b) => a.value - b.value);
+            const elt = sorted.find(
+                (elt, idx, arr) => yTarget <= elt.value &&
+                    (idx === arr.length - 1 || arr[idx + 1]!.value >= yTarget),
+                ) ??
+                sorted[sorted.length - 1]!;
+            return keys.indexOf(elt.key);
+          });
 
-      makeLegend(svg, width, d => transparent(fieldColor(d)), keys);
-    };
+          makeLegend(svg, width, d => transparent(fieldColor(d)), keys);
+        };
 
 const transparent = (color: string): string => `${color}aa`;
 
@@ -632,7 +637,7 @@ const makeSvg =
 
 const makeAxes =
     (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
-     data: readonly PaymentRecord[], keys: readonly PaymentType[],
+     data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[],
      width: number, height: number, margin: Margin, yLabel: string,
      yDomainFn: (ys: readonly number[]) => number): {
       x: d3.ScaleLinear<number, number, never>,
@@ -677,7 +682,7 @@ const makeAxes =
 
 const makeTooltip =
     (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
-     data: readonly PaymentRecord[], keys: readonly PaymentType[],
+     data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[],
      x: d3.ScaleLinear<number, number, never>,
      identifyPaymentType: (yCoord: number, d: PaymentRecord) =>
          number): void => {
@@ -687,7 +692,7 @@ const makeTooltip =
         // eslint-disable-next-line no-invalid-this
         const pointer = d3.pointer(event, this);
         const datum = bisectMonth(data, x, pointer[0]);
-        const paymentTypeIdx = identifyPaymentType(pointer[1], datum);
+        const paymentTypeIdx = identifyPaymentType(pointer[1], datum.data);
 
         const value =
             keys.map(
@@ -954,13 +959,14 @@ const deleteCookie = (name: string) => {
 // Returns an array where the ith element is an object with the amount paid of
 // each type before (and excluding) the ith month.
 const cumulativeSumByFields =
-    (data: readonly PaymentRecord[], fields: readonly PaymentType[]):
-        PaymentRecord[] => {
-          const results = new Array<PaymentRecord>(data.length + 1);
-          results[0] = {month: 0, data: {} as Record<PaymentType, number>};
+    (data: readonly PaymentRecordWithMonth[], fields: readonly PaymentType[]):
+        PaymentRecordWithMonth[] => {
+          const results = new Array<PaymentRecordWithMonth>(data.length + 1);
+          const record = {month: 0, data: {} as Record<PaymentType, number>};
           for (const k of fields) {
-            results[0].data[k] = 0;
+            record.data[k] = 0;
           }
+          results[0] = record;
           for (const [idx, datum] of data.entries()) {
             const newData = {} as Record<PaymentType, number>;
             for (const field of fields) {
@@ -990,11 +996,10 @@ const countBurndownMonths =
       if (!ctx.alreadyClosed) {
         assets -= ctx.downPayment + ctx.closingCost;
       }
-      for (const [i, record] of schedule.entries()) {
+      for (const [i, data] of schedule.entries()) {
         if (i < ctx.paymentsAlreadyMade) {
           continue;
         }
-        const data = record.data;
         const due = d3.sum(keys.map(k => data[k])) + ctx.monthlyDebt;
         if (due >= assets) return i;
         assets -= due;
