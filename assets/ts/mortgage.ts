@@ -116,6 +116,8 @@ const keys = [
 ] as const;
 type PaymentType = typeof keys[number];
 
+const nonLoanKeys = ['hoa', 'property_tax', 'homeowners_insurance'] as const;
+
 const COOKIE_ATTRIBUTES: Readonly<string[]> = [
   'Secure',
   'SameSite=Lax',
@@ -990,21 +992,20 @@ const countSatisfying = <T,>(data: readonly T[], predicate: (t: T) => boolean): 
     return count;
   };
 
+// Returns the number of payments that can be made with the given total assets,
+// taking previously-made payments into account.
 const countBurndownMonths =
     (ctx: Context, schedule: readonly PaymentRecord[]): number => {
-      let assets = ctx.totalAssets;
-      if (!ctx.alreadyClosed) {
-        assets -= ctx.downPayment + ctx.closingCost;
-      }
-      for (const [i, data] of schedule.entries()) {
-        if (i < ctx.paymentsAlreadyMade) {
-          continue;
-        }
-        const due = d3.sum(keys.map(k => data[k])) + ctx.monthlyDebt;
+      let assets = ctx.totalAssets -
+          (ctx.alreadyClosed ? 0 : ctx.downPayment + ctx.closingCost);
+      for (const [i, data] of schedule.slice(ctx.paymentsAlreadyMade)
+               .entries()) {
+        const due = sumOfTypes(data, keys) + ctx.monthlyDebt;
         if (due >= assets) return i;
         assets -= due;
       }
-      return schedule.length;
+      return schedule.length - ctx.paymentsAlreadyMade +
+          Math.floor(assets / sumOfTypes(schedule[0]!, nonLoanKeys));
     };
 
 populateFields();

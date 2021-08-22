@@ -113,6 +113,7 @@ var data = [];
         'homeowners_insurance',
         'pmi',
     ];
+    var nonLoanKeys = ['hoa', 'property_tax', 'homeowners_insurance'];
     var COOKIE_ATTRIBUTES = [
         'Secure',
         'SameSite=Lax',
@@ -917,25 +918,16 @@ var data = [];
     };
     var countBurndownMonths = function (ctx, schedule) {
         var e_16, _a;
-        var assets = ctx.totalAssets;
-        if (!ctx.alreadyClosed) {
-            assets -= ctx.downPayment + ctx.closingCost;
-        }
-        var _loop_3 = function (i, data_2) {
-            if (i < ctx.paymentsAlreadyMade) {
-                return "continue";
-            }
-            var due = d3.sum(keys.map(function (k) { return data_2[k]; })) + ctx.monthlyDebt;
-            if (due >= assets)
-                return { value: i };
-            assets -= due;
-        };
+        var assets = ctx.totalAssets -
+            (ctx.alreadyClosed ? 0 : ctx.downPayment + ctx.closingCost);
         try {
-            for (var _b = __values(schedule.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
+            for (var _b = __values(schedule.slice(ctx.paymentsAlreadyMade)
+                .entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
                 var _d = __read(_c.value, 2), i = _d[0], data_2 = _d[1];
-                var state_1 = _loop_3(i, data_2);
-                if (typeof state_1 === "object")
-                    return state_1.value;
+                var due = sumOfTypes(data_2, keys) + ctx.monthlyDebt;
+                if (due >= assets)
+                    return i;
+                assets -= due;
             }
         }
         catch (e_16_1) { e_16 = { error: e_16_1 }; }
@@ -945,7 +937,8 @@ var data = [];
             }
             finally { if (e_16) throw e_16.error; }
         }
-        return schedule.length;
+        return schedule.length - ctx.paymentsAlreadyMade +
+            Math.floor(assets / sumOfTypes(schedule[0], nonLoanKeys));
     };
     populateFields();
     saveFields();
