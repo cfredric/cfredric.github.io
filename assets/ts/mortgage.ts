@@ -1,10 +1,6 @@
-import d3 = require('d3');
-
-// Typescript doesn't like having variables that are never read, but we want to
-// expose the payment schedule as a variable for the user to play around with in
-// the JS developer console, if they want to do some more complicated stuff.
-// @ts-ignore
-let data: PaymentRecord[] = [];
+import * as d3 from 'd3';
+import {Context} from './context';
+import * as utils from './utils';
 
 (function() {
 const fmt = new Intl.NumberFormat('en-US', {
@@ -18,83 +14,70 @@ const hundredthsPctFmt = new Intl.NumberFormat('en-US', {
   style: 'percent',
   maximumFractionDigits: 2,
 });
-// Returns the numeric value of the input element, or 0 if the input was empty.
-const orZero = (elt: HTMLInputElement): number => {
-  const num = Number.parseFloat(elt.value);
-  return Number.isNaN(num) ? 0 : num;
-};
-// Clamps the input to within the interval [min, max] (inclusive on each end).
-const clamp = (x: number, {min, max}: {min: number, max: number}): number =>
-    Math.max(min, Math.min(max, x));
-// Returns the HTMLInputElement with the given ID, or throws an informative
-// error.
-const getInputElt = (id: string): HTMLInputElement => {
-  const elt = document.getElementById(id);
-  if (!(elt instanceof HTMLInputElement))
-    throw new Error(`${id} element is not an HTMLInputElement`);
-  return elt;
-};
-// Returns the HTMLElement with the given ID, or throws an informative error.
-const getHtmlElt = (id: string): HTMLElement => {
-  const elt = document.getElementById(id);
-  if (!(elt instanceof HTMLElement))
-    throw new Error(`${id} element is not an HTMLElement`);
-  return elt;
-};
 
-const clearInputsButton = getHtmlElt('clear-inputs-button');
+const clearInputsButton = utils.getHtmlElt('clear-inputs-button');
 
 // Inputs.
-const priceInput = getInputElt('price-input');
-const homeValueInput = getInputElt('home-value-input');
-const hoaInput = getInputElt('hoa-input');
-const downPaymentPercentageInput = getInputElt('down-payment-percentage-input');
-const downPaymentAbsoluteInput = getInputElt('down-payment-absolute-input');
-const interestRateInput = getInputElt('interest-rate-input');
-const pointsPurchasedInput = getInputElt('points-purchased-input');
-const pointValueInput = getInputElt('point-value-input');
-const mortgageInsuranceInput = getInputElt('mortgage-insurance-input');
+const priceInput = utils.getInputElt('price-input');
+const homeValueInput = utils.getInputElt('home-value-input');
+const hoaInput = utils.getInputElt('hoa-input');
+const downPaymentPercentageInput =
+    utils.getInputElt('down-payment-percentage-input');
+const downPaymentAbsoluteInput =
+    utils.getInputElt('down-payment-absolute-input');
+const interestRateInput = utils.getInputElt('interest-rate-input');
+const pointsPurchasedInput = utils.getInputElt('points-purchased-input');
+const pointValueInput = utils.getInputElt('point-value-input');
+const mortgageInsuranceInput = utils.getInputElt('mortgage-insurance-input');
 const pmiEquityPercentageInput =
-    getInputElt('mortgage-insurance-equity-percentage-input');
-const propertyTaxAbsoluteInput = getInputElt('property-tax-absolute-input');
-const propertyTaxPercentageInput = getInputElt('property-tax-percentage-input');
+    utils.getInputElt('mortgage-insurance-equity-percentage-input');
+const propertyTaxAbsoluteInput =
+    utils.getInputElt('property-tax-absolute-input');
+const propertyTaxPercentageInput =
+    utils.getInputElt('property-tax-percentage-input');
 const residentialExemptionSavingsInput =
-    getInputElt('residential-exemption-savings-input');
+    utils.getInputElt('residential-exemption-savings-input');
 const residentialExemptionDeductionInput =
-    getInputElt('residential-exemption-deduction-input');
-const homeownersInsuranceInput = getInputElt('homeowners-insurance-input');
-const closingCostInput = getInputElt('closing-cost-input');
-const mortgageTermInput = getInputElt('mortgage-term-input');
-const annualIncomeInput = getInputElt('annual-income-input');
-const monthlyDebtInput = getInputElt('monthly-debt-input');
-const totalAssetsInput = getInputElt('total-assets-input');
-const alreadyClosedInput = getInputElt('already-closed-input');
-const paymentsAlreadyMadeInput = getInputElt('payments-already-made-input');
+    utils.getInputElt('residential-exemption-deduction-input');
+const homeownersInsuranceInput =
+    utils.getInputElt('homeowners-insurance-input');
+const closingCostInput = utils.getInputElt('closing-cost-input');
+const mortgageTermInput = utils.getInputElt('mortgage-term-input');
+const annualIncomeInput = utils.getInputElt('annual-income-input');
+const monthlyDebtInput = utils.getInputElt('monthly-debt-input');
+const totalAssetsInput = utils.getInputElt('total-assets-input');
+const alreadyClosedInput = utils.getInputElt('already-closed-input');
+const paymentsAlreadyMadeInput =
+    utils.getInputElt('payments-already-made-input');
 
 // Outputs.
-const homeValueHintOutput = getHtmlElt('home-value-hint');
-const interestRateHintOutput = getHtmlElt('interest-rate-hint');
-const pointValueHintOutput = getHtmlElt('point-value-hint');
+const homeValueHintOutput = utils.getHtmlElt('home-value-hint');
+const interestRateHintOutput = utils.getHtmlElt('interest-rate-hint');
+const pointValueHintOutput = utils.getHtmlElt('point-value-hint');
 const pmiEquityPercentageHintOutput =
-    getHtmlElt('mortgage-insurance-equity-percent-hint');
-const propertyTaxHintOutput = getHtmlElt('property-tax-percentage-hint');
-const residentialExemptionHintOutput = getHtmlElt('residential-exemption-hint');
-const mortgageTermHintOutput = getHtmlElt('mortgage-term-hint');
-const downPaymentHintOutput = getHtmlElt('down-payment-hint');
-const loanAmountOutput = getHtmlElt('loan-amount-output');
-const principalAndInterestOutput = getHtmlElt('principal-and-interest-output');
-const monthlyPaymentAmountOutput = getHtmlElt('monthly-payment-output');
-const monthlyPaymentPmiOutput = getHtmlElt('monthly-payment-pmi-output');
-const pmiPaymentTimelineOutput = getHtmlElt('pmi-payment-timeline-output');
-const lifetimePaymentOutput = getHtmlElt('lifetime-payment-output');
-const purchasePaymentOutput = getHtmlElt('purchase-payment-output');
-const totalPaidSoFarOutput = getHtmlElt('total-paid-so-far-output');
-const equityOwnedSoFarOutput = getHtmlElt('equity-owned-so-far-output');
-const totalLoanOwedOutput = getHtmlElt('total-loan-owed-output');
-const remainingEquityOutput = getHtmlElt('remaining-equity-to-pay-for-output');
-const debtToIncomeOutput = getHtmlElt('debt-to-income-ratio-output');
+    utils.getHtmlElt('mortgage-insurance-equity-percent-hint');
+const propertyTaxHintOutput = utils.getHtmlElt('property-tax-percentage-hint');
+const residentialExemptionHintOutput =
+    utils.getHtmlElt('residential-exemption-hint');
+const mortgageTermHintOutput = utils.getHtmlElt('mortgage-term-hint');
+const downPaymentHintOutput = utils.getHtmlElt('down-payment-hint');
+const loanAmountOutput = utils.getHtmlElt('loan-amount-output');
+const principalAndInterestOutput =
+    utils.getHtmlElt('principal-and-interest-output');
+const monthlyPaymentAmountOutput = utils.getHtmlElt('monthly-payment-output');
+const monthlyPaymentPmiOutput = utils.getHtmlElt('monthly-payment-pmi-output');
+const pmiPaymentTimelineOutput =
+    utils.getHtmlElt('pmi-payment-timeline-output');
+const lifetimePaymentOutput = utils.getHtmlElt('lifetime-payment-output');
+const purchasePaymentOutput = utils.getHtmlElt('purchase-payment-output');
+const totalPaidSoFarOutput = utils.getHtmlElt('total-paid-so-far-output');
+const equityOwnedSoFarOutput = utils.getHtmlElt('equity-owned-so-far-output');
+const totalLoanOwedOutput = utils.getHtmlElt('total-loan-owed-output');
+const remainingEquityOutput =
+    utils.getHtmlElt('remaining-equity-to-pay-for-output');
+const debtToIncomeOutput = utils.getHtmlElt('debt-to-income-ratio-output');
 const firedTomorrowCountdownOutput =
-    getHtmlElt('fired-tomorrow-countdown-output');
+    utils.getHtmlElt('fired-tomorrow-countdown-output');
 
 const keys = [
   'principal',
@@ -194,11 +177,39 @@ const cookieValueMap: Readonly<Map<HTMLInputElement, InputEntry>> = new Map([
   [totalAssetsInput, {name: 'total_assets'}],
 ]);
 
+const contextFromInputs = () => new Context({
+  price: utils.orZero(priceInput),
+  homeValue: utils.orZero(homeValueInput),
+  hoa: utils.orZero(hoaInput),
+  downPaymentPercent: utils.orZero(downPaymentPercentageInput),
+  downPaymentAbsolute: utils.orZero(downPaymentAbsoluteInput),
+  interestRate: utils.orZero(interestRateInput),
+  pointValue: utils.orZero(pointValueInput),
+  pointsPurchased: utils.orZero(pointsPurchasedInput),
+  pmi: utils.orZero(mortgageInsuranceInput),
+  pmiEquityPercent: utils.orZero(pmiEquityPercentageInput),
+  propertyTaxAbsolute: utils.orZero(propertyTaxAbsoluteInput),
+  propertyTaxPercent: utils.orZero(propertyTaxPercentageInput),
+  residentialExemptionAnnualSavings:
+      utils.orZero(residentialExemptionSavingsInput),
+  residentialExemptionDeduction:
+      utils.orZero(residentialExemptionDeductionInput),
+  homeownersInsurance: utils.orZero(homeownersInsuranceInput),
+  closingCost: utils.orZero(closingCostInput),
+  // Assume a 30 year fixed loan.
+  mortgageTerm: utils.orZero(mortgageTermInput),
+  annualIncome: utils.orZero(annualIncomeInput),
+  monthlyDebt: utils.orZero(monthlyDebtInput),
+  totalAssets: utils.orZero(totalAssetsInput),
+  alreadyClosed: alreadyClosedInput.checked,
+  paymentsAlreadyMade: utils.orZero(paymentsAlreadyMadeInput),
+});
+
 // Attaches listeners to react to user input, URL changes.
 const attachListeners = (): void => {
   clearInputsButton.addEventListener('click', () => void clearInputs());
   const onChange = (elt: HTMLInputElement) => {
-    const ctx = new Context();
+    const ctx = contextFromInputs();
     showAmountHints(ctx);
     saveFields(elt);
     setContents(ctx);
@@ -208,106 +219,6 @@ const attachListeners = (): void => {
   }
   window.onpopstate = () => void populateFields();
 };
-
-const console_prompt = () => {
-  console.log(
-      'Play around with the data! ' +
-      'The payment schedule is in a variable called `data`. ' +
-      'D3 is exposed as `d3`.');
-};
-
-class Context {
-  // This class captures a snapshot of the input fields at construction, and
-  // computes all the interesting values to be used in the payment schedule
-  // calculation.
-  //
-  // This is an optimization detail, as a kind of memoization to avoid needless
-  // extra function calls when we've already computed a value.
-  readonly price: number;
-  readonly homeValue: number;
-  readonly hoa: number;
-  readonly downPayment: number;
-  readonly downPaymentPct: number;
-  readonly interestRate: number;
-  readonly pointsPurchased: number;
-  readonly pointValue: number;
-  readonly pmi: number;
-  readonly pmiEquityPct: number;
-  readonly propertyTax: number;
-  readonly residentialExemptionPerMonth: number;
-  readonly homeownersInsurance: number;
-  readonly closingCost: number;
-  readonly mortgageTerm: number;
-  readonly annualIncome: number;
-  readonly monthlyDebt: number;
-  readonly totalAssets: number;
-  readonly alreadyClosed: boolean;
-  readonly paymentsAlreadyMade: number;
-
-  readonly n: number;
-
-  constructor() {
-    this.price = Math.max(0, orZero(priceInput));
-    this.homeValue = Math.max(0, orZero(homeValueInput)) || this.price;
-    this.hoa = Math.max(0, orZero(hoaInput));
-    this.downPayment =
-        clamp(orZero(downPaymentPercentageInput), {min: 0, max: 100}) / 100 *
-            this.price ||
-        clamp(orZero(downPaymentAbsoluteInput), {min: 0, max: this.price});
-    this.downPaymentPct = this.downPayment / this.price;
-    this.interestRate =
-        clamp(orZero(interestRateInput), {min: 0, max: 100}) / 100;
-    this.pointValue = Math.max(0, orZero(pointValueInput) / 100) || 0.0025;
-    this.pointsPurchased = Math.max(0, orZero(pointsPurchasedInput));
-    if (this.interestRate && this.pointsPurchased) {
-      this.interestRate = Math.max(
-          0, this.interestRate - this.pointsPurchased * this.pointValue);
-    }
-    this.pmi = this.downPaymentPct >= 0.2 ?
-        0 :
-        Math.max(0, orZero(mortgageInsuranceInput));
-    this.pmiEquityPct =
-        clamp(orZero(pmiEquityPercentageInput), {min: 0, max: 100}) / 100 ||
-        0.22;
-    {
-      const rawMonthlyAbsolute = Math.max(0, orZero(propertyTaxAbsoluteInput));
-      const rawAnnualRate =
-          clamp(orZero(propertyTaxPercentageInput), {min: 0, max: 100}) / 100;
-
-      const rawExemptionAnnualSavings =
-          Math.max(0, orZero(residentialExemptionSavingsInput));
-      const rawAnnualDeduction = clamp(
-          orZero(residentialExemptionDeductionInput),
-          {min: 0, max: this.price});
-
-      if (rawExemptionAnnualSavings) {
-        const monthlyAbsolute =
-            rawMonthlyAbsolute || rawAnnualRate * this.homeValue / 12;
-        this.propertyTax = monthlyAbsolute - rawExemptionAnnualSavings / 12;
-        this.residentialExemptionPerMonth = rawExemptionAnnualSavings / 12;
-      } else {
-        const annualRate =
-            rawMonthlyAbsolute * 12 / this.homeValue || rawAnnualRate;
-        this.propertyTax =
-            annualRate * (this.homeValue - rawAnnualDeduction) / 12;
-        this.residentialExemptionPerMonth =
-            annualRate * rawAnnualDeduction / 12;
-      }
-    }
-    this.homeownersInsurance = Math.max(0, orZero(homeownersInsuranceInput));
-    this.closingCost = Math.max(0, orZero(closingCostInput));
-    // Assume a 30 year fixed loan.
-    this.mortgageTerm = Math.max(0, orZero(mortgageTermInput)) || 30;
-    this.n = 12 * this.mortgageTerm;
-    this.annualIncome = Math.max(0, orZero(annualIncomeInput));
-    this.monthlyDebt = Math.max(0, orZero(monthlyDebtInput));
-    this.totalAssets = Math.max(0, orZero(totalAssetsInput));
-
-    this.alreadyClosed = alreadyClosedInput.checked;
-    this.paymentsAlreadyMade =
-        clamp(orZero(paymentsAlreadyMadeInput), {min: 0, max: this.n});
-  }
-}
 
 // Set the contents of all the outputs based on the `ctx`.
 const setContents = (ctx: Context): void => {
@@ -327,14 +238,14 @@ const setContents = (ctx: Context): void => {
     monthlyPaymentAmountOutput.innerText = `${fmt.format(M + extras)}`;
     monthlyPaymentPmiOutput.innerText = `${fmt.format(M + extras + ctx.pmi)}`;
     const showPmi = ctx.pmi && ctx.downPaymentPct < ctx.pmiEquityPct;
-    getHtmlElt('monthly-payment-without-pmi-span').style.display =
+    utils.getHtmlElt('monthly-payment-without-pmi-span').style.display =
         showPmi ? '' : 'none';
-    getHtmlElt('monthly-payment-pmi-div').style.display = showPmi ? '' : 'none';
+    utils.getHtmlElt('monthly-payment-pmi-div').style.display =
+        showPmi ? '' : 'none';
     const schedule = calculatePaymentSchedule(ctx, M);
-    data = schedule;
     buildPaymentScheduleChart(schedule, keys);
     const pmiMonths =
-        countSatisfying(schedule, payment => payment.data.pmi !== 0);
+        utils.countSatisfying(schedule, payment => payment.data.pmi !== 0);
     pmiPaymentTimelineOutput.innerText = `${formatMonthNum(pmiMonths)} (${
         fmt.format(pmiMonths * ctx.pmi)} total)`;
     const cumulativeSums = cumulativeSumByFields(schedule, keys);
@@ -399,7 +310,6 @@ const setContents = (ctx: Context): void => {
                 (ctx.monthlyDebt + M + extras + ctx.pmi) / ctx.annualIncome *
                 12)}`);
   } else {
-    data = [];
     clearMonthlyPaymentOutputs();
   }
 
@@ -436,7 +346,7 @@ interface Margin {
 const showConditionalOutput =
     (condition: boolean, containerName: string, outputElt: HTMLElement,
      generateOutput: () => string) => {
-      const container = getHtmlElt(containerName);
+      const container = utils.getHtmlElt(containerName);
       let text;
       let display;
       if (condition) {
@@ -793,7 +703,7 @@ const clearMonthlyPaymentOutputs = (): void => {
   lifetimePaymentOutput.innerText = '';
 
   debtToIncomeOutput.innerText = '';
-  getHtmlElt('debt-to-income-ratio-div').style.display = 'none';
+  utils.getHtmlElt('debt-to-income-ratio-div').style.display = 'none';
 
   document.querySelector('#schedule_viz > svg:first-of-type')?.remove();
   document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
@@ -841,7 +751,7 @@ const populateFields = (): void => {
     }
   }
   if (hasValue) {
-    const ctx = new Context();
+    const ctx = contextFromInputs();
     showAmountHints(ctx);
     setContents(ctx);
   }
@@ -941,15 +851,12 @@ const clearDeprecatedStorage = () => {
   const url = new URL(location.href);
   let modified = false;
   for (const {name, deprecated} of urlParamMap.values())
-    if (deprecated)
-      modified = deleteParam(url, name) || modified;
+    if (deprecated) modified = deleteParam(url, name) || modified;
 
-  if (modified)
-    history.pushState({}, '', url.toString());
+  if (modified) history.pushState({}, '', url.toString());
 
   for (const {name, deprecated} of cookieValueMap.values())
-    if (deprecated)
-      deleteCookie(name);
+    if (deprecated) deleteCookie(name);
 };
 
 // Deletes the given parameter in `url`, if it exists. Returns true if `url` was
@@ -996,15 +903,6 @@ const cumulativeSumByFields =
           return results;
         };
 
-// Counts the number of elements of `data` which satisfy `predicate`.
-const countSatisfying = <T,>(data: readonly T[], predicate: (t: T) => boolean): number => {
-    let count = 0;
-    for (const t of data)
-      if (predicate(t))
-        ++count;
-    return count;
-  };
-
 // Returns the number of payments that can be made with the given total assets,
 // taking previously-made payments into account.
 const countBurndownMonths =
@@ -1028,5 +926,4 @@ populateFields();
 saveFields();
 clearDeprecatedStorage();
 attachListeners();
-console_prompt();
 })();
