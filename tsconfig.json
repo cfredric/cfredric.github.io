@@ -9,7 +9,7 @@
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "outDir": "./build",
+    "outDir": "./tsbuild",
     "removeComments": true,
     "strict": true,
     "target": "es5",
