@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
 import {Context} from './context';
+import {keys, Margin, PaymentRecord, PaymentRecordWithMonth, PaymentType} from './types';
 import * as utils from './utils';
 
 (function() {
@@ -78,18 +79,6 @@ const remainingEquityOutput =
 const debtToIncomeOutput = utils.getHtmlElt('debt-to-income-ratio-output');
 const firedTomorrowCountdownOutput =
     utils.getHtmlElt('fired-tomorrow-countdown-output');
-
-const keys = [
-  'principal',
-  'interest',
-  'hoa',
-  'property_tax',
-  'homeowners_insurance',
-  'pmi',
-] as const;
-type PaymentType = typeof keys[number];
-
-const nonLoanKeys = ['hoa', 'property_tax', 'homeowners_insurance'] as const;
 
 const COOKIE_ATTRIBUTES: Readonly<string[]> = [
   'Secure',
@@ -246,9 +235,9 @@ const setContents = (ctx: Context): void => {
     buildPaymentScheduleChart(schedule, keys);
     const pmiMonths =
         utils.countSatisfying(schedule, payment => payment.data.pmi !== 0);
-    pmiPaymentTimelineOutput.innerText = `${formatMonthNum(pmiMonths)} (${
+    pmiPaymentTimelineOutput.innerText = `${utils.formatMonthNum(pmiMonths)} (${
         fmt.format(pmiMonths * ctx.pmi)} total)`;
-    const cumulativeSums = cumulativeSumByFields(schedule, keys);
+    const cumulativeSums = utils.cumulativeSumByFields(schedule, keys);
     if (M) {
       buildCumulativeChart(cumulativeSums, ['principal', 'interest', 'pmi']);
       lifetimePaymentOutput.innerText =
@@ -262,8 +251,11 @@ const setContents = (ctx: Context): void => {
         !!ctx.totalAssets, 'fired-tomorrow-countdown-div',
         firedTomorrowCountdownOutput,
         () => `${
-            formatMonthNum(
-                countBurndownMonths(ctx, schedule.map(d => d.data)))}`)
+            utils.formatMonthNum(utils.countBurndownMonths(
+                ctx.totalAssets -
+                    (ctx.alreadyClosed ? 0 : ctx.downPayment + ctx.closingCost),
+                schedule.slice(ctx.paymentsAlreadyMade).map(d => d.data),
+                ctx.monthlyDebt))}`)
 
     showConditionalOutput(
         !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-paid-so-far-div',
@@ -271,7 +263,7 @@ const setContents = (ctx: Context): void => {
         () => `${
             fmt.format(
                 (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-                sumOfTypes(
+                utils.sumOfKeys(
                     cumulativeSums[ctx.paymentsAlreadyMade]!.data, keys))}`);
 
     const absoluteEquityOwned = (ctx.alreadyClosed ? ctx.downPayment : 0) +
@@ -286,10 +278,10 @@ const setContents = (ctx: Context): void => {
     showConditionalOutput(
         !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-loan-owed-div',
         totalLoanOwedOutput, () => {
-          const totalPrincipalAndInterestPaid = sumOfTypes(
+          const totalPrincipalAndInterestPaid = utils.sumOfKeys(
               cumulativeSums[ctx.paymentsAlreadyMade]!.data,
               ['principal', 'interest']);
-          const totalPrincipalAndInterestToPay = sumOfTypes(
+          const totalPrincipalAndInterestToPay = utils.sumOfKeys(
               cumulativeSums[cumulativeSums.length - 1]!.data,
               ['principal', 'interest']);
           return `${
@@ -320,27 +312,9 @@ const setContents = (ctx: Context): void => {
           )}`;
 };
 
-// Sums the given types of payments in a record.
-const sumOfTypes = (data: PaymentRecord, keys: readonly PaymentType[]) =>
-    d3.sum(keys.map(key => data[key]));
-
 // Computes the sum of principal + interest to be paid each month of the loan.
 const monthlyFormula = (P: number, r: number, n: number): number =>
     (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-
-interface PaymentRecordWithMonth {
-  month: number;
-  data: PaymentRecord;
-}
-
-type PaymentRecord = Record<PaymentType, number>;
-
-interface Margin {
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
-}
 
 // Conditionally shows or hides an output.
 const showConditionalOutput =
@@ -531,11 +505,6 @@ const buildCumulativeChart =
 // Adds an alpha channel to a hex color string to make it translucent.
 const transparent = (color: string): string => `${color}aa`;
 
-// Formats a number of months into an integral number of years and integral
-// number of months.
-const formatMonthNum = (m: number): string =>
-    (m >= 12 ? `${Math.floor(m / 12)}y ` : '') + `${m % 12}mo`;
-
 // Creates a figure.
 const makeSvg =
     (divId: string, width: number, height: number, margin: Margin):
@@ -615,7 +584,7 @@ const makeTooltip =
                     k => `${fieldDisplay(k)}: ${fmt.format(datum.data[k])}` +
                         '\n')
                 .join('') +
-            `Month: ${formatMonthNum(datum.month)}`;
+            `Month: ${utils.formatMonthNum(datum.month)}`;
         tooltip.attr('transform', `translate(${x(datum.month)},${pointer[1]})`)
             .call(callout, value, paymentTypeIdx);
       });
@@ -878,46 +847,6 @@ const setCookie = (name: string, value: string) => {
 const deleteCookie = (name: string) => {
   document.cookie = `${name}=0;${COOKIE_SUFFIX_DELETE}`;
 };
-
-// Returns an array where the ith element is an object with the amount paid of
-// each type before (and excluding) the ith month.
-const cumulativeSumByFields =
-    (data: readonly PaymentRecordWithMonth[], fields: readonly PaymentType[]):
-        PaymentRecordWithMonth[] => {
-          const results = new Array<PaymentRecordWithMonth>(data.length + 1);
-          const record = {month: 0, data: {} as PaymentRecord};
-          for (const k of fields) {
-            record.data[k] = 0;
-          }
-          results[0] = record;
-          for (const [idx, datum] of data.entries()) {
-            const newData = {} as PaymentRecord;
-            for (const field of fields) {
-              newData[field] = datum.data[field] + results[idx]!.data[field];
-            }
-            results[idx + 1] = {
-              data: newData,
-              month: datum.month,
-            };
-          }
-          return results;
-        };
-
-// Returns the number of payments that can be made with the given total assets,
-// taking previously-made payments into account.
-const countBurndownMonths =
-    (ctx: Context, schedule: readonly PaymentRecord[]): number => {
-      let assets = ctx.totalAssets -
-          (ctx.alreadyClosed ? 0 : ctx.downPayment + ctx.closingCost);
-      for (const [i, data] of schedule.slice(ctx.paymentsAlreadyMade)
-               .entries()) {
-        const due = sumOfTypes(data, keys) + ctx.monthlyDebt;
-        if (due >= assets) return i;
-        assets -= due;
-      }
-      return schedule.length - ctx.paymentsAlreadyMade +
-          Math.floor(assets / sumOfTypes(schedule[0]!, nonLoanKeys));
-    };
 
 populateFields();
 // To support URL param / cookie deprecations cleanly, we write out the UI
