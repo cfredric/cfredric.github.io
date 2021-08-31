@@ -49,6 +49,9 @@ url: https://cfredric.github.io
 # then add in the baseurl here, like this: "/repository-name"
 baseurl: ""
 
+# remote_theme: pages-themes/midnight@v0.2.0
+theme: jekyll-theme-midnight
+
 #
 # !! You don't need to change any of the configuration flags below !!
 #
@@ -75,13 +78,21 @@ sass:
 # Use the following plug-ins
 plugins:
   - jekyll-sitemap # Create a sitemap using the official Jekyll sitemap gem
-  - jekyll-feed # Create an Atom feed using the official Jekyll feed gem
+  - jekyll-remote-theme
+  - jekyll-theme-midnight
 
 # Exclude these files from your production _site
 exclude:
+  - .cache
+  - .github
+  - .gitignore
+  - CNAME
   - Gemfile
   - Gemfile.lock
   - LICENSE
   - README.md
-  - CNAME
-  - .cache
+  - jest.config.js
+  - node_modules
+  - package-lock.json
+  - package.json
+  - tsconfig.json
