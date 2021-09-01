@@ -1,0 +1,21 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+#header {
+  position: unset !important;
+}
+
+section {
+  margin-top: 0;
+}
+
+nav {
+  font-size: 22px;
+  background-color: unset !important;
+
+  a {
+    letter-spacing: 1px;
+  }
+}

@@ -16,6 +16,8 @@ const hundredthsPctFmt = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 });
 
+const textColor = '#f0e7d5';
+
 const clearInputsButton = utils.getHtmlElt('clear-inputs-button');
 
 // Inputs.
@@ -541,7 +543,8 @@ const makeAxes =
       svg.append('text')
           .attr('transform', `translate(${width / 2}, ${height + margin.top})`)
           .style('text-anchor', 'middle')
-          .text('Month');
+          .text('Month')
+          .attr('fill', textColor);
 
       const y =
           d3.scaleLinear()
@@ -559,7 +562,8 @@ const makeAxes =
           .attr('x', 0 - height / 2)
           .attr('dy', '1em')
           .style('text-anchor', 'middle')
-          .text(yLabel);
+          .text(yLabel)
+          .attr('fill', textColor);
 
       return {x, y};
     };
@@ -661,7 +665,8 @@ const makeLegend =
           .attr('x', 18)
           .attr('y', (_, i) => i * 18)
           .attr('text-anchor', 'start')
-          .attr('dominant-baseline', 'hanging');
+          .attr('dominant-baseline', 'hanging')
+          .attr('fill', textColor);
     };
 
 // Clears output elements associated with monthly payments.

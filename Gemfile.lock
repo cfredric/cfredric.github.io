@@ -277,7 +277,6 @@ DEPENDENCIES
   jekyll-feed
   jekyll-remote-theme
   jekyll-sitemap
-  jekyll-theme-midnight
 
 BUNDLED WITH
    2.1.2

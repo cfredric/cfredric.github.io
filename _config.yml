@@ -2,7 +2,6 @@
 # This file contains configuration flags to customize your site
 #
 
-# Name of your site (displayed in the header)
 name: Programming || math
 
 # Short bio or description (displayed in the header)
@@ -49,8 +48,7 @@ url: https://cfredric.github.io
 # then add in the baseurl here, like this: "/repository-name"
 baseurl: ""
 
-# remote_theme: pages-themes/midnight@v0.2.0
-theme: jekyll-theme-midnight
+remote_theme: pages-themes/midnight@v0.2.0
 
 #
 # !! You don't need to change any of the configuration flags below !!
@@ -79,7 +77,6 @@ sass:
 plugins:
   - jekyll-sitemap # Create a sitemap using the official Jekyll sitemap gem
   - jekyll-remote-theme
-  - jekyll-theme-midnight
 
 # Exclude these files from your production _site
 exclude:
