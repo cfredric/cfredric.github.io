@@ -1,6 +1,7 @@
 import * as d3 from 'd3';
+
 import {Context} from './context';
-import {keys, Margin, PaymentRecord, PaymentRecordWithMonth, PaymentType} from './types';
+import {InputEntry, keys, Margin, PaymentRecord, PaymentRecordWithMonth, PaymentType} from './types';
 import * as utils from './utils';
 
 (function() {
@@ -132,11 +133,6 @@ const fieldDisplay = (pt: PaymentType): string => {
       return 'PMI';
   }
 };
-
-interface InputEntry {
-  name: string;
-  deprecated?: boolean;
-}
 
 const urlParamMap: Readonly<Map<HTMLInputElement, InputEntry>> = new Map([
   [priceInput, {name: 'price'}],
@@ -737,14 +733,14 @@ const saveFields = (changed?: HTMLInputElement): void => {
   let urlChanged = false;
   if (changed) {
     if (urlParamMap.has(changed)) {
-      urlChanged =
-          urlChanged || updateURLParam(url, changed, urlParamMap.get(changed)!);
+      urlChanged = urlChanged ||
+          utils.updateURLParam(url, changed, urlParamMap.get(changed)!);
     }
     if (cookieValueMap.has(changed))
       updateCookie(changed, cookieValueMap.get(changed)!);
   } else {
     for (const [elt, entry] of urlParamMap.entries()) {
-      urlChanged = urlChanged || updateURLParam(url, elt, entry);
+      urlChanged = urlChanged || utils.updateURLParam(url, elt, entry);
     }
     for (const [elt, entry] of cookieValueMap.entries()) {
       updateCookie(elt, entry);
@@ -759,7 +755,7 @@ const clearInputs = () => {
   let urlChanged = false;
   for (const [elt, entry] of urlParamMap.entries()) {
     elt.value = '';
-    urlChanged = deleteParam(url, entry.name) || urlChanged;
+    urlChanged = utils.deleteParam(url, entry.name) || urlChanged;
   }
   if (urlChanged) history.pushState({}, '', url.toString());
   for (const [elt, entry] of cookieValueMap.entries()) {
@@ -767,33 +763,6 @@ const clearInputs = () => {
     deleteCookie(entry.name);
   }
 };
-
-// Updates the value of the given URL parameter in `url`.
-const updateURLParam =
-    (url: URL, elt: HTMLInputElement, entry: InputEntry): boolean => {
-      if (entry.deprecated) return false;
-      let value;
-      let hasValue;
-      switch (elt.type) {
-        case 'text':
-          value = encodeURIComponent(elt.value);
-          hasValue = value !== '';
-          break;
-        case 'checkbox':
-          value = '';
-          hasValue = elt.checked;
-          break;
-        default:
-          throw new Error('unreachable');
-      }
-      if (hasValue) {
-        const result = !url.searchParams.has(entry.name) ||
-            url.searchParams.get(entry.name) !== value;
-        url.searchParams.set(entry.name, value);
-        return result;
-      }
-      return deleteParam(url, entry.name);
-    };
 
 // Updates the value of the given cookie.
 const updateCookie =
@@ -825,20 +794,12 @@ const clearDeprecatedStorage = () => {
   const url = new URL(location.href);
   let modified = false;
   for (const {name, deprecated} of urlParamMap.values())
-    if (deprecated) modified = deleteParam(url, name) || modified;
+    if (deprecated) modified = utils.deleteParam(url, name) || modified;
 
   if (modified) history.pushState({}, '', url.toString());
 
   for (const {name, deprecated} of cookieValueMap.values())
     if (deprecated) deleteCookie(name);
-};
-
-// Deletes the given parameter in `url`, if it exists. Returns true if `url` was
-// modified.
-const deleteParam = (url: URL, name: string): boolean => {
-  const hadValue = url.searchParams.has(name);
-  url.searchParams.delete(name);
-  return hadValue;
 };
 
 // Sets the value of the cookie with the given name.

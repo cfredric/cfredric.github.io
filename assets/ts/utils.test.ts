@@ -208,3 +208,97 @@ test('formatMonthNum', () => {
   expect(utils.formatMonthNum(NaN)).toBe('NaN');
   expect(utils.formatMonthNum(-NaN)).toBe('NaN');
 });
+
+test('deleteParam', () => {
+  const withValue = 'https://example.test/page?foo=bar&baz=quux';
+  const withChecked = 'https://example.test/page?foo=&baz=quux';
+  const withoutParam = 'https://example.test/page?baz=quux';
+
+  let url;
+
+  // Deletes param when present.
+  url = new URL(withValue);
+  expect(utils.deleteParam(url, 'foo')).toBe(true);
+
+  // Deletes checked when present.
+  url = new URL(withChecked);
+  expect(utils.deleteParam(url, 'foo')).toBe(true);
+
+  // No-op when missing.
+  url = new URL(withoutParam);
+  expect(utils.deleteParam(url, 'foo')).toBe(false);
+});
+
+test('updateURLParam', () => {
+  const blank = 'https://example.test/page';
+
+  let url;
+
+  // Text inputs.
+  {
+    const text = document.createElement('input');
+    const withParam = 'https://example.test/page?foo=bar';
+    const withParams = 'https://example.test/page?foo=bar&baz=quux';
+
+    // Simple addition.
+    url = new URL(blank);
+    text.value = 'bar';
+    expect(utils.updateURLParam(url, text, {name: 'foo'})).toBe(true);
+    expect(url.toString()).toBe('https://example.test/page?foo=bar');
+
+    // Replacement.
+    url = new URL(withParam);
+    text.value = 'baz';
+    expect(utils.updateURLParam(url, text, {name: 'foo'})).toBe(true);
+    expect(url.toString()).toBe('https://example.test/page?foo=baz');
+
+    // Addition URI encodes.
+    url = new URL(blank);
+    text.value = 'bar&baz';
+    expect(utils.updateURLParam(url, text, {name: 'foo'})).toBe(true);
+    expect(url.toString()).toBe('https://example.test/page?foo=bar%2526baz');
+
+    // Replacement URI encodes.
+    url = new URL(withParam);
+    text.value = 'bar&baz';
+    expect(utils.updateURLParam(url, text, {name: 'foo'})).toBe(true);
+    expect(url.toString()).toBe('https://example.test/page?foo=bar%2526baz');
+
+    // Deletes text.
+    url = new URL(withParam);
+    text.value = '';
+    expect(utils.updateURLParam(url, text, {name: 'foo'})).toBe(true);
+    expect(url.toString()).toBe('https://example.test/page');
+
+    // Coexists with others.
+    url = new URL(withParams);
+    text.value = 'baz';
+    expect(utils.updateURLParam(url, text, {name: 'foo'})).toBe(true);
+    expect(url.toString()).toBe('https://example.test/page?foo=baz&baz=quux');
+  }
+
+  // Checkbox inputs.
+  {
+    const withChecked = 'https://example.test/page?foo=';
+    const withOthers = 'https://example.test/page?foo=&boo=far';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+
+    // Simple addition.
+    url = new URL(blank);
+    checkbox.checked = true;
+    expect(utils.updateURLParam(url, checkbox, {name: 'foo'})).toBe(true);
+    expect(url.toString()).toBe('https://example.test/page?foo=');
+
+    // Deletes.
+    url = new URL(withChecked);
+    checkbox.checked = false;
+    expect(utils.updateURLParam(url, checkbox, {name: 'foo'})).toBe(true);
+    expect(url.toString()).toBe('https://example.test/page');
+
+    url = new URL(withOthers);
+    checkbox.checked = false;
+    expect(utils.updateURLParam(url, checkbox, {name: 'foo'})).toBe(true);
+    expect(url.toString()).toBe('https://example.test/page?boo=far');
+  }
+});

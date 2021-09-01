@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
-import {keys, nonLoanKeys, PaymentRecord, PaymentRecordWithMonth, PaymentType} from './types';
+
+import {InputEntry, keys, nonLoanKeys, PaymentRecord, PaymentRecordWithMonth, PaymentType} from './types';
 
 // Returns the numeric value of the input element, or 0 if the input was empty.
 export const orZero = (elt: HTMLInputElement): number => {
@@ -77,18 +78,54 @@ export const countBurndownMonths =
 
 // Formats a number of months into an integral number of years and integral
 // number of months.
-export const formatMonthNum = (m: number): string => {
-  if (!Number.isFinite(m)) {
-    if (Number.isNaN(m)) return 'NaN';
-    if (m > 0) return 'forever';
-  }
-  if (m <= 0) return '0mo';
+export const formatMonthNum = (m: number):
+    string => {
+      if (!Number.isFinite(m)) {
+        if (Number.isNaN(m)) return 'NaN';
+        if (m > 0) return 'forever';
+      }
+      if (m <= 0) return '0mo';
 
-  const years = Math.floor(m / 12);
-  const months = m % 12;
+      const years = Math.floor(m / 12);
+      const months = m % 12;
 
-  let output = years !== 0 ? `${years}y ` : '';
-  if (months !== 0) output += `${months}mo`;
+      let output = years !== 0 ? `${years}y ` : '';
+      if (months !== 0) output += `${months}mo`;
 
-  return output.trim();
-}
+      return output.trim();
+    }
+
+// Deletes the given parameter in `url`, if it exists. Returns true if `url` was
+// modified.
+export const deleteParam = (url: URL, name: string): boolean => {
+  const hadValue = url.searchParams.has(name);
+  url.searchParams.delete(name);
+  return hadValue;
+};
+
+// Updates the value of the given URL parameter in `url`.
+export const updateURLParam =
+    (url: URL, elt: HTMLInputElement, entry: InputEntry): boolean => {
+      if (entry.deprecated) return false;
+      let value;
+      let hasValue;
+      switch (elt.type) {
+        case 'text':
+          value = encodeURIComponent(elt.value);
+          hasValue = value !== '';
+          break;
+        case 'checkbox':
+          value = '';
+          hasValue = elt.checked;
+          break;
+        default:
+          throw new Error('unreachable');
+      }
+      if (hasValue) {
+        const result = !url.searchParams.has(entry.name) ||
+            url.searchParams.get(entry.name) !== value;
+        url.searchParams.set(entry.name, value);
+        return result;
+      }
+      return deleteParam(url, entry.name);
+    };

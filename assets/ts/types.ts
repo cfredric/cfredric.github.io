@@ -19,6 +19,11 @@ export interface PaymentRecordWithMonth {
   data: PaymentRecord;
 }
 
+export interface InputEntry {
+  name: string;
+  deprecated?: boolean;
+}
+
 export interface Margin {
   top: number;
   bottom: number;
