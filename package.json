@@ -18,7 +18,8 @@
     "watch": "tsc --watch",
     "build": "parcel build -d build --public-url \"/build/\" ./assets/ts/mortgage.ts",
     "start": "jekyll serve",
-    "test": "jest"
+    "test": "jest",
+    "format": "clang-format -style=Google -i assets/ts/*"
   },
   "repository": {
     "type": "git",
