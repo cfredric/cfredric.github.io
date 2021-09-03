@@ -3,6 +3,7 @@
  */
 
 import * as d3 from 'd3';
+import {Decimal} from 'decimal.js';
 import * as utils from './utils';
 
 test('countSatisfying no matches', () => {
@@ -16,13 +17,13 @@ test('countSatisfying basic', () => {
 test('orZero basic', () => {
   const elt = document.createElement('input');
   elt.value = '0';
-  expect(utils.orZero(elt)).toBe(0);
+  expect(utils.orZero(elt)).toStrictEqual(new Decimal(0));
 
   elt.value = '723';
-  expect(utils.orZero(elt)).toBe(723);
+  expect(utils.orZero(elt)).toStrictEqual(new Decimal(723));
 
   elt.value = 'foo';
-  expect(utils.orZero(elt)).toBe(0);
+  expect(utils.orZero(elt)).toStrictEqual(new Decimal(0));
 });
 
 test('cumulativeSumByFields', () => {
@@ -31,34 +32,34 @@ test('cumulativeSumByFields', () => {
                {
                  month: 0,
                  data: {
-                   'principal': 1,
-                   'interest': 0,
-                   'hoa': 0,
-                   'property_tax': 0,
-                   'pmi': 0,
-                   'homeowners_insurance': 0
+                   'principal': new Decimal(1),
+                   'interest': new Decimal(0),
+                   'hoa': new Decimal(0),
+                   'property_tax': new Decimal(0),
+                   'pmi': new Decimal(0),
+                   'homeowners_insurance': new Decimal(0),
                  },
                },
                {
                  month: 1,
                  data: {
-                   'principal': 2,
-                   'interest': 0,
-                   'hoa': 0,
-                   'property_tax': 0,
-                   'pmi': 0,
-                   'homeowners_insurance': 0
+                   'principal': new Decimal(2),
+                   'interest': new Decimal(0),
+                   'hoa': new Decimal(0),
+                   'property_tax': new Decimal(0),
+                   'pmi': new Decimal(0),
+                   'homeowners_insurance': new Decimal(0),
                  },
                },
                {
                  month: 2,
                  data: {
-                   'principal': 4,
-                   'interest': 0,
-                   'hoa': 0,
-                   'property_tax': 0,
-                   'pmi': 0,
-                   'homeowners_insurance': 0
+                   'principal': new Decimal(4),
+                   'interest': new Decimal(0),
+                   'hoa': new Decimal(0),
+                   'property_tax': new Decimal(0),
+                   'pmi': new Decimal(0),
+                   'homeowners_insurance': new Decimal(0),
                  },
                },
              ],
@@ -67,25 +68,25 @@ test('cumulativeSumByFields', () => {
         {
           month: 0,
           data: {
-            'principal': 0,
+            'principal': new Decimal(0),
           },
         },
         {
           month: 1,
           data: {
-            'principal': 1,
+            'principal': new Decimal(1),
           },
         },
         {
           month: 2,
           data: {
-            'principal': 3,
+            'principal': new Decimal(3),
           },
         },
         {
           month: 3,
           data: {
-            'principal': 7,
+            'principal': new Decimal(7),
           },
         },
       ]);
@@ -94,100 +95,100 @@ test('cumulativeSumByFields', () => {
 test('countBurndownMonths', () => {
   // Can pay off full loan, no recurring debts, no non-loan payments.
   expect(utils.countBurndownMonths(
-             100,
+             new Decimal(100),
              [
                {
-                 'principal': 99,
-                 'interest': 0,
-                 'hoa': 0,
-                 'property_tax': 0,
-                 'pmi': 0,
-                 'homeowners_insurance': 0
+                 'principal': new Decimal(99),
+                 'interest': new Decimal(0),
+                 'hoa': new Decimal(0),
+                 'property_tax': new Decimal(0),
+                 'pmi': new Decimal(0),
+                 'homeowners_insurance': new Decimal(0),
                },
              ],
-             0))
+             new Decimal(0)))
       .toBe(Infinity);
 
   // Can pay off full loan, no recurring debts, but some non-loan payments.
   expect(utils.countBurndownMonths(
-             100,
+             new Decimal(100),
              [
                {
-                 'principal': 95,
-                 'interest': 0,
-                 'hoa': 1,
-                 'property_tax': 0,
-                 'pmi': 0,
-                 'homeowners_insurance': 0
+                 'principal': new Decimal(95),
+                 'interest': new Decimal(0),
+                 'hoa': new Decimal(1),
+                 'property_tax': new Decimal(0),
+                 'pmi': new Decimal(0),
+                 'homeowners_insurance': new Decimal(0),
                },
              ],
-             0))
+             new Decimal(0)))
       .toBe(5);
 
   // Can't pay off full loan; no recurring debts; some non-loan payments.
   expect(utils.countBurndownMonths(
-             100,
+             new Decimal(100),
              [
                {
-                 'principal': 95,
-                 'interest': 0,
-                 'hoa': 1,
-                 'property_tax': 0,
-                 'pmi': 0,
-                 'homeowners_insurance': 0
+                 'principal': new Decimal(95),
+                 'interest': new Decimal(0),
+                 'hoa': new Decimal(1),
+                 'property_tax': new Decimal(0),
+                 'pmi': new Decimal(0),
+                 'homeowners_insurance': new Decimal(0),
                },
                {
-                 'principal': 95,
-                 'interest': 0,
-                 'hoa': 1,
-                 'property_tax': 0,
-                 'pmi': 0,
-                 'homeowners_insurance': 0
+                 'principal': new Decimal(95),
+                 'interest': new Decimal(0),
+                 'hoa': new Decimal(1),
+                 'property_tax': new Decimal(0),
+                 'pmi': new Decimal(0),
+                 'homeowners_insurance': new Decimal(0),
                },
              ],
-             0))
+             new Decimal(0)))
       .toBe(1);
 
   // Can't pay off full loan; some recurring debts; some non-loan payments.
   expect(utils.countBurndownMonths(
-             100,
+             new Decimal(100),
              [
                {
-                 'principal': 95,
-                 'interest': 0,
-                 'hoa': 1,
-                 'property_tax': 0,
-                 'pmi': 0,
-                 'homeowners_insurance': 0
+                 'principal': new Decimal(95),
+                 'interest': new Decimal(0),
+                 'hoa': new Decimal(1),
+                 'property_tax': new Decimal(0),
+                 'pmi': new Decimal(0),
+                 'homeowners_insurance': new Decimal(0),
                },
                {
-                 'principal': 95,
-                 'interest': 0,
-                 'hoa': 1,
-                 'property_tax': 0,
-                 'pmi': 0,
-                 'homeowners_insurance': 0
+                 'principal': new Decimal(95),
+                 'interest': new Decimal(0),
+                 'hoa': new Decimal(1),
+                 'property_tax': new Decimal(0),
+                 'pmi': new Decimal(0),
+                 'homeowners_insurance': new Decimal(0),
                },
              ],
-             2))
+             new Decimal(2)))
       .toBe(1);
 
   // Can pay off full loan; some recurring debts; some non-loan payments.  At
-  // the end of the mortgage, assets will be 9; then return schedule.length + (9
-  // / (2 + 4)) = 1 + 1 = 2
+  // the end of the mortgage, assets will be 9; then return schedule.length +
+  // (9 / (2 + 4)) = 1 + 1 = 2
   expect(utils.countBurndownMonths(
-             16,
+             new Decimal(16),
              [
                {
-                 'principal': 1,
-                 'interest': 0,
-                 'hoa': 2,
-                 'property_tax': 0,
-                 'pmi': 0,
-                 'homeowners_insurance': 0
+                 'principal': new Decimal(1),
+                 'interest': new Decimal(0),
+                 'hoa': new Decimal(2),
+                 'property_tax': new Decimal(0),
+                 'pmi': new Decimal(0),
+                 'homeowners_insurance': new Decimal(0),
                },
              ],
-             4))
+             new Decimal(4)))
       .toBe(2);
 });
 

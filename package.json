@@ -4,7 +4,8 @@
   "description": "blag",
   "main": "index.js",
   "dependencies": {
-    "d3": "^6.5.0"
+    "d3": "^6.5.0",
+    "decimal.js": "^10.3.1"
   },
   "devDependencies": {
     "@types/d3": "^6.3.0",

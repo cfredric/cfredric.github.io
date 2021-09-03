@@ -1,11 +1,17 @@
-import * as d3 from 'd3';
+import {Decimal} from 'decimal.js';
 
 import {InputEntry, keys, nonLoanKeys, PaymentRecord, PaymentRecordWithMonth, PaymentType} from './types';
 
 // Returns the numeric value of the input element, or 0 if the input was empty.
-export const orZero = (elt: HTMLInputElement): number => {
+export const orZeroN = (elt: HTMLInputElement): number => {
   const num = Number.parseFloat(elt.value);
   return Number.isNaN(num) ? 0 : num;
+};
+// Decimal version of the above.
+export const orZero = (elt: HTMLInputElement): Decimal => {
+  const str = elt.value;
+  if (Number.isNaN(Number.parseFloat(str))) return new Decimal(0);
+  return new Decimal(str);
 };
 // Returns the HTMLInputElement with the given ID, or throws an informative
 // error.
@@ -33,8 +39,8 @@ export const countSatisfying = <T,>(data: readonly T[], predicate: (t: T) => boo
   };
 
 // Sums the given keys in a record.
-export const sumOfKeys = <T extends string,>(data: Record<T, number>, keys: readonly T[]) =>
-    d3.sum(keys.map(key => data[key]));
+export const sumOfKeys = <T extends string,>(data: Record<T, Decimal>, keys: readonly T[]) =>
+    Decimal.sum(...keys.map(key => data[key]));
 
 // Returns an array where the ith element is an object with the amount paid of
 // each type before (and excluding) the ith month.
@@ -44,13 +50,13 @@ export const cumulativeSumByFields =
           const results = new Array<PaymentRecordWithMonth>(data.length + 1);
           const record = {month: 0, data: {} as PaymentRecord};
           for (const k of fields) {
-            record.data[k] = 0;
+            record.data[k] = new Decimal(0);
           }
           results[0] = record;
           for (const [idx, datum] of data.entries()) {
             const newData = {} as PaymentRecord;
             for (const field of fields) {
-              newData[field] = datum.data[field] + results[idx]!.data[field];
+              newData[field] = datum.data[field].add(results[idx]!.data[field]);
             }
             results[idx + 1] = {
               data: newData,
@@ -63,17 +69,19 @@ export const cumulativeSumByFields =
 // Returns the number of payments that can be made with the given total assets,
 // taking previously-made payments into account.
 export const countBurndownMonths =
-    (startingAssets: number, schedule: readonly PaymentRecord[],
-     monthlyDebt: number): number => {
+    (startingAssets: Decimal, schedule: readonly PaymentRecord[],
+     monthlyDebt: Decimal): number => {
       let assets = startingAssets;
       for (const [i, data] of schedule.entries()) {
-        const due = sumOfKeys(data, keys) + monthlyDebt;
-        if (due >= assets) return i;
-        assets -= due;
+        const due = sumOfKeys(data, keys).add(monthlyDebt);
+        if (due.gt(assets)) return i;
+        assets = assets.sub(due);
       }
       return schedule.length +
-          Math.floor(
-              assets / (sumOfKeys(schedule[0]!, nonLoanKeys) + monthlyDebt));
+          Decimal
+              .floor(assets.div(
+                  sumOfKeys(schedule[0]!, nonLoanKeys).add(monthlyDebt)))
+              .toNumber();
     };
 
 // Formats a number of months into an integral number of years and integral
@@ -129,3 +137,12 @@ export const updateURLParam =
       }
       return deleteParam(url, entry.name);
     };
+
+// Returns the first non-zero argument, or zero if all arguments are zero (or
+// none are provided).
+export const chooseNonzero = (...xs: Decimal[]): Decimal => {
+  for (const x of xs) {
+    if (!x.eq(0)) return x;
+  }
+  return new Decimal(0);
+};

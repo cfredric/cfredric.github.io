@@ -1,3 +1,5 @@
+import {Decimal} from 'decimal.js';
+
 export const keys = [
   'principal',
   'interest',
@@ -12,7 +14,7 @@ export const nonLoanKeys =
 
 export type PaymentType = typeof keys[number];
 
-export type PaymentRecord = Record<PaymentType, number>;
+export type PaymentRecord = Record<PaymentType, Decimal>;
 
 export interface PaymentRecordWithMonth {
   month: number;

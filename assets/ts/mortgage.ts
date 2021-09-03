@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
 import {InputEntry, keys, Margin, PaymentRecord, PaymentRecordWithMonth, PaymentType} from './types';
@@ -172,7 +173,7 @@ const contextFromInputs = () => new Context({
   downPaymentAbsolute: utils.orZero(downPaymentAbsoluteInput),
   interestRate: utils.orZero(interestRateInput),
   pointValue: utils.orZero(pointValueInput),
-  pointsPurchased: utils.orZero(pointsPurchasedInput),
+  pointsPurchased: utils.orZeroN(pointsPurchasedInput),
   pmi: utils.orZero(mortgageInsuranceInput),
   pmiEquityPercent: utils.orZero(pmiEquityPercentageInput),
   propertyTaxAbsolute: utils.orZero(propertyTaxAbsoluteInput),
@@ -184,12 +185,12 @@ const contextFromInputs = () => new Context({
   homeownersInsurance: utils.orZero(homeownersInsuranceInput),
   closingCost: utils.orZero(closingCostInput),
   // Assume a 30 year fixed loan.
-  mortgageTerm: utils.orZero(mortgageTermInput),
+  mortgageTerm: utils.orZeroN(mortgageTermInput),
   annualIncome: utils.orZero(annualIncomeInput),
   monthlyDebt: utils.orZero(monthlyDebtInput),
   totalAssets: utils.orZero(totalAssetsInput),
   alreadyClosed: alreadyClosedInput.checked,
-  paymentsAlreadyMade: utils.orZero(paymentsAlreadyMadeInput),
+  paymentsAlreadyMade: utils.orZeroN(paymentsAlreadyMadeInput),
 });
 
 // Attaches listeners to react to user input, URL changes.
@@ -209,21 +210,25 @@ const attachListeners = (): void => {
 
 // Set the contents of all the outputs based on the `ctx`.
 const setContents = (ctx: Context): void => {
-  loanAmountOutput.innerText = `${fmt.format(ctx.price - ctx.downPayment)}`;
+  loanAmountOutput.innerText =
+      `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
 
-  if (ctx.interestRate || ctx.downPayment === ctx.price) {
-    const M = ctx.downPayment === ctx.price ?
-        0 :
+  if (!ctx.interestRate.eq(0) || ctx.downPayment.eq(ctx.price)) {
+    const M = ctx.downPayment.eq(ctx.price) ?
+        new Decimal(0) :
         monthlyFormula(
-            ctx.price * (1 - ctx.downPaymentPct),
-            ctx.interestRate / 12,
+            ctx.price.mul(Decimal.sub(1, ctx.downPaymentPct)),
+            ctx.interestRate.div(12),
             ctx.n,
         );
-    principalAndInterestOutput.innerText = `${fmt.format(M)}`;
-    const extras = ctx.hoa + ctx.propertyTax + ctx.homeownersInsurance;
+    principalAndInterestOutput.innerText = `${fmt.format(M.toNumber())}`;
+    const extras =
+        Decimal.sum(ctx.hoa, ctx.propertyTax, ctx.homeownersInsurance);
 
-    monthlyPaymentAmountOutput.innerText = `${fmt.format(M + extras)}`;
-    monthlyPaymentPmiOutput.innerText = `${fmt.format(M + extras + ctx.pmi)}`;
+    monthlyPaymentAmountOutput.innerText =
+        `${fmt.format(M.add(extras).toNumber())}`;
+    monthlyPaymentPmiOutput.innerText =
+        `${fmt.format(Decimal.sum(M, extras, ctx.pmi).toNumber())}`;
     const showPmi = ctx.pmi && ctx.downPaymentPct < ctx.pmiEquityPct;
     utils.getHtmlElt('monthly-payment-without-pmi-span').style.display =
         showPmi ? '' : 'none';
@@ -232,26 +237,28 @@ const setContents = (ctx: Context): void => {
     const schedule = calculatePaymentSchedule(ctx, M);
     buildPaymentScheduleChart(schedule, keys);
     const pmiMonths =
-        utils.countSatisfying(schedule, payment => payment.data.pmi !== 0);
+        utils.countSatisfying(schedule, payment => !payment.data.pmi.eq(0));
     pmiPaymentTimelineOutput.innerText = `${utils.formatMonthNum(pmiMonths)} (${
-        fmt.format(pmiMonths * ctx.pmi)} total)`;
+        fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`;
     const cumulativeSums = utils.cumulativeSumByFields(schedule, keys);
-    if (M) {
+    if (!M.eq(0)) {
       buildCumulativeChart(cumulativeSums, ['principal', 'interest', 'pmi']);
-      lifetimePaymentOutput.innerText =
-          `${fmt.format(ctx.n * M + d3.sum(schedule, d => d.data.pmi))}`;
+      lifetimePaymentOutput.innerText = `${
+          fmt.format(Decimal.sum(M.mul(ctx.n), ...schedule.map(d => d.data.pmi))
+                         .toNumber())}`;
     } else {
       document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
       lifetimePaymentOutput.innerText = `${fmt.format(0)}`;
     }
 
     showConditionalOutput(
-        !!ctx.totalAssets, 'fired-tomorrow-countdown-div',
+        !ctx.totalAssets.eq(0), 'fired-tomorrow-countdown-div',
         firedTomorrowCountdownOutput,
         () => `${
             utils.formatMonthNum(utils.countBurndownMonths(
-                ctx.totalAssets -
-                    (ctx.alreadyClosed ? 0 : ctx.downPayment + ctx.closingCost),
+                ctx.totalAssets.sub(
+                    (ctx.alreadyClosed ? new Decimal(0) :
+                                         ctx.downPayment.add(ctx.closingCost))),
                 schedule.slice(ctx.paymentsAlreadyMade).map(d => d.data),
                 ctx.monthlyDebt))}`)
 
@@ -260,17 +267,22 @@ const setContents = (ctx: Context): void => {
         totalPaidSoFarOutput,
         () => `${
             fmt.format(
-                (ctx.alreadyClosed ? ctx.closingCost + ctx.downPayment : 0) +
-                utils.sumOfKeys(
-                    cumulativeSums[ctx.paymentsAlreadyMade]!.data, keys))}`);
+                (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
+                                     new Decimal(0))
+                    .add(utils.sumOfKeys(
+                        cumulativeSums[ctx.paymentsAlreadyMade]!.data, keys))
+                    .toNumber())}`);
 
-    const absoluteEquityOwned = (ctx.alreadyClosed ? ctx.downPayment : 0) +
-        cumulativeSums[ctx.paymentsAlreadyMade]!.data['principal'];
+    const absoluteEquityOwned =
+        (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
+            .add(cumulativeSums[ctx.paymentsAlreadyMade]!.data['principal']);
     showConditionalOutput(
         !!ctx.paymentsAlreadyMade || ctx.alreadyClosed,
         'equity-owned-so-far-div', equityOwnedSoFarOutput, () => {
-          return `${pctFmt.format(absoluteEquityOwned / ctx.homeValue)} (${
-              fmt.format(absoluteEquityOwned)})`;
+          return `${
+              pctFmt.format(
+                  absoluteEquityOwned.div(ctx.homeValue).toNumber())} (${
+              fmt.format(absoluteEquityOwned.toNumber())})`;
         });
 
     showConditionalOutput(
@@ -283,36 +295,43 @@ const setContents = (ctx: Context): void => {
               cumulativeSums[cumulativeSums.length - 1]!.data,
               ['principal', 'interest']);
           return `${
-              fmt.format(
-                  totalPrincipalAndInterestToPay -
-                  totalPrincipalAndInterestPaid)}`;
+              fmt.format(totalPrincipalAndInterestToPay
+                             .sub(totalPrincipalAndInterestPaid)
+                             .toNumber())}`;
         });
 
     showConditionalOutput(
         !!ctx.paymentsAlreadyMade || ctx.alreadyClosed,
         'remaining-equity-to-pay-for-div', remainingEquityOutput,
-        () => `${fmt.format(ctx.price - absoluteEquityOwned)}`);
+        () => `${fmt.format(ctx.price.sub(absoluteEquityOwned).toNumber())}`);
 
     showConditionalOutput(
         !!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput,
         () => `${
-            pctFmt.format(
-                (ctx.monthlyDebt + M + extras + ctx.pmi) / ctx.annualIncome *
-                12)}`);
+            pctFmt.format(Decimal.sum(ctx.monthlyDebt, M, extras, ctx.pmi)
+                              .div(ctx.annualIncome)
+                              .mul(12)
+                              .toNumber())}`);
   } else {
     clearMonthlyPaymentOutputs();
   }
 
   purchasePaymentOutput.innerText = `${
-      fmt.format(
-          ctx.downPayment + ctx.closingCost +
-              ctx.pointsPurchased * (ctx.price - ctx.downPayment) / 100,
-          )}`;
+      fmt.format(Decimal
+                     .sum(
+                         ctx.downPayment,
+                         ctx.closingCost,
+                         ctx.price.sub(ctx.downPayment)
+                             .mul(ctx.pointsPurchased)
+                             .div(100),
+                         )
+                     .toNumber())}`;
 };
 
 // Computes the sum of principal + interest to be paid each month of the loan.
-const monthlyFormula = (P: number, r: number, n: number): number =>
-    (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+const monthlyFormula = (P: Decimal, r: Decimal, n: number): Decimal =>
+    (P.mul(r).mul(Decimal.pow(r.add(1), n)))
+        .div(Decimal.pow(r.add(1), n).sub(1));
 
 // Conditionally shows or hides an output.
 const showConditionalOutput =
@@ -334,19 +353,21 @@ const showConditionalOutput =
 
 // Computes the payment for each month of the loan.
 const calculatePaymentSchedule =
-    (ctx: Context, monthlyPayment: number): PaymentRecordWithMonth[] => {
+    (ctx: Context, monthlyPayment: Decimal): PaymentRecordWithMonth[] => {
       let equity = ctx.downPayment;
       const schedule: PaymentRecordWithMonth[] = [];
       for (const month of d3.range(ctx.n)) {
-        const principal = ctx.price - equity;
-        const interestPayment = (ctx.interestRate / 12) * principal;
-        const pmiPayment = equity < ctx.pmiEquityPct * ctx.price ? ctx.pmi : 0;
-        equity += monthlyPayment - interestPayment;
+        const principal = ctx.price.sub(equity);
+        const interestPayment = ctx.interestRate.div(12).mul(principal);
+        const pmiPayment = equity.lt(ctx.pmiEquityPct.mul(ctx.price)) ?
+            ctx.pmi :
+            new Decimal(0);
+        equity = equity.add(monthlyPayment).sub(interestPayment);
         schedule.push({
           month: month + 1,
           data: {
             interest: interestPayment,
-            principal: monthlyPayment - interestPayment,
+            principal: monthlyPayment.sub(interestPayment),
             pmi: pmiPayment,
             hoa: ctx.hoa,
             property_tax: ctx.propertyTax,
@@ -359,19 +380,23 @@ const calculatePaymentSchedule =
 
 // Updates the "hints"/previews displayed alongside the input fields.
 const showAmountHints = (ctx: Context): void => {
-  homeValueHintOutput.innerText = `(${fmt.format(ctx.homeValue)})`;
-  downPaymentHintOutput.innerText = `(${fmt.format(ctx.downPayment)})`;
+  homeValueHintOutput.innerText = `(${fmt.format(ctx.homeValue.toNumber())})`;
+  downPaymentHintOutput.innerText =
+      `(${fmt.format(ctx.downPayment.toNumber())})`;
   interestRateHintOutput.innerText =
-      `(${hundredthsPctFmt.format(ctx.interestRate)})`;
+      `(${hundredthsPctFmt.format(ctx.interestRate.toNumber())})`;
   pointValueHintOutput.innerText =
-      `(${hundredthsPctFmt.format(ctx.pointValue)})`;
+      `(${hundredthsPctFmt.format(ctx.pointValue.toNumber())})`;
   pmiEquityPercentageHintOutput.innerText =
-      `(${pctFmt.format(ctx.pmiEquityPct)})`;
+      `(${pctFmt.format(ctx.pmiEquityPct.toNumber())})`;
   propertyTaxHintOutput.innerText = `(Effective ${
-      fmt.format(ctx.propertyTax * 12 / ctx.homeValue * 1000)} / $1000; ${
-      fmt.format(ctx.propertyTax)}/mo)`;
+      fmt.format(ctx.propertyTax.mul(12)
+                     .div(ctx.homeValue)
+                     .mul(1000)
+                     .toNumber())} / $1000; ${
+      fmt.format(ctx.propertyTax.toNumber())}/mo)`;
   residentialExemptionHintOutput.innerText =
-      `(${fmt.format(ctx.residentialExemptionPerMonth)}/mo)`
+      `(${fmt.format(ctx.residentialExemptionPerMonth.toNumber())}/mo)`
   mortgageTermHintOutput.innerText = `(${ctx.mortgageTerm} yrs)`;
 };
 
@@ -417,7 +442,7 @@ const buildPaymentScheduleChart =
                         .keys(keys)
                         .order(d3.stackOrderNone)
                         .offset(d3.stackOffsetNone)
-                        .value((d, key) => d.data[key])(schedule))
+                        .value((d, key) => d.data[key].toNumber())(schedule))
               .join('path')
               .style('fill', d => fieldColor(d.key))
               .attr(
@@ -430,12 +455,12 @@ const buildPaymentScheduleChart =
 
           makeTooltip(svg, schedule, keys, x, (mouseY, datum) => {
             const yTarget = y.invert(mouseY);
-            let cumulative = 0;
+            let cumulative = new Decimal(0);
             for (const [idx, key] of keys.entries()) {
-              if (cumulative + datum[key] >= yTarget) {
+              if (cumulative.add(datum[key]).gte(yTarget)) {
                 return idx;
               }
-              cumulative += datum[key];
+              cumulative = cumulative.add(datum[key]);
             }
             return keys.length - 1;
           });
@@ -445,60 +470,60 @@ const buildPaymentScheduleChart =
 
 // Builds the chart of cumulative payments over time.
 const buildCumulativeChart =
-    (data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[]):
-        void => {
-          const margin = {top: 50, right: 100, bottom: 120, left: 100};
-          const width = 900 - margin.left - margin.right;
-          const height = 450 - margin.top - margin.bottom;
+    (data: readonly PaymentRecordWithMonth[],
+     keys: readonly PaymentType[]): void => {
+      const margin = {top: 50, right: 100, bottom: 120, left: 100};
+      const width = 900 - margin.left - margin.right;
+      const height = 450 - margin.top - margin.bottom;
 
-          const svg = makeSvg('cumulative_viz', width, height, margin);
+      const svg = makeSvg('cumulative_viz', width, height, margin);
 
-          const {x, y} = makeAxes(
-              svg,
-              data,
-              keys,
-              width,
-              height,
-              margin,
-              'Cumulative Payment',
-              d3.max,
-          );
+      const {x, y} = makeAxes(
+          svg,
+          data,
+          keys,
+          width,
+          height,
+          margin,
+          'Cumulative Payment',
+          d3.max,
+      );
 
-          const area = d3.area<{month: number, value: number}>()
-                           .curve(d3.curveMonotoneX)
-                           .x(d => x(d.month))
-                           .y0(y(0))
-                           .y1(d => y(d.value));
+      const area = d3.area<{month: number, value: Decimal}>()
+                       .curve(d3.curveMonotoneX)
+                       .x(d => x(d.month))
+                       .y0(y(0))
+                       .y1(d => y(d.value.toNumber()));
 
-          svg.selectAll('.area')
-              .data(keys.map(key => ({
-                               key,
-                               values: data.map(datum => ({
-                                                  month: datum.month,
-                                                  value: datum.data[key],
-                                                })),
-                             })))
-              .enter()
-              .append('g')
-              .attr('class', d => `area ${d.key}`)
-              .append('path')
-              .attr('d', d => area(d.values))
-              .style('fill', d => transparent(fieldColor(d.key)));
+      svg.selectAll('.area')
+          .data(keys.map(key => ({
+                           key,
+                           values: data.map(datum => ({
+                                              month: datum.month,
+                                              value: datum.data[key],
+                                            })),
+                         })))
+          .enter()
+          .append('g')
+          .attr('class', d => `area ${d.key}`)
+          .append('path')
+          .attr('d', d => area(d.values))
+          .style('fill', d => transparent(fieldColor(d.key)));
 
-          makeTooltip(svg, data, keys, x, (mouseY, datum) => {
-            const yTarget = y.invert(mouseY);
-            const sorted = keys.map(key => ({key, value: datum[key]}))
-                               .sort((a, b) => a.value - b.value);
-            const elt = sorted.find(
-                (elt, idx, arr) => yTarget <= elt.value &&
-                    (idx === arr.length - 1 || arr[idx + 1]!.value >= yTarget),
-                ) ??
-                sorted[sorted.length - 1]!;
-            return keys.indexOf(elt.key);
-          });
+      makeTooltip(svg, data, keys, x, (mouseY, datum) => {
+        const yTarget = y.invert(mouseY);
+        const sorted = keys.map(key => ({key, value: datum[key]}))
+                           .sort((a, b) => a.value.cmp(b.value));
+        const elt = sorted.find(
+            (elt, idx, arr) => elt.value.gte(yTarget) &&
+                (idx === arr.length - 1 || arr[idx + 1]!.value.gte(yTarget)),
+            ) ??
+            sorted[sorted.length - 1]!;
+        return keys.indexOf(elt.key);
+      });
 
-          makeLegend(svg, width, d => transparent(fieldColor(d)), keys);
-        };
+      makeLegend(svg, width, d => transparent(fieldColor(d)), keys);
+    };
 
 // Adds an alpha channel to a hex color string to make it translucent.
 const transparent = (color: string): string => `${color}aa`;
@@ -546,7 +571,10 @@ const makeAxes =
           d3.scaleLinear()
               .domain([
                 0,
-                d3.max(data, d => yDomainFn(keys.map(k => d.data[k])) * 1.25)!,
+                d3.max(
+                    data,
+                    d => yDomainFn(keys.map(k => d.data[k].toNumber())) * 1.25)!
+                ,
               ])
               .range([height, 0]);
       svg.append('g').call(d3.axisLeft(y));
@@ -579,11 +607,11 @@ const makeTooltip =
         const datum = bisectMonth(data, x, pointer[0]);
         const paymentTypeIdx = identifyPaymentType(pointer[1], datum.data);
 
-        const value =
-            keys.map(
-                    k => `${fieldDisplay(k)}: ${fmt.format(datum.data[k])}` +
-                        '\n')
-                .join('') +
+        const value = keys.map(
+                              k => `${fieldDisplay(k)}: ${
+                                       fmt.format(datum.data[k].toNumber())}` +
+                                  '\n')
+                          .join('') +
             `Month: ${utils.formatMonthNum(datum.month)}`;
         tooltip.attr('transform', `translate(${x(datum.month)},${pointer[1]})`)
             .call(callout, value, paymentTypeIdx);
