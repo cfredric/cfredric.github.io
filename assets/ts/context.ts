@@ -28,6 +28,7 @@ interface Input {
       totalAssets: Decimal,                        //
       alreadyClosed: boolean,                      //
       paymentsAlreadyMade: number,                 //
+      prepayment: Decimal,                         //
 }
 
 export class Context {
@@ -57,6 +58,7 @@ export class Context {
   readonly totalAssets: Decimal;
   readonly alreadyClosed: boolean;
   readonly paymentsAlreadyMade: number;
+  readonly prepayment: Decimal;
 
   readonly n: number;
 
@@ -117,5 +119,6 @@ export class Context {
     this.alreadyClosed = input.alreadyClosed;
     this.paymentsAlreadyMade =
         clamp(input.paymentsAlreadyMade, {min: 0, max: this.n});
+    this.prepayment = input.prepayment.clamp(0, this.price);
   }
 }

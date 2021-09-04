@@ -16,7 +16,8 @@
     "typescript": "^4.4.2"
   },
   "scripts": {
-    "watch": "tsc --watch",
+    "watchts": "tsc --watch",
+    "watch": "parcel watch -d build --public-url \"/build/\" ./assets/ts/mortgage.ts",
     "build": "parcel build -d build --public-url \"/build/\" ./assets/ts/mortgage.ts",
     "start": "jekyll serve",
     "test": "jest",

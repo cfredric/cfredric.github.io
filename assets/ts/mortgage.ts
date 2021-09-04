@@ -54,6 +54,7 @@ const totalAssetsInput = utils.getInputElt('total-assets-input');
 const alreadyClosedInput = utils.getInputElt('already-closed-input');
 const paymentsAlreadyMadeInput =
     utils.getInputElt('payments-already-made-input');
+const prepaymentInput = utils.getInputElt('prepayment-input');
 
 // Outputs.
 const homeValueHintOutput = utils.getHtmlElt('home-value-hint');
@@ -73,6 +74,7 @@ const monthlyPaymentAmountOutput = utils.getHtmlElt('monthly-payment-output');
 const monthlyPaymentPmiOutput = utils.getHtmlElt('monthly-payment-pmi-output');
 const pmiPaymentTimelineOutput =
     utils.getHtmlElt('pmi-payment-timeline-output');
+const lifetimeOfLoanOutput = utils.getHtmlElt('lifetime-of-loan-output');
 const lifetimePaymentOutput = utils.getHtmlElt('lifetime-payment-output');
 const purchasePaymentOutput = utils.getHtmlElt('purchase-payment-output');
 const totalPaidSoFarOutput = utils.getHtmlElt('total-paid-so-far-output');
@@ -158,6 +160,7 @@ const urlParamMap: Readonly<Map<HTMLInputElement, InputEntry>> = new Map([
   [totalAssetsInput, {name: 'total_assets', deprecated: true}],
   [alreadyClosedInput, {name: 'closed'}],
   [paymentsAlreadyMadeInput, {name: 'paid'}],
+  [prepaymentInput, {name: 'prepay'}],
 ]);
 
 const cookieValueMap: Readonly<Map<HTMLInputElement, InputEntry>> = new Map([
@@ -191,6 +194,7 @@ const contextFromInputs = () => new Context({
   totalAssets: utils.orZero(totalAssetsInput),
   alreadyClosed: alreadyClosedInput.checked,
   paymentsAlreadyMade: utils.orZeroN(paymentsAlreadyMadeInput),
+  prepayment: utils.orZero(prepaymentInput),
 });
 
 // Attaches listeners to react to user input, URL changes.
@@ -221,20 +225,23 @@ const setContents = (ctx: Context): void => {
             ctx.interestRate.div(12),
             ctx.n,
         );
-    principalAndInterestOutput.innerText = `${fmt.format(M.toNumber())}`;
+    const monthlyLoanPayment = M.add(ctx.prepayment);
+    principalAndInterestOutput.innerText =
+        `${fmt.format(monthlyLoanPayment.toNumber())}`;
     const extras =
         Decimal.sum(ctx.hoa, ctx.propertyTax, ctx.homeownersInsurance);
 
     monthlyPaymentAmountOutput.innerText =
-        `${fmt.format(M.add(extras).toNumber())}`;
-    monthlyPaymentPmiOutput.innerText =
-        `${fmt.format(Decimal.sum(M, extras, ctx.pmi).toNumber())}`;
+        `${fmt.format(monthlyLoanPayment.add(extras).toNumber())}`;
+    monthlyPaymentPmiOutput.innerText = `${
+        fmt.format(
+            Decimal.sum(monthlyLoanPayment, extras, ctx.pmi).toNumber())}`;
     const showPmi = ctx.pmi && ctx.downPaymentPct < ctx.pmiEquityPct;
     utils.getHtmlElt('monthly-payment-without-pmi-span').style.display =
         showPmi ? '' : 'none';
     utils.getHtmlElt('monthly-payment-pmi-div').style.display =
         showPmi ? '' : 'none';
-    const schedule = calculatePaymentSchedule(ctx, M);
+    const schedule = calculatePaymentSchedule(ctx, monthlyLoanPayment);
     buildPaymentScheduleChart(schedule, keys);
     const pmiMonths =
         utils.countSatisfying(schedule, payment => !payment.data.pmi.eq(0));
@@ -243,8 +250,14 @@ const setContents = (ctx: Context): void => {
     const cumulativeSums = utils.cumulativeSumByFields(schedule, keys);
     if (!M.eq(0)) {
       buildCumulativeChart(cumulativeSums, ['principal', 'interest', 'pmi']);
+      lifetimeOfLoanOutput.innerText = `${
+          utils.formatMonthNum(
+              utils.countSatisfying(schedule, m => m.data.principal.gt(0)))}`
       lifetimePaymentOutput.innerText = `${
-          fmt.format(Decimal.sum(M.mul(ctx.n), ...schedule.map(d => d.data.pmi))
+          fmt.format(utils
+                         .sumOfKeys(
+                             cumulativeSums[cumulativeSums.length - 1]!.data,
+                             ['principal', 'interest', 'pmi'])
                          .toNumber())}`;
     } else {
       document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
@@ -308,10 +321,12 @@ const setContents = (ctx: Context): void => {
     showConditionalOutput(
         !!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput,
         () => `${
-            pctFmt.format(Decimal.sum(ctx.monthlyDebt, M, extras, ctx.pmi)
-                              .div(ctx.annualIncome)
-                              .mul(12)
-                              .toNumber())}`);
+            pctFmt.format(
+                Decimal
+                    .sum(ctx.monthlyDebt, monthlyLoanPayment, extras, ctx.pmi)
+                    .div(ctx.annualIncome)
+                    .mul(12)
+                    .toNumber())}`);
   } else {
     clearMonthlyPaymentOutputs();
   }
@@ -353,21 +368,24 @@ const showConditionalOutput =
 
 // Computes the payment for each month of the loan.
 const calculatePaymentSchedule =
-    (ctx: Context, monthlyPayment: Decimal): PaymentRecordWithMonth[] => {
-      let equity = ctx.downPayment;
+    (ctx: Context, monthlyLoanPayment: Decimal): PaymentRecordWithMonth[] => {
+      let equityOwned = ctx.downPayment;
       const schedule: PaymentRecordWithMonth[] = [];
       for (const month of d3.range(ctx.n)) {
-        const principal = ctx.price.sub(equity);
-        const interestPayment = ctx.interestRate.div(12).mul(principal);
-        const pmiPayment = equity.lt(ctx.pmiEquityPct.mul(ctx.price)) ?
+        const principalRemaining = ctx.price.sub(equityOwned);
+        const interestPayment =
+            ctx.interestRate.div(12).mul(principalRemaining);
+        const pmiPayment = equityOwned.lt(ctx.pmiEquityPct.mul(ctx.price)) ?
             ctx.pmi :
             new Decimal(0);
-        equity = equity.add(monthlyPayment).sub(interestPayment);
+        const principalPaidThisMonth = monthlyLoanPayment.sub(interestPayment)
+                                           .clamp(0, principalRemaining);
+        equityOwned = equityOwned.add(principalPaidThisMonth);
         schedule.push({
           month: month + 1,
           data: {
             interest: interestPayment,
-            principal: monthlyPayment.sub(interestPayment),
+            principal: principalPaidThisMonth,
             pmi: pmiPayment,
             hoa: ctx.hoa,
             property_tax: ctx.propertyTax,
