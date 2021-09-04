@@ -808,6 +808,8 @@ const clearInputs = () => {
     elt.value = '';
     deleteCookie(entry.name);
   }
+  const ctx = contextFromInputs();
+  showAmountHints(ctx);
 };
 
 // Updates the value of the given cookie.
