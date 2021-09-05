@@ -206,12 +206,11 @@ const contextFromInputs = () => new Context({
 // Attaches listeners to react to user input, URL changes.
 const attachListeners = (): void => {
   clearInputsButton.addEventListener('click', () => void clearInputs());
-  const onChange = (elt: HTMLInputElement) => {
-    saveFields(elt);
-    setContents(contextFromInputs());
-  };
   for (const elt of urlParamMap.keys()) {
-    elt.addEventListener('input', () => onChange(elt));
+    elt.addEventListener('input', () => {
+      saveFields(elt);
+      setContents(contextFromInputs());
+    });
   }
   window.onpopstate = () => void populateFields();
 };
