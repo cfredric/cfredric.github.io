@@ -178,3 +178,10 @@ export const computeStockAssets =
       }
       return assets;
     };
+
+export const fillTemplateElts = (className: string, value: string) => {
+  for (const elt of Array.from(document.getElementsByClassName(className))) {
+    if (!(elt instanceof HTMLElement)) continue;
+    elt.innerText = value;
+  }
+}

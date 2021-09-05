@@ -345,30 +345,26 @@ const setContents = (ctx: Context): void => {
         if (!(elt instanceof HTMLElement)) continue;
         elt.style.display = '';
       }
-      for (const elt of Array.from(
-               document.getElementsByClassName('mortgage-term'))) {
-        if (!(elt instanceof HTMLElement)) continue;
-        elt.innerText = utils.formatMonthNum(ctx.n);
-      }
-      for (const elt of Array.from(
-               document.getElementsByClassName('prepay-amount'))) {
-        if (!(elt instanceof HTMLElement)) continue;
-        elt.innerText = fmt.format(ctx.prepayment.toNumber());
-      }
-      const prepayAssets = utils.computeStockAssets(
-          schedule
-              .map(
-                  m => monthlyLoanPayment.sub(
-                      Decimal.sum(m.data.interest, m.data.principal)))
-              .filter(x => !x.eq(0)),
-          ctx.stocksReturnRate);
-      prepayComparisonOutput.innerText =
-          `${fmt.format(prepayAssets.toNumber())}`;
+      utils.fillTemplateElts('mortgage-term', utils.formatMonthNum(ctx.n));
+      utils.fillTemplateElts(
+          'prepay-amount', fmt.format(ctx.prepayment.toNumber()));
+      prepayComparisonOutput.innerText = `${
+          fmt.format(utils
+                         .computeStockAssets(
+                             schedule
+                                 .map(
+                                     m => monthlyLoanPayment.sub(Decimal.sum(
+                                         m.data.interest, m.data.principal)))
+                                 .filter(x => !x.eq(0)),
+                             ctx.stocksReturnRate)
+                         .toNumber())}`;
 
-      const stockAssets = utils.computeStockAssets(
-          new Array(ctx.n).fill(ctx.prepayment), ctx.stocksReturnRate);
-      stocksComparisonOutput.innerText =
-          `${fmt.format(stockAssets.toNumber())}`;
+      stocksComparisonOutput.innerText = `${
+          fmt.format(utils
+                         .computeStockAssets(
+                             new Array(ctx.n).fill(ctx.prepayment),
+                             ctx.stocksReturnRate)
+                         .toNumber())}`;
     }
   } else {
     clearMonthlyPaymentOutputs();
