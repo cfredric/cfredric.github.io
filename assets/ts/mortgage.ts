@@ -207,10 +207,8 @@ const contextFromInputs = () => new Context({
 const attachListeners = (): void => {
   clearInputsButton.addEventListener('click', () => void clearInputs());
   const onChange = (elt: HTMLInputElement) => {
-    const ctx = contextFromInputs();
-    showAmountHints(ctx);
     saveFields(elt);
-    setContents(ctx);
+    setContents(contextFromInputs());
   };
   for (const elt of urlParamMap.keys()) {
     elt.addEventListener('input', () => onChange(elt));
@@ -220,6 +218,7 @@ const attachListeners = (): void => {
 
 // Set the contents of all the outputs based on the `ctx`.
 const setContents = (ctx: Context): void => {
+  showAmountHints(ctx);
   loanAmountOutput.innerText =
       `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
 
@@ -808,9 +807,7 @@ const populateFields = (): void => {
     }
   }
   if (hasValue) {
-    const ctx = contextFromInputs();
-    showAmountHints(ctx);
-    setContents(ctx);
+    setContents(contextFromInputs());
   }
 };
 
@@ -849,8 +846,7 @@ const clearInputs = () => {
     elt.value = '';
     deleteCookie(entry.name);
   }
-  const ctx = contextFromInputs();
-  showAmountHints(ctx);
+  setContents(contextFromInputs());
 };
 
 // Updates the value of the given cookie.
