@@ -303,3 +303,53 @@ test('updateURLParam', () => {
     expect(url.toString()).toBe('https://example.test/page?boo=far');
   }
 });
+
+test('computeStockAssets', () => {
+  // Investing something during one month doesn't cause any growth, since
+  // there's no time to compound.
+  expect(utils.computeStockAssets([new Decimal(1)], new Decimal(1)).toNumber())
+      .toBeCloseTo(1, 6);
+
+  // Investing something for a year, with no expected annual return, should
+  // have no effect.
+  expect(utils
+             .computeStockAssets(
+                 [new Decimal(1)].concat(new Array(12).fill(new Decimal(0))),
+                 new Decimal(0))
+             .toNumber())
+      .toBeCloseTo(1, 6);
+
+  // Investing something for a year, with an expected annual return of 0.5,
+  // should cause it to grow 1.5x (modulo rounding accuracy).
+  expect(utils
+             .computeStockAssets(
+                 [new Decimal(10)].concat(new Array(12).fill(new Decimal(0))),
+                 new Decimal(0.5))
+             .toNumber())
+      .toBeCloseTo(15, 6);
+
+  // Investing something for a year, with an expected annual return of 1, should
+  // cause it to double (modulo rounding accuracy).
+  expect(utils
+             .computeStockAssets(
+                 [new Decimal(7)].concat(new Array(12).fill(new Decimal(0))),
+                 new Decimal(1))
+             .toNumber())
+      .toBeCloseTo(14, 6);
+
+  // Monthly investments over a year, with an expected annual return of 0,
+  // should come out to their simple sum.
+  expect(utils
+             .computeStockAssets(
+                 new Array(12).fill(new Decimal(1)), new Decimal(0))
+             .toNumber())
+      .toBeCloseTo(12, 6);
+
+  // Monthly investments over a year, with an expected annual return of 0.1,
+  // should compound.
+  expect(utils
+             .computeStockAssets(
+                 new Array(12).fill(new Decimal(1)), new Decimal(0.1))
+             .toNumber())
+      .toBeGreaterThan(12.54);
+})

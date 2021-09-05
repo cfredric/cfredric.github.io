@@ -1,4 +1,4 @@
-import {Decimal} from 'decimal.js';
+import Decimal from 'decimal.js';
 import * as utils from './utils';
 
 // Clamps the input to within the interval [min, max] (inclusive on each end).
@@ -29,6 +29,7 @@ interface Input {
       alreadyClosed: boolean,                      //
       paymentsAlreadyMade: number,                 //
       prepayment: Decimal,                         //
+      stocksReturnRate?: Decimal,                  //
 }
 
 export class Context {
@@ -59,6 +60,7 @@ export class Context {
   readonly alreadyClosed: boolean;
   readonly paymentsAlreadyMade: number;
   readonly prepayment: Decimal;
+  readonly stocksReturnRate: Decimal;
 
   readonly n: number;
 
@@ -120,5 +122,8 @@ export class Context {
     this.paymentsAlreadyMade =
         clamp(input.paymentsAlreadyMade, {min: 0, max: this.n});
     this.prepayment = input.prepayment.clamp(0, this.price);
+    this.stocksReturnRate = input.stocksReturnRate ?
+        input.stocksReturnRate.div(100) :
+        new Decimal(0.07);
   }
 }

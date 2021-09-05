@@ -55,6 +55,7 @@ const alreadyClosedInput = utils.getInputElt('already-closed-input');
 const paymentsAlreadyMadeInput =
     utils.getInputElt('payments-already-made-input');
 const prepaymentInput = utils.getInputElt('prepayment-input');
+const stocksReturnRateInput = utils.getInputElt('stocks-return-rate-input');
 
 // Outputs.
 const homeValueHintOutput = utils.getHtmlElt('home-value-hint');
@@ -67,6 +68,7 @@ const residentialExemptionHintOutput =
     utils.getHtmlElt('residential-exemption-hint');
 const mortgageTermHintOutput = utils.getHtmlElt('mortgage-term-hint');
 const downPaymentHintOutput = utils.getHtmlElt('down-payment-hint');
+const stocksReturnRateHintOutput = utils.getHtmlElt('stocks-return-rate-hint');
 const loanAmountOutput = utils.getHtmlElt('loan-amount-output');
 const principalAndInterestOutput =
     utils.getHtmlElt('principal-and-interest-output');
@@ -85,6 +87,8 @@ const remainingEquityOutput =
 const debtToIncomeOutput = utils.getHtmlElt('debt-to-income-ratio-output');
 const firedTomorrowCountdownOutput =
     utils.getHtmlElt('fired-tomorrow-countdown-output');
+const prepayComparisonOutput = utils.getHtmlElt('prepay-comparison-output');
+const stocksComparisonOutput = utils.getHtmlElt('stocks-comparison-output');
 
 const COOKIE_ATTRIBUTES: Readonly<string[]> = [
   'Secure',
@@ -161,6 +165,7 @@ const urlParamMap: Readonly<Map<HTMLInputElement, InputEntry>> = new Map([
   [alreadyClosedInput, {name: 'closed'}],
   [paymentsAlreadyMadeInput, {name: 'paid'}],
   [prepaymentInput, {name: 'prepay'}],
+  [stocksReturnRateInput, {name: 'stock_rate'}],
 ]);
 
 const cookieValueMap: Readonly<Map<HTMLInputElement, InputEntry>> = new Map([
@@ -195,6 +200,7 @@ const contextFromInputs = () => new Context({
   alreadyClosed: alreadyClosedInput.checked,
   paymentsAlreadyMade: utils.orZeroN(paymentsAlreadyMadeInput),
   prepayment: utils.orZero(prepaymentInput),
+  stocksReturnRate: utils.orUndef(stocksReturnRateInput),
 });
 
 // Attaches listeners to react to user input, URL changes.
@@ -327,6 +333,43 @@ const setContents = (ctx: Context): void => {
                     .div(ctx.annualIncome)
                     .mul(12)
                     .toNumber())}`);
+
+    // Show the comparison between prepayment and investment, if relevant.
+    if (ctx.prepayment.eq(0)) {
+      for (const elt of Array.from(document.getElementsByClassName('prepay'))) {
+        if (!(elt instanceof HTMLElement)) continue;
+        elt.style.display = 'none';
+      }
+    } else {
+      for (const elt of Array.from(document.getElementsByClassName('prepay'))) {
+        if (!(elt instanceof HTMLElement)) continue;
+        elt.style.display = '';
+      }
+      for (const elt of Array.from(
+               document.getElementsByClassName('mortgage-term'))) {
+        if (!(elt instanceof HTMLElement)) continue;
+        elt.innerText = utils.formatMonthNum(ctx.n);
+      }
+      for (const elt of Array.from(
+               document.getElementsByClassName('prepay-amount'))) {
+        if (!(elt instanceof HTMLElement)) continue;
+        elt.innerText = fmt.format(ctx.prepayment.toNumber());
+      }
+      const prepayAssets = utils.computeStockAssets(
+          schedule
+              .map(
+                  m => monthlyLoanPayment.sub(
+                      Decimal.sum(m.data.interest, m.data.principal)))
+              .filter(x => !x.eq(0)),
+          ctx.stocksReturnRate);
+      prepayComparisonOutput.innerText =
+          `${fmt.format(prepayAssets.toNumber())}`;
+
+      const stockAssets = utils.computeStockAssets(
+          new Array(ctx.n).fill(ctx.prepayment), ctx.stocksReturnRate);
+      stocksComparisonOutput.innerText =
+          `${fmt.format(stockAssets.toNumber())}`;
+    }
   } else {
     clearMonthlyPaymentOutputs();
   }
@@ -416,6 +459,8 @@ const showAmountHints = (ctx: Context): void => {
   residentialExemptionHintOutput.innerText =
       `(${fmt.format(ctx.residentialExemptionPerMonth.toNumber())}/mo)`
   mortgageTermHintOutput.innerText = `(${ctx.mortgageTerm} yrs)`;
+  stocksReturnRateHintOutput.innerText =
+      `(${hundredthsPctFmt.format(ctx.stocksReturnRate.toNumber())})`
 };
 
 // Given the X axis and an X mouse coordinate, finds the month that is being

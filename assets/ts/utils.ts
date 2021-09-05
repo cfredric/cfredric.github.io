@@ -13,6 +13,12 @@ export const orZero = (elt: HTMLInputElement): Decimal => {
   if (Number.isNaN(Number.parseFloat(str))) return new Decimal(0);
   return new Decimal(str);
 };
+// Returns the numberic value of the input element, or undefined.
+export const orUndef = (elt: HTMLInputElement): Decimal|undefined => {
+  const str = elt.value;
+  if (Number.isNaN(Number.parseFloat(str))) return undefined;
+  return new Decimal(str);
+};
 // Returns the HTMLInputElement with the given ID, or throws an informative
 // error.
 export const getInputElt = (id: string): HTMLInputElement => {
@@ -146,3 +152,29 @@ export const chooseNonzero = (...xs: Decimal[]): Decimal => {
   }
   return new Decimal(0);
 };
+
+// Computes the total stock assets at the end of `schedule`, assuming a given
+// annual rate of return and monthly compounding.
+export const computeStockAssets =
+    (schedule: Decimal[], annualReturnRate: Decimal): Decimal => {
+      // Let Y = annual rate of return, M = monthly rate of return. Then:
+      //
+      // Y = (1 + M) ^ 12 - 1
+      //
+      // Solve for M:
+      //
+      // M = (Y + 1)^(1/12) - 1
+      //
+      // Since we scale `assets` by 1+M each month anyway, don't bother to
+      // subtract 1:
+      //
+      // monthlyScaleFactor = M + 1 = (Y + 1)^(1/12)
+      const monthlyScaleFactor =
+          annualReturnRate.add(1).pow(Decimal.div(1, 12));
+
+      let assets = new Decimal(0);
+      for (const investment of schedule) {
+        assets = assets.mul(monthlyScaleFactor).add(investment);
+      }
+      return assets;
+    };
