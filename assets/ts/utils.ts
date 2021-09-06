@@ -146,7 +146,7 @@ export const updateURLParam =
 
 // Returns the first non-zero argument, or zero if all arguments are zero (or
 // none are provided).
-export const chooseNonzero = (...xs: Decimal[]): Decimal => {
+export const chooseNonzero = (...xs: readonly Decimal[]): Decimal => {
   for (const x of xs) {
     if (!x.eq(0)) return x;
   }
@@ -156,7 +156,7 @@ export const chooseNonzero = (...xs: Decimal[]): Decimal => {
 // Computes the total stock assets at the end of `schedule`, assuming a given
 // annual rate of return and monthly compounding.
 export const computeStockAssets =
-    (schedule: Decimal[], annualReturnRate: Decimal): Decimal => {
+    (schedule: readonly Decimal[], annualReturnRate: Decimal): Decimal => {
       // Let Y = annual rate of return, M = monthly rate of return. Then:
       //
       // Y = (1 + M) ^ 12 - 1
