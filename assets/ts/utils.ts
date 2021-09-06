@@ -199,10 +199,10 @@ export const computeAmortizedPaymentAmount =
           //     n = the number of pay installments
           //
           // Then:
-          // monthly principal + interest = P*r*(1+r)^n / ((1+r)^n -1)
+          // monthly principal + interest = P*r*(1+r)^n / ((1+r)^n - 1)
 
           const onePlusRToTheN = r.add(1).pow(n);
-          return (P.mul(r).mul(onePlusRToTheN)).div(onePlusRToTheN.sub(1));
+          return P.mul(r).mul(onePlusRToTheN).div(onePlusRToTheN.sub(1));
         }
 
 // Conditionally shows or hides an output.
