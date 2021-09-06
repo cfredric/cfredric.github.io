@@ -186,154 +186,6 @@ const setContents = (ctx: Context): void => {
   loanAmountOutput.innerText =
       `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
 
-  if (!ctx.interestRate.eq(0) || ctx.downPayment.eq(ctx.price)) {
-    const M = ctx.downPayment.eq(ctx.price) ?
-        new Decimal(0) :
-        monthlyFormula(
-            ctx.price.mul(Decimal.sub(1, ctx.downPaymentPct)),
-            ctx.interestRate.div(12),
-            ctx.n,
-        );
-    const monthlyLoanPayment = M.add(ctx.prepayment);
-    principalAndInterestOutput.innerText =
-        `${fmt.format(monthlyLoanPayment.toNumber())}`;
-    const extras =
-        Decimal.sum(ctx.hoa, ctx.propertyTax, ctx.homeownersInsurance);
-
-    monthlyPaymentAmountOutput.innerText =
-        `${fmt.format(monthlyLoanPayment.add(extras).toNumber())}`;
-    monthlyPaymentPmiOutput.innerText = `${
-        fmt.format(
-            Decimal.sum(monthlyLoanPayment, extras, ctx.pmi).toNumber())}`;
-    const showPmi = ctx.pmi && ctx.downPaymentPct < ctx.pmiEquityPct;
-    utils.getHtmlElt('monthly-payment-without-pmi-span').style.display =
-        showPmi ? '' : 'none';
-    utils.getHtmlElt('monthly-payment-pmi-div').style.display =
-        showPmi ? '' : 'none';
-    const schedule = calculatePaymentSchedule(ctx, monthlyLoanPayment);
-    viz.buildPaymentScheduleChart(schedule, fmt, keys);
-    const pmiMonths =
-        utils.countSatisfying(schedule, payment => !payment.data.pmi.eq(0));
-    pmiPaymentTimelineOutput.innerText = `${utils.formatMonthNum(pmiMonths)} (${
-        fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`;
-    const cumulativeSums = utils.cumulativeSumByFields(schedule, keys);
-    if (!M.eq(0)) {
-      viz.buildCumulativeChart(
-          cumulativeSums, fmt, ['principal', 'interest', 'pmi']);
-      lifetimeOfLoanOutput.innerText = `${
-          utils.formatMonthNum(
-              utils.countSatisfying(schedule, m => m.data.principal.gt(0)))}`
-      lifetimePaymentOutput.innerText = `${
-          fmt.format(utils
-                         .sumOfKeys(
-                             cumulativeSums[cumulativeSums.length - 1]!.data,
-                             ['principal', 'interest', 'pmi'])
-                         .toNumber())}`;
-    } else {
-      document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
-      lifetimePaymentOutput.innerText = `${fmt.format(0)}`;
-    }
-
-    showConditionalOutput(
-        !ctx.totalAssets.eq(0), 'fired-tomorrow-countdown-div',
-        firedTomorrowCountdownOutput,
-        () => `${
-            utils.formatMonthNum(utils.countBurndownMonths(
-                ctx.totalAssets.sub(
-                    (ctx.alreadyClosed ? new Decimal(0) :
-                                         ctx.downPayment.add(ctx.closingCost))),
-                schedule.slice(ctx.paymentsAlreadyMade).map(d => d.data),
-                ctx.monthlyDebt))}`)
-
-    showConditionalOutput(
-        !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-paid-so-far-div',
-        totalPaidSoFarOutput,
-        () => `${
-            fmt.format(
-                (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
-                                     new Decimal(0))
-                    .add(utils.sumOfKeys(
-                        cumulativeSums[ctx.paymentsAlreadyMade]!.data, keys))
-                    .toNumber())}`);
-
-    const absoluteEquityOwned =
-        (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
-            .add(cumulativeSums[ctx.paymentsAlreadyMade]!.data['principal']);
-    showConditionalOutput(
-        !!ctx.paymentsAlreadyMade || ctx.alreadyClosed,
-        'equity-owned-so-far-div', equityOwnedSoFarOutput, () => {
-          return `${
-              pctFmt.format(
-                  absoluteEquityOwned.div(ctx.homeValue).toNumber())} (${
-              fmt.format(absoluteEquityOwned.toNumber())})`;
-        });
-
-    showConditionalOutput(
-        !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-loan-owed-div',
-        totalLoanOwedOutput, () => {
-          const totalPrincipalAndInterestPaid = utils.sumOfKeys(
-              cumulativeSums[ctx.paymentsAlreadyMade]!.data,
-              ['principal', 'interest']);
-          const totalPrincipalAndInterestToPay = utils.sumOfKeys(
-              cumulativeSums[cumulativeSums.length - 1]!.data,
-              ['principal', 'interest']);
-          return `${
-              fmt.format(totalPrincipalAndInterestToPay
-                             .sub(totalPrincipalAndInterestPaid)
-                             .toNumber())}`;
-        });
-
-    showConditionalOutput(
-        !!ctx.paymentsAlreadyMade || ctx.alreadyClosed,
-        'remaining-equity-to-pay-for-div', remainingEquityOutput,
-        () => `${fmt.format(ctx.price.sub(absoluteEquityOwned).toNumber())}`);
-
-    showConditionalOutput(
-        !!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput,
-        () => `${
-            pctFmt.format(
-                Decimal
-                    .sum(ctx.monthlyDebt, monthlyLoanPayment, extras, ctx.pmi)
-                    .div(ctx.annualIncome)
-                    .mul(12)
-                    .toNumber())}`);
-
-    // Show the comparison between prepayment and investment, if relevant.
-    if (ctx.prepayment.eq(0)) {
-      for (const elt of Array.from(document.getElementsByClassName('prepay'))) {
-        if (!(elt instanceof HTMLElement)) continue;
-        elt.style.display = 'none';
-      }
-    } else {
-      for (const elt of Array.from(document.getElementsByClassName('prepay'))) {
-        if (!(elt instanceof HTMLElement)) continue;
-        elt.style.display = '';
-      }
-      utils.fillTemplateElts('mortgage-term', utils.formatMonthNum(ctx.n));
-      utils.fillTemplateElts(
-          'prepay-amount', fmt.format(ctx.prepayment.toNumber()));
-      prepayComparisonOutput.innerText = `${
-          fmt.format(utils
-                         .computeStockAssets(
-                             schedule
-                                 .map(
-                                     m => monthlyLoanPayment.sub(Decimal.sum(
-                                         m.data.interest, m.data.principal)))
-                                 .filter(x => !x.eq(0)),
-                             ctx.stocksReturnRate)
-                         .toNumber())}`;
-
-      stocksComparisonOutput.innerText = `${
-          fmt.format(utils
-                         .computeStockAssets(
-                             new Array(ctx.n).fill(ctx.prepayment),
-                             ctx.stocksReturnRate)
-                         .toNumber())}`;
-    }
-  } else {
-    clearMonthlyPaymentOutputs();
-  }
-
   purchasePaymentOutput.innerText = `${
       fmt.format(Decimal
                      .sum(
@@ -344,6 +196,152 @@ const setContents = (ctx: Context): void => {
                              .div(100),
                          )
                      .toNumber())}`;
+
+  if (ctx.interestRate.eq(0) && !ctx.downPayment.eq(ctx.price)) {
+    clearMonthlyPaymentOutputs();
+    return;
+  }
+
+  const M = ctx.downPayment.eq(ctx.price) ?
+      new Decimal(0) :
+      monthlyFormula(
+          ctx.price.mul(Decimal.sub(1, ctx.downPaymentPct)),
+          ctx.interestRate.div(12),
+          ctx.n,
+      );
+  const monthlyLoanPayment = M.add(ctx.prepayment);
+  principalAndInterestOutput.innerText =
+      `${fmt.format(monthlyLoanPayment.toNumber())}`;
+  const extras = Decimal.sum(ctx.hoa, ctx.propertyTax, ctx.homeownersInsurance);
+
+  monthlyPaymentAmountOutput.innerText =
+      `${fmt.format(monthlyLoanPayment.add(extras).toNumber())}`;
+  monthlyPaymentPmiOutput.innerText = `${
+      fmt.format(Decimal.sum(monthlyLoanPayment, extras, ctx.pmi).toNumber())}`;
+  const showPmi = ctx.pmi && ctx.downPaymentPct < ctx.pmiEquityPct;
+  utils.getHtmlElt('monthly-payment-without-pmi-span').style.display =
+      showPmi ? '' : 'none';
+  utils.getHtmlElt('monthly-payment-pmi-div').style.display =
+      showPmi ? '' : 'none';
+  const schedule = calculatePaymentSchedule(ctx, monthlyLoanPayment);
+  viz.buildPaymentScheduleChart(schedule, fmt, keys);
+  const pmiMonths =
+      utils.countSatisfying(schedule, payment => !payment.data.pmi.eq(0));
+  pmiPaymentTimelineOutput.innerText = `${utils.formatMonthNum(pmiMonths)} (${
+      fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`;
+  const cumulativeSums = utils.cumulativeSumByFields(schedule, keys);
+  if (!M.eq(0)) {
+    viz.buildCumulativeChart(
+        cumulativeSums, fmt, ['principal', 'interest', 'pmi']);
+    lifetimeOfLoanOutput.innerText = `${
+        utils.formatMonthNum(
+            utils.countSatisfying(schedule, m => m.data.principal.gt(0)))}`
+    lifetimePaymentOutput.innerText = `${
+        fmt.format(utils
+                       .sumOfKeys(
+                           cumulativeSums[cumulativeSums.length - 1]!.data,
+                           ['principal', 'interest', 'pmi'])
+                       .toNumber())}`;
+  } else {
+    document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
+    lifetimePaymentOutput.innerText = `${fmt.format(0)}`;
+  }
+
+  showConditionalOutput(
+      !ctx.totalAssets.eq(0), 'fired-tomorrow-countdown-div',
+      firedTomorrowCountdownOutput,
+      () => `${
+          utils.formatMonthNum(utils.countBurndownMonths(
+              ctx.totalAssets.sub(
+                  (ctx.alreadyClosed ? new Decimal(0) :
+                                       ctx.downPayment.add(ctx.closingCost))),
+              schedule.slice(ctx.paymentsAlreadyMade).map(d => d.data),
+              ctx.monthlyDebt))}`)
+
+  showConditionalOutput(
+      !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-paid-so-far-div',
+      totalPaidSoFarOutput,
+      () => `${
+          fmt.format(
+              (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
+                                   new Decimal(0))
+                  .add(utils.sumOfKeys(
+                      cumulativeSums[ctx.paymentsAlreadyMade]!.data, keys))
+                  .toNumber())}`);
+
+  const absoluteEquityOwned =
+      (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
+          .add(cumulativeSums[ctx.paymentsAlreadyMade]!.data['principal']);
+  showConditionalOutput(
+      !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'equity-owned-so-far-div',
+      equityOwnedSoFarOutput, () => {
+        return `${
+            pctFmt.format(
+                absoluteEquityOwned.div(ctx.homeValue).toNumber())} (${
+            fmt.format(absoluteEquityOwned.toNumber())})`;
+      });
+
+  showConditionalOutput(
+      !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-loan-owed-div',
+      totalLoanOwedOutput, () => {
+        const totalPrincipalAndInterestPaid = utils.sumOfKeys(
+            cumulativeSums[ctx.paymentsAlreadyMade]!.data,
+            ['principal', 'interest']);
+        const totalPrincipalAndInterestToPay = utils.sumOfKeys(
+            cumulativeSums[cumulativeSums.length - 1]!.data,
+            ['principal', 'interest']);
+        return `${
+            fmt.format(totalPrincipalAndInterestToPay
+                           .sub(totalPrincipalAndInterestPaid)
+                           .toNumber())}`;
+      });
+
+  showConditionalOutput(
+      !!ctx.paymentsAlreadyMade || ctx.alreadyClosed,
+      'remaining-equity-to-pay-for-div', remainingEquityOutput,
+      () => `${fmt.format(ctx.price.sub(absoluteEquityOwned).toNumber())}`);
+
+  showConditionalOutput(
+      !!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput,
+      () => `${
+          pctFmt.format(
+              Decimal.sum(ctx.monthlyDebt, monthlyLoanPayment, extras, ctx.pmi)
+                  .div(ctx.annualIncome)
+                  .mul(12)
+                  .toNumber())}`);
+
+  // Show the comparison between prepayment and investment, if relevant.
+  if (ctx.prepayment.eq(0)) {
+    for (const elt of Array.from(document.getElementsByClassName('prepay'))) {
+      if (!(elt instanceof HTMLElement)) continue;
+      elt.style.display = 'none';
+    }
+  } else {
+    for (const elt of Array.from(document.getElementsByClassName('prepay'))) {
+      if (!(elt instanceof HTMLElement)) continue;
+      elt.style.display = '';
+    }
+    utils.fillTemplateElts('mortgage-term', utils.formatMonthNum(ctx.n));
+    utils.fillTemplateElts(
+        'prepay-amount', fmt.format(ctx.prepayment.toNumber()));
+    prepayComparisonOutput.innerText = `${
+        fmt.format(utils
+                       .computeStockAssets(
+                           schedule
+                               .map(
+                                   m => monthlyLoanPayment.sub(Decimal.sum(
+                                       m.data.interest, m.data.principal)))
+                               .filter(x => !x.eq(0)),
+                           ctx.stocksReturnRate)
+                       .toNumber())}`;
+
+    stocksComparisonOutput.innerText = `${
+        fmt.format(
+            utils
+                .computeStockAssets(
+                    new Array(ctx.n).fill(ctx.prepayment), ctx.stocksReturnRate)
+                .toNumber())}`;
+  }
 };
 
 // Computes the sum of principal + interest to be paid each month of the loan.
