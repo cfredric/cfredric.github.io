@@ -191,9 +191,19 @@ export const fillTemplateElts =
     }
 
 // Computes the sum of principal + interest to be paid each month of the loan.
-export const monthlyFormula = (P: Decimal, r: Decimal, n: number): Decimal =>
-    (P.mul(r).mul(Decimal.pow(r.add(1), n)))
-        .div(Decimal.pow(r.add(1), n).sub(1));
+export const computeAmortizedPaymentAmount =
+    (P: Decimal, r: Decimal, n: number):
+        Decimal => {
+          // Let P = the loan amount (principal),
+          //     r = the annual interest rate / 12,
+          //     n = the number of pay installments
+          //
+          // Then:
+          // monthly principal + interest = P*r*(1+r)^n / ((1+r)^n -1)
+
+          const onePlusRToTheN = r.add(1).pow(n);
+          return (P.mul(r).mul(onePlusRToTheN)).div(onePlusRToTheN.sub(1));
+        }
 
 // Conditionally shows or hides an output.
 export const showConditionalOutput =

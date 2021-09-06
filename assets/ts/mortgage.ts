@@ -184,13 +184,12 @@ const setContents = (ctx: Context): void => {
     return;
   }
 
-  const M = ctx.downPayment.eq(ctx.price) ?
-      new Decimal(0) :
-      utils.monthlyFormula(
-          ctx.price.mul(Decimal.sub(1, ctx.downPaymentPct)),
-          ctx.interestRate.div(12),
-          ctx.n,
-      );
+  const M = ctx.downPayment.eq(ctx.price) ? new Decimal(0) :
+                                            utils.computeAmortizedPaymentAmount(
+                                                ctx.price.sub(ctx.downPayment),
+                                                ctx.interestRate.div(12),
+                                                ctx.n,
+                                            );
   const monthlyLoanPayment = M.add(ctx.prepayment);
   principalAndInterestOutput.innerText =
       `${fmt.format(monthlyLoanPayment.toNumber())}`;
