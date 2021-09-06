@@ -240,7 +240,7 @@ const setContents = (ctx: Context): void => {
         fmt.format(utils
                        .sumOfKeys(
                            cumulativeSums[cumulativeSums.length - 1]!.data,
-                           ['principal', 'interest', 'pmi'])
+                           ['principal', 'interest'])
                        .toNumber())}`;
   } else {
     document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
