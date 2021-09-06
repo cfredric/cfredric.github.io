@@ -1,8 +1,7 @@
-import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
-import {InputEntry, keys, PaymentRecordWithMonth} from './types';
+import {InputEntry, keys} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -88,23 +87,6 @@ const firedTomorrowCountdownOutput =
     utils.getHtmlElt('fired-tomorrow-countdown-output');
 const prepayComparisonOutput = utils.getHtmlElt('prepay-comparison-output');
 const stocksComparisonOutput = utils.getHtmlElt('stocks-comparison-output');
-
-const COOKIE_ATTRIBUTES: Readonly<string[]> = [
-  'Secure',
-  'SameSite=Lax',
-  `Domain=${window.location.hostname}`,
-  'Path=/Mortgage',
-];
-
-const COOKIE_SUFFIX = COOKIE_ATTRIBUTES
-                          .concat([
-                            `max-age=${60 * 60 * 24 * 365 * 10}`,
-                          ])
-                          .join(';');
-
-const COOKIE_SUFFIX_DELETE = COOKIE_ATTRIBUTES.concat([
-  `max-age=0`,
-])
 
 const urlParamMap: Readonly<Map<HTMLInputElement, InputEntry>> = new Map([
   [priceInput, {name: 'price'}],
@@ -204,7 +186,7 @@ const setContents = (ctx: Context): void => {
 
   const M = ctx.downPayment.eq(ctx.price) ?
       new Decimal(0) :
-      monthlyFormula(
+      utils.monthlyFormula(
           ctx.price.mul(Decimal.sub(1, ctx.downPaymentPct)),
           ctx.interestRate.div(12),
           ctx.n,
@@ -223,7 +205,7 @@ const setContents = (ctx: Context): void => {
       showPmi ? '' : 'none';
   utils.getHtmlElt('monthly-payment-pmi-div').style.display =
       showPmi ? '' : 'none';
-  const schedule = calculatePaymentSchedule(ctx, monthlyLoanPayment);
+  const schedule = utils.calculatePaymentSchedule(ctx, monthlyLoanPayment);
   viz.buildPaymentScheduleChart(schedule, fmt, keys);
   const pmiMonths =
       utils.countSatisfying(schedule, payment => !payment.data.pmi.eq(0));
@@ -247,7 +229,7 @@ const setContents = (ctx: Context): void => {
     lifetimePaymentOutput.innerText = `${fmt.format(0)}`;
   }
 
-  showConditionalOutput(
+  utils.showConditionalOutput(
       !ctx.totalAssets.eq(0), 'fired-tomorrow-countdown-div',
       firedTomorrowCountdownOutput,
       () => `${
@@ -258,7 +240,7 @@ const setContents = (ctx: Context): void => {
               schedule.slice(ctx.paymentsAlreadyMade).map(d => d.data),
               ctx.monthlyDebt))}`)
 
-  showConditionalOutput(
+  utils.showConditionalOutput(
       !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-paid-so-far-div',
       totalPaidSoFarOutput,
       () => `${
@@ -272,7 +254,7 @@ const setContents = (ctx: Context): void => {
   const absoluteEquityOwned =
       (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
           .add(cumulativeSums[ctx.paymentsAlreadyMade]!.data['principal']);
-  showConditionalOutput(
+  utils.showConditionalOutput(
       !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'equity-owned-so-far-div',
       equityOwnedSoFarOutput, () => {
         return `${
@@ -281,7 +263,7 @@ const setContents = (ctx: Context): void => {
             fmt.format(absoluteEquityOwned.toNumber())})`;
       });
 
-  showConditionalOutput(
+  utils.showConditionalOutput(
       !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-loan-owed-div',
       totalLoanOwedOutput, () => {
         const totalPrincipalAndInterestPaid = utils.sumOfKeys(
@@ -296,12 +278,12 @@ const setContents = (ctx: Context): void => {
                            .toNumber())}`;
       });
 
-  showConditionalOutput(
+  utils.showConditionalOutput(
       !!ctx.paymentsAlreadyMade || ctx.alreadyClosed,
       'remaining-equity-to-pay-for-div', remainingEquityOutput,
       () => `${fmt.format(ctx.price.sub(absoluteEquityOwned).toNumber())}`);
 
-  showConditionalOutput(
+  utils.showConditionalOutput(
       !!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput,
       () => `${
           pctFmt.format(
@@ -343,59 +325,6 @@ const setContents = (ctx: Context): void => {
                 .toNumber())}`;
   }
 };
-
-// Computes the sum of principal + interest to be paid each month of the loan.
-const monthlyFormula = (P: Decimal, r: Decimal, n: number): Decimal =>
-    (P.mul(r).mul(Decimal.pow(r.add(1), n)))
-        .div(Decimal.pow(r.add(1), n).sub(1));
-
-// Conditionally shows or hides an output.
-const showConditionalOutput =
-    (condition: boolean, containerName: string, outputElt: HTMLElement,
-     generateOutput: () => string) => {
-      const container = utils.getHtmlElt(containerName);
-      let text;
-      let display;
-      if (condition) {
-        text = generateOutput();
-        display = '';
-      } else {
-        text = '';
-        display = 'none';
-      }
-      outputElt.innerText = text;
-      container.style.display = display;
-    };
-
-// Computes the payment for each month of the loan.
-const calculatePaymentSchedule =
-    (ctx: Context, monthlyLoanPayment: Decimal): PaymentRecordWithMonth[] => {
-      let equityOwned = ctx.downPayment;
-      const schedule: PaymentRecordWithMonth[] = [];
-      for (const month of d3.range(ctx.n)) {
-        const principalRemaining = ctx.price.sub(equityOwned);
-        const interestPayment =
-            ctx.interestRate.div(12).mul(principalRemaining);
-        const pmiPayment = equityOwned.lt(ctx.pmiEquityPct.mul(ctx.price)) ?
-            ctx.pmi :
-            new Decimal(0);
-        const principalPaidThisMonth = monthlyLoanPayment.sub(interestPayment)
-                                           .clamp(0, principalRemaining);
-        equityOwned = equityOwned.add(principalPaidThisMonth);
-        schedule.push({
-          month: month + 1,
-          data: {
-            interest: interestPayment,
-            principal: principalPaidThisMonth,
-            pmi: pmiPayment,
-            hoa: ctx.hoa,
-            property_tax: ctx.propertyTax,
-            homeowners_insurance: ctx.homeownersInsurance,
-          },
-        });
-      }
-      return schedule;
-    };
 
 // Updates the "hints"/previews displayed alongside the input fields.
 const showAmountHints = (ctx: Context): void => {
@@ -491,13 +420,13 @@ const saveFields = (changed?: HTMLInputElement): void => {
           utils.updateURLParam(url, changed, urlParamMap.get(changed)!);
     }
     if (cookieValueMap.has(changed))
-      updateCookie(changed, cookieValueMap.get(changed)!);
+      utils.updateCookie(changed, cookieValueMap.get(changed)!);
   } else {
     for (const [elt, entry] of urlParamMap.entries()) {
       urlChanged = urlChanged || utils.updateURLParam(url, elt, entry);
     }
     for (const [elt, entry] of cookieValueMap.entries()) {
-      updateCookie(elt, entry);
+      utils.updateCookie(elt, entry);
     }
   }
   if (urlChanged) history.pushState({}, '', url.toString());
@@ -514,35 +443,10 @@ const clearInputs = () => {
   if (urlChanged) history.pushState({}, '', url.toString());
   for (const [elt, entry] of cookieValueMap.entries()) {
     elt.value = '';
-    deleteCookie(entry.name);
+    utils.deleteCookie(entry.name);
   }
   setContents(contextFromInputs());
 };
-
-// Updates the value of the given cookie.
-const updateCookie =
-    (elt: HTMLInputElement, entry: InputEntry) => {
-      if (entry.deprecated) return;
-      let value;
-      let hasValue;
-      switch (elt.type) {
-        case 'text':
-          value = elt.value;
-          hasValue = value !== '';
-          break;
-        case 'checkbox':
-          value = '1';
-          hasValue = elt.checked;
-          break;
-        default:
-          throw new Error('unreachable');
-      }
-      if (hasValue) {
-        setCookie(entry.name, value);
-      } else {
-        deleteCookie(entry.name);
-      }
-    }
 
 // Clears out deprecated URL params and cookies.
 const clearDeprecatedStorage = () => {
@@ -554,19 +458,7 @@ const clearDeprecatedStorage = () => {
   if (modified) history.pushState({}, '', url.toString());
 
   for (const {name, deprecated} of cookieValueMap.values())
-    if (deprecated) deleteCookie(name);
-};
-
-// Sets the value of the cookie with the given name.
-const setCookie = (name: string, value: string) => {
-  document.cookie = `${name}=${encodeURIComponent(value)};${COOKIE_SUFFIX}`;
-};
-
-// "Deletes" the cookie with the given name. This doesn't seem to really delete
-// the cookie; it just makes it a session cookie, so that it won't be present in
-// the next session of the browser.
-const deleteCookie = (name: string) => {
-  document.cookie = `${name}=0;${COOKIE_SUFFIX_DELETE}`;
+    if (deprecated) utils.deleteCookie(name);
 };
 
 populateFields();

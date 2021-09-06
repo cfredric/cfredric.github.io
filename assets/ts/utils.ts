@@ -1,5 +1,7 @@
+import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
+import {Context} from './context';
 import {InputEntry, keys, nonLoanKeys, PaymentRecord, PaymentRecordWithMonth, PaymentType} from './types';
 
 // Returns the numeric value of the input element, or 0 if the input was empty.
@@ -179,9 +181,118 @@ export const computeStockAssets =
       return assets;
     };
 
-export const fillTemplateElts = (className: string, value: string) => {
-  for (const elt of Array.from(document.getElementsByClassName(className))) {
-    if (!(elt instanceof HTMLElement)) continue;
-    elt.innerText = value;
-  }
-}
+export const fillTemplateElts =
+    (className: string, value: string) => {
+      for (const elt of Array.from(
+               document.getElementsByClassName(className))) {
+        if (!(elt instanceof HTMLElement)) continue;
+        elt.innerText = value;
+      }
+    }
+
+// Computes the sum of principal + interest to be paid each month of the loan.
+export const monthlyFormula = (P: Decimal, r: Decimal, n: number): Decimal =>
+    (P.mul(r).mul(Decimal.pow(r.add(1), n)))
+        .div(Decimal.pow(r.add(1), n).sub(1));
+
+// Conditionally shows or hides an output.
+export const showConditionalOutput =
+    (condition: boolean, containerName: string, outputElt: HTMLElement,
+     generateOutput: () => string) => {
+      const container = getHtmlElt(containerName);
+      let text;
+      let display;
+      if (condition) {
+        text = generateOutput();
+        display = '';
+      } else {
+        text = '';
+        display = 'none';
+      }
+      outputElt.innerText = text;
+      container.style.display = display;
+    };
+
+// Computes the payment for each month of the loan.
+export const calculatePaymentSchedule =
+    (ctx: Context, monthlyLoanPayment: Decimal): PaymentRecordWithMonth[] => {
+      let equityOwned = ctx.downPayment;
+      const schedule: PaymentRecordWithMonth[] = [];
+      for (const month of d3.range(ctx.n)) {
+        const principalRemaining = ctx.price.sub(equityOwned);
+        const interestPayment =
+            ctx.interestRate.div(12).mul(principalRemaining);
+        const pmiPayment = equityOwned.lt(ctx.pmiEquityPct.mul(ctx.price)) ?
+            ctx.pmi :
+            new Decimal(0);
+        const principalPaidThisMonth = monthlyLoanPayment.sub(interestPayment)
+                                           .clamp(0, principalRemaining);
+        equityOwned = equityOwned.add(principalPaidThisMonth);
+        schedule.push({
+          month: month + 1,
+          data: {
+            interest: interestPayment,
+            principal: principalPaidThisMonth,
+            pmi: pmiPayment,
+            hoa: ctx.hoa,
+            property_tax: ctx.propertyTax,
+            homeowners_insurance: ctx.homeownersInsurance,
+          },
+        });
+      }
+      return schedule;
+    };
+
+// Updates the value of the given cookie.
+export const updateCookie =
+    (elt: HTMLInputElement, entry: InputEntry) => {
+      if (entry.deprecated) return;
+      let value;
+      let hasValue;
+      switch (elt.type) {
+        case 'text':
+          value = elt.value;
+          hasValue = value !== '';
+          break;
+        case 'checkbox':
+          value = '1';
+          hasValue = elt.checked;
+          break;
+        default:
+          throw new Error('unreachable');
+      }
+      if (hasValue) {
+        setCookie(entry.name, value);
+      } else {
+        deleteCookie(entry.name);
+      }
+    }
+
+const COOKIE_ATTRIBUTES: Readonly<string[]> = [
+  'Secure',
+  'SameSite=Lax',
+  `Domain=${window.location.hostname}`,
+  'Path=/Mortgage',
+];
+
+const COOKIE_SUFFIX = COOKIE_ATTRIBUTES
+                          .concat([
+                            `max-age=${60 * 60 * 24 * 365 * 10}`,
+                          ])
+                          .join(';');
+
+const COOKIE_SUFFIX_DELETE = COOKIE_ATTRIBUTES.concat([
+  `max-age=0`,
+])
+
+// Sets the value of the cookie with the given name.
+const setCookie = (name: string, value: string) => {
+  document.cookie = `${name}=${encodeURIComponent(value)};${COOKIE_SUFFIX}`;
+};
+
+// "Deletes" the cookie with the given name. This doesn't seem to really delete
+// the cookie; it just makes it a session cookie, so that it won't be present in
+// the next session of the browser.
+export const deleteCookie = (name: string) => {
+  document.cookie = `${name}=0;${COOKIE_SUFFIX_DELETE}`;
+};
