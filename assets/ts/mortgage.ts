@@ -218,7 +218,7 @@ const setContents = (ctx: Context): void => {
       `${fmt.format(monthlyLoanPayment.add(extras).toNumber())}`;
   monthlyPaymentPmiOutput.innerText = `${
       fmt.format(Decimal.sum(monthlyLoanPayment, extras, ctx.pmi).toNumber())}`;
-  const showPmi = ctx.pmi && ctx.downPaymentPct < ctx.pmiEquityPct;
+  const showPmi = ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct);
   utils.getHtmlElt('monthly-payment-without-pmi-span').style.display =
       showPmi ? '' : 'none';
   utils.getHtmlElt('monthly-payment-pmi-div').style.display =
