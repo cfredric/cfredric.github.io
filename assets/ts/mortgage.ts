@@ -155,7 +155,7 @@ const attachListeners = (): void => {
   clearInputsButton.addEventListener('click', () => void clearInputs());
   for (const elt of urlParamMap.keys()) {
     elt.addEventListener('input', () => {
-      saveFields(elt);
+      utils.saveFields(urlParamMap, cookieValueMap, elt);
       setContents(contextFromInputs());
     });
   }
@@ -410,28 +410,6 @@ const populateFields = (): void => {
   }
 };
 
-// Saves fields to the URL and cookies.
-const saveFields = (changed?: HTMLInputElement): void => {
-  const url = new URL(location.href);
-  let urlChanged = false;
-  if (changed) {
-    if (urlParamMap.has(changed)) {
-      urlChanged = urlChanged ||
-          utils.updateURLParam(url, changed, urlParamMap.get(changed)!);
-    }
-    if (cookieValueMap.has(changed))
-      utils.updateCookie(changed, cookieValueMap.get(changed)!);
-  } else {
-    for (const [elt, entry] of urlParamMap.entries()) {
-      urlChanged = urlChanged || utils.updateURLParam(url, elt, entry);
-    }
-    for (const [elt, entry] of cookieValueMap.entries()) {
-      utils.updateCookie(elt, entry);
-    }
-  }
-  if (urlChanged) history.pushState({}, '', url.toString());
-};
-
 // Clears all parameters from the `url`, and clears all cookies.
 const clearInputs = () => {
   const url = new URL(location.href);
@@ -448,24 +426,11 @@ const clearInputs = () => {
   setContents(contextFromInputs());
 };
 
-// Clears out deprecated URL params and cookies.
-const clearDeprecatedStorage = () => {
-  const url = new URL(location.href);
-  let modified = false;
-  for (const {name, deprecated} of urlParamMap.values())
-    if (deprecated) modified = utils.deleteParam(url, name) || modified;
-
-  if (modified) history.pushState({}, '', url.toString());
-
-  for (const {name, deprecated} of cookieValueMap.values())
-    if (deprecated) utils.deleteCookie(name);
-};
-
 populateFields();
 // To support URL param / cookie deprecations cleanly, we write out the UI
 // fields immediately after populating them. This "upgrades" fields that have
 // been moved from URL params to cookies (or vice versa).
-saveFields();
-clearDeprecatedStorage();
+utils.saveFields(urlParamMap, cookieValueMap);
+utils.clearDeprecatedStorage(urlParamMap, cookieValueMap);
 attachListeners();
 })();

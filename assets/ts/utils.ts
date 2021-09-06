@@ -244,7 +244,7 @@ export const calculatePaymentSchedule =
     };
 
 // Updates the value of the given cookie.
-export const updateCookie =
+const updateCookie =
     (elt: HTMLInputElement, entry: InputEntry) => {
       if (entry.deprecated) return;
       let value;
@@ -296,3 +296,43 @@ const setCookie = (name: string, value: string) => {
 export const deleteCookie = (name: string) => {
   document.cookie = `${name}=0;${COOKIE_SUFFIX_DELETE}`;
 };
+
+// Saves fields to the URL and cookies.
+export const saveFields =
+    (urlParams: Map<HTMLInputElement, InputEntry>,
+     cookieValues: Map<HTMLInputElement, InputEntry>,
+     changed?: HTMLInputElement): void => {
+      const url = new URL(location.href);
+      let urlChanged = false;
+      if (changed) {
+        if (urlParams.has(changed)) {
+          urlChanged = urlChanged ||
+              updateURLParam(url, changed, urlParams.get(changed)!);
+        }
+        if (cookieValues.has(changed))
+          updateCookie(changed, cookieValues.get(changed)!);
+      } else {
+        for (const [elt, entry] of urlParams.entries()) {
+          urlChanged = urlChanged || updateURLParam(url, elt, entry);
+        }
+        for (const [elt, entry] of cookieValues.entries()) {
+          updateCookie(elt, entry);
+        }
+      }
+      if (urlChanged) history.pushState({}, '', url.toString());
+    };
+
+// Clears out deprecated URL params and cookies.
+export const clearDeprecatedStorage =
+    (urlParams: Map<HTMLInputElement, InputEntry>,
+     cookieValues: Map<HTMLInputElement, InputEntry>) => {
+      const url = new URL(location.href);
+      let modified = false;
+      for (const {name, deprecated} of urlParams.values())
+        if (deprecated) modified = deleteParam(url, name) || modified;
+
+      if (modified) history.pushState({}, '', url.toString());
+
+      for (const {name, deprecated} of cookieValues.values())
+        if (deprecated) deleteCookie(name);
+    };
