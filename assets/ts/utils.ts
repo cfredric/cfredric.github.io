@@ -85,11 +85,11 @@ export const countBurndownMonths =
         if (due.gt(assets)) return i;
         assets = assets.sub(due);
       }
+
+      const totalMonthlyExpenses = monthlyDebt.add(
+          schedule.length ? sumOfKeys(schedule[0]!, nonLoanKeys) : 0);
       return schedule.length +
-          Decimal
-              .floor(assets.div(
-                  sumOfKeys(schedule[0]!, nonLoanKeys).add(monthlyDebt)))
-              .toNumber();
+          Decimal.floor(assets.div(totalMonthlyExpenses)).toNumber();
     };
 
 // Formats a number of months into an integral number of years and integral

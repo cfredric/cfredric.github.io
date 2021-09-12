@@ -93,6 +93,10 @@ test('cumulativeSumByFields', () => {
 });
 
 test('countBurndownMonths', () => {
+  // Can handle an empty schedule slice.
+  expect(utils.countBurndownMonths(new Decimal(50), [], new Decimal(10)))
+      .toBe(5);
+
   // Can pay off full loan, no recurring debts, no non-loan payments.
   expect(utils.countBurndownMonths(
              new Decimal(100),
