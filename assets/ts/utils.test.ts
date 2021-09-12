@@ -97,6 +97,10 @@ test('countBurndownMonths', () => {
   expect(utils.countBurndownMonths(new Decimal(50), [], new Decimal(10)))
       .toBe(5);
 
+  // Can handle an empty schedule slice and no monthly debts.
+  expect(utils.countBurndownMonths(new Decimal(50), [], new Decimal(0)))
+      .toBe(Infinity);
+
   // Can pay off full loan, no recurring debts, no non-loan payments.
   expect(utils.countBurndownMonths(
              new Decimal(100),
