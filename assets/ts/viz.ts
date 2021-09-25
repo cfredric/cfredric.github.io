@@ -82,8 +82,6 @@ export const buildPaymentScheduleChart = (
       .selectAll('path')
       .data(d3.stack<unknown, PaymentRecordWithMonth, PaymentType>()
                 .keys(keys)
-                .order(d3.stackOrderNone)
-                .offset(d3.stackOffsetNone)
                 .value((d, key) => d.data[key].toNumber())(schedule))
       .join('path')
       .style('fill', d => fieldColor(d.key))
@@ -92,8 +90,7 @@ export const buildPaymentScheduleChart = (
           d3.area<d3.SeriesPoint<PaymentRecordWithMonth>>()
               .x(d => x(d.data.month))
               .y0(d => y(d['0']))
-              .y1(d => y(d['1'])),
-      );
+              .y1(d => y(d['1'])));
 
   makeTooltip(svg, schedule, keys, x, formatter, (mouseY, datum) => {
     const yTarget = y.invert(mouseY);
