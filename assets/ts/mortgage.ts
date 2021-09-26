@@ -228,43 +228,47 @@ const setContents = (ctx: Context): void => {
     lifetimePaymentOutput.innerText = `${fmt.format(0)}`;
   }
 
-  utils.showConditionalOutput(
-      !ctx.totalAssets.eq(0), 'fired-tomorrow-countdown-div',
-      firedTomorrowCountdownOutput,
-      () => `${
+  utils.showConditionalOutput(!ctx.totalAssets.eq(0), [
+    {
+      containerName: 'fired-tomorrow-countdown-div',
+      outputElt: firedTomorrowCountdownOutput,
+      generateOutput: () => `${
           utils.formatMonthNum(utils.countBurndownMonths(
               ctx.totalAssets.sub(
                   (ctx.alreadyClosed ? new Decimal(0) :
                                        ctx.downPayment.add(ctx.closingCost))),
               schedule.slice(ctx.paymentsAlreadyMade).map(d => d.data),
-              ctx.monthlyDebt))}`)
+              ctx.monthlyDebt))}`,
+    },
+  ]);
 
-  utils.showConditionalOutput(
-      !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-paid-so-far-div',
-      totalPaidSoFarOutput,
-      () => `${
+  const absoluteEquityOwned =
+      (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
+          .add(cumulativeSums[ctx.paymentsAlreadyMade]!.data['principal']);
+
+  utils.showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, [
+    {
+      containerName: 'total-paid-so-far-div',
+      outputElt: totalPaidSoFarOutput,
+      generateOutput: () => `${
           fmt.format(
               (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
                                    new Decimal(0))
                   .add(utils.sumOfKeys(
                       cumulativeSums[ctx.paymentsAlreadyMade]!.data, keys))
-                  .toNumber())}`);
-
-  const absoluteEquityOwned =
-      (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
-          .add(cumulativeSums[ctx.paymentsAlreadyMade]!.data['principal']);
-  utils.showConditionalOutput(
-      !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'equity-owned-so-far-div',
-      equityOwnedSoFarOutput, () => {
-        return `${
-            pctFmt.format(
-                absoluteEquityOwned.div(ctx.homeValue).toNumber())} (${
-            fmt.format(absoluteEquityOwned.toNumber())})`;
-      });
-
-  utils.showConditionalOutput(
-      !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, 'total-loan-owed-div',
-      totalLoanOwedOutput, () => {
+                  .toNumber())}`,
+    },
+    {
+      containerName: 'equity-owned-so-far-div',
+      outputElt: equityOwnedSoFarOutput,
+      generateOutput: () => `${
+          pctFmt.format(absoluteEquityOwned.div(ctx.homeValue).toNumber())} (${
+          fmt.format(absoluteEquityOwned.toNumber())})`,
+    },
+    {
+      containerName: 'total-loan-owed-div',
+      outputElt: totalLoanOwedOutput,
+      generateOutput() {
         const totalPrincipalAndInterestPaid = utils.sumOfKeys(
             cumulativeSums[ctx.paymentsAlreadyMade]!.data,
             ['principal', 'interest']);
@@ -275,21 +279,28 @@ const setContents = (ctx: Context): void => {
             fmt.format(totalPrincipalAndInterestToPay
                            .sub(totalPrincipalAndInterestPaid)
                            .toNumber())}`;
-      });
+      },
+    },
+    {
+      containerName: 'remaining-equity-to-pay-for-div',
+      outputElt: remainingEquityOutput,
+      generateOutput: () =>
+          `${fmt.format(ctx.price.sub(absoluteEquityOwned).toNumber())}`,
+    },
+  ]);
 
-  utils.showConditionalOutput(
-      !!ctx.paymentsAlreadyMade || ctx.alreadyClosed,
-      'remaining-equity-to-pay-for-div', remainingEquityOutput,
-      () => `${fmt.format(ctx.price.sub(absoluteEquityOwned).toNumber())}`);
-
-  utils.showConditionalOutput(
-      !!ctx.annualIncome, 'debt-to-income-ratio-div', debtToIncomeOutput,
-      () => `${
+  utils.showConditionalOutput(!!ctx.annualIncome, [
+    {
+      containerName: 'debt-to-income-ratio-div',
+      outputElt: debtToIncomeOutput,
+      generateOutput: () => `${
           pctFmt.format(
               Decimal.sum(ctx.monthlyDebt, monthlyLoanPayment, extras, ctx.pmi)
                   .div(ctx.annualIncome)
                   .mul(12)
-                  .toNumber())}`);
+                  .toNumber())}`,
+    },
+  ]);
 
   // Show the comparison between prepayment and investment, if relevant.
   if (ctx.prepayment.eq(0)) {

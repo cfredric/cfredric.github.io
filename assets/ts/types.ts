@@ -32,3 +32,9 @@ export interface Margin {
   left: number;
   right: number;
 }
+
+export interface ConditionalOutput {
+  containerName: string;
+  outputElt: HTMLElement;
+  generateOutput(): string;
+}

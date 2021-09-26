@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
-import {InputEntry, keys, nonLoanKeys, PaymentRecord, PaymentRecordWithMonth, PaymentType} from './types';
+import {ConditionalOutput, InputEntry, keys, nonLoanKeys, PaymentRecord, PaymentRecordWithMonth, PaymentType} from './types';
 
 // Returns the numeric value of the input element, or 0 if the input was empty.
 export const orZeroN = (elt: HTMLInputElement): number => {
@@ -207,20 +207,12 @@ export const computeAmortizedPaymentAmount =
 
 // Conditionally shows or hides an output.
 export const showConditionalOutput =
-    (condition: boolean, containerName: string, outputElt: HTMLElement,
-     generateOutput: () => string) => {
-      const container = getHtmlElt(containerName);
-      let text;
-      let display;
-      if (condition) {
-        text = generateOutput();
-        display = '';
-      } else {
-        text = '';
-        display = 'none';
+    (condition: boolean, outputs: readonly ConditionalOutput[]) => {
+      for (const output of outputs) {
+        output.outputElt.innerText = condition ? output.generateOutput() : '';
+        getHtmlElt(output.containerName).style.display =
+            condition ? '' : 'none';
       }
-      outputElt.innerText = text;
-      container.style.display = display;
     };
 
 // Computes the payment for each month of the loan.
