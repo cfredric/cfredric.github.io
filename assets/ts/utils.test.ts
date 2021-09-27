@@ -26,6 +26,28 @@ test('orZero basic', () => {
   expect(utils.orZero(elt)).toStrictEqual(new Decimal(0));
 });
 
+test('monthDiff', () => {
+  expect(utils.computeMonthDiff(new Date(2021, 4, 5), new Date(2021, 5, 1)))
+      .toBe(1);
+  expect(utils.computeMonthDiff(new Date(2021, 4, 5), new Date(2021, 6, 1)))
+      .toBe(2);
+  expect(utils.computeMonthDiff(new Date(2021, 4, 5), new Date(2021, 7, 1)))
+      .toBe(3);
+
+  expect(utils.computeMonthDiff(new Date(2021, 4, 5), new Date(2022, 4, 1)))
+      .toBe(12);
+
+  expect(utils.computeMonthDiff(new Date(2021, 4, 1), new Date(2021, 5, 1)))
+      .toBe(1);
+  expect(utils.computeMonthDiff(new Date(2021, 4, 1), new Date(2021, 6, 1)))
+      .toBe(2);
+  expect(utils.computeMonthDiff(new Date(2021, 4, 1), new Date(2021, 7, 1)))
+      .toBe(3);
+
+  expect(utils.computeMonthDiff(new Date(2021, 4, 1), new Date(2022, 4, 1)))
+      .toBe(12);
+});
+
 test('cumulativeSumByFields', () => {
   expect(utils.cumulativeSumByFields(
              [

@@ -46,6 +46,18 @@ export const countSatisfying = <T,>(data: readonly T[], predicate: (t: T) => boo
     return count;
   };
 
+// Counts the number of months between `from` and `to`. I.e., how many times the
+// "month" part of the date has changed.
+export const computeMonthDiff = (from: Date, to: Date) =>
+    // Computations are kept in local time, since that's what the user provided.
+    // (Importantly, the user might have specified the first of a month, which
+    // if converted to UTC, could become the last of the previous month. We want
+    // to avoid artificially changing the month like that.)
+    Math.max(
+        0,
+        to.getMonth() - from.getMonth() +
+            12 * (to.getFullYear() - from.getFullYear()));
+
 // Sums the given keys in a record.
 export const sumOfKeys = <T extends string,>(data: Record<T, Decimal>, keys: readonly T[]) =>
     Decimal.sum(...keys.map(key => data[key]));
@@ -127,6 +139,7 @@ export const updateURLParam =
       let hasValue;
       switch (elt.type) {
         case 'text':
+        case 'date':
           value = encodeURIComponent(elt.value);
           hasValue = value !== '';
           break;

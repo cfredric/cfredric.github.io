@@ -28,6 +28,7 @@ interface Input {
       totalAssets: Decimal,                        //
       alreadyClosed: boolean,                      //
       paymentsAlreadyMade: number,                 //
+      closingDate?: Date,                          //
       prepayment: Decimal,                         //
       stocksReturnRate?: Decimal,                  //
 }
@@ -119,8 +120,12 @@ export class Context {
     this.totalAssets = Decimal.max(0, input.totalAssets);
 
     this.alreadyClosed = input.alreadyClosed;
+
     this.paymentsAlreadyMade =
-        clamp(input.paymentsAlreadyMade, {min: 0, max: this.n});
+        clamp(input.paymentsAlreadyMade, {min: 0, max: this.n}) ||
+        (input.closingDate ?
+             utils.computeMonthDiff(input.closingDate, new Date()) :
+             0);
     this.prepayment = input.prepayment.clamp(0, this.price);
     this.stocksReturnRate = input.stocksReturnRate ?
         input.stocksReturnRate.div(100) :

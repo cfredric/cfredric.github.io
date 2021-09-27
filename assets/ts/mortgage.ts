@@ -52,10 +52,11 @@ const totalAssetsInput = utils.getInputElt('total-assets-input');
 const alreadyClosedInput = utils.getInputElt('already-closed-input');
 const paymentsAlreadyMadeInput =
     utils.getInputElt('payments-already-made-input');
+const closingDateInput = utils.getInputElt('closing-date-input');
 const prepaymentInput = utils.getInputElt('prepayment-input');
 const stocksReturnRateInput = utils.getInputElt('stocks-return-rate-input');
 
-// Outputs.
+// Hints.
 const homeValueHintOutput = utils.getHtmlElt('home-value-hint');
 const interestRateHintOutput = utils.getHtmlElt('interest-rate-hint');
 const pointValueHintOutput = utils.getHtmlElt('point-value-hint');
@@ -66,7 +67,11 @@ const residentialExemptionHintOutput =
     utils.getHtmlElt('residential-exemption-hint');
 const mortgageTermHintOutput = utils.getHtmlElt('mortgage-term-hint');
 const downPaymentHintOutput = utils.getHtmlElt('down-payment-hint');
+const paymentsAlreadyMadeHintOutput =
+    utils.getHtmlElt('payments-already-made-hint');
 const stocksReturnRateHintOutput = utils.getHtmlElt('stocks-return-rate-hint');
+
+// Outputs.
 const loanAmountOutput = utils.getHtmlElt('loan-amount-output');
 const principalAndInterestOutput =
     utils.getHtmlElt('principal-and-interest-output');
@@ -111,6 +116,7 @@ const urlParamMap: Readonly<Map<HTMLInputElement, InputEntry>> = new Map([
   [totalAssetsInput, {name: 'total_assets', deprecated: true}],
   [alreadyClosedInput, {name: 'closed'}],
   [paymentsAlreadyMadeInput, {name: 'paid'}],
+  [closingDateInput, {name: 'closing-date'}],
   [prepaymentInput, {name: 'prepay'}],
   [stocksReturnRateInput, {name: 'stock_rate'}],
 ]);
@@ -139,13 +145,14 @@ const contextFromInputs = () => new Context({
       utils.orZero(residentialExemptionDeductionInput),
   homeownersInsurance: utils.orZero(homeownersInsuranceInput),
   closingCost: utils.orZero(closingCostInput),
-  // Assume a 30 year fixed loan.
   mortgageTerm: utils.orZeroN(mortgageTermInput),
   annualIncome: utils.orZero(annualIncomeInput),
   monthlyDebt: utils.orZero(monthlyDebtInput),
   totalAssets: utils.orZero(totalAssetsInput),
   alreadyClosed: alreadyClosedInput.checked,
   paymentsAlreadyMade: utils.orZeroN(paymentsAlreadyMadeInput),
+  closingDate: closingDateInput.value ? new Date(closingDateInput.value) :
+                                        undefined,
   prepayment: utils.orZero(prepaymentInput),
   stocksReturnRate: utils.orUndef(stocksReturnRateInput),
 });
@@ -356,6 +363,8 @@ const showAmountHints = (ctx: Context): void => {
   residentialExemptionHintOutput.innerText =
       `(${fmt.format(ctx.residentialExemptionPerMonth.toNumber())}/mo)`
   mortgageTermHintOutput.innerText = `(${ctx.mortgageTerm} yrs)`;
+  paymentsAlreadyMadeHintOutput.innerText =
+      `(${ctx.paymentsAlreadyMade} payments)`;
   stocksReturnRateHintOutput.innerText =
       `(${hundredthsPctFmt.format(ctx.stocksReturnRate.toNumber())})`
 };
@@ -381,6 +390,7 @@ const populateFields = (): void => {
   for (const [elt, {name}] of urlParamMap.entries()) {
     switch (elt.type) {
       case 'text':
+      case 'date':
         const value = url.searchParams.get(name);
         hasValue = hasValue || value !== null;
         elt.value = value ? decodeURIComponent(value) : '';
