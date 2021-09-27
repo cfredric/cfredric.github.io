@@ -27,6 +27,14 @@ test('orZero basic', () => {
 });
 
 test('monthDiff', () => {
+  expect(utils.computeMonthDiff(new Date(2021, 4, 5), new Date(2021, 3, 1)))
+      .toBe(0);
+
+  expect(utils.computeMonthDiff(new Date(2021, 4, 5), new Date(2021, 4, 1)))
+      .toBe(0);
+  expect(utils.computeMonthDiff(new Date(2021, 4, 5), new Date(2021, 4, 30)))
+      .toBe(0);
+
   expect(utils.computeMonthDiff(new Date(2021, 4, 5), new Date(2021, 5, 1)))
       .toBe(1);
   expect(utils.computeMonthDiff(new Date(2021, 4, 5), new Date(2021, 6, 1)))
