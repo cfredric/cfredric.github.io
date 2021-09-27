@@ -160,11 +160,15 @@ const contextFromInputs = () => new Context({
 // Attaches listeners to react to user input, URL changes.
 const attachListeners = (): void => {
   clearInputsButton.addEventListener('click', () => void clearInputs());
+  const reactToInput = (elt: HTMLInputElement) => () => {
+    utils.saveFields(urlParamMap, cookieValueMap, elt);
+    setContents(contextFromInputs());
+  };
   for (const elt of urlParamMap.keys()) {
-    elt.addEventListener('input', () => {
-      utils.saveFields(urlParamMap, cookieValueMap, elt);
-      setContents(contextFromInputs());
-    });
+    elt.addEventListener('input', reactToInput(elt));
+  }
+  for (const elt of cookieValueMap.keys()) {
+    elt.addEventListener('input', reactToInput(elt));
   }
   window.onpopstate = () => void populateFields();
 };
