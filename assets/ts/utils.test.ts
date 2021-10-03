@@ -60,7 +60,7 @@ test('cumulativeSumByFields', () => {
   expect(utils.cumulativeSumByFields(
              [
                {
-                 month: 0,
+                 month: 1,
                  data: {
                    'principal': new Decimal(1),
                    'interest': new Decimal(0),
@@ -71,7 +71,7 @@ test('cumulativeSumByFields', () => {
                  },
                },
                {
-                 month: 1,
+                 month: 2,
                  data: {
                    'principal': new Decimal(2),
                    'interest': new Decimal(0),
@@ -82,7 +82,7 @@ test('cumulativeSumByFields', () => {
                  },
                },
                {
-                 month: 2,
+                 month: 3,
                  data: {
                    'principal': new Decimal(4),
                    'interest': new Decimal(0),

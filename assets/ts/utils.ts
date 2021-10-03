@@ -77,7 +77,7 @@ export const cumulativeSumByFields =
             }
             results[idx + 1] = {
               data: newData,
-              month: datum.month + 1,
+              month: datum.month,
             };
           }
           return results;
