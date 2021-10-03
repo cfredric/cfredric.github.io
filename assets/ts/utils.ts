@@ -348,3 +348,32 @@ export const clearDeprecatedStorage =
       for (const {name, deprecated} of cookieValues.values())
         if (deprecated) deleteCookie(name);
     };
+
+export const removeChildren =
+    (node: Node) => {
+      while (node.firstChild) {
+        node.removeChild(node.firstChild);
+      }
+    }
+
+export const makeTable =
+    (headers: readonly string[], rows: readonly string[][]):
+        HTMLTableElement => {
+          const table = document.createElement('table');
+          const head = table.createTHead();
+          const headRow = head.insertRow();
+          for (const h of headers) {
+            const cell = headRow.insertCell();
+            cell.innerText = h;
+          }
+          const body = table.createTBody();
+          for (const row of rows) {
+            const tr = body.insertRow();
+            for (const cell of row) {
+              const tc = tr.insertCell();
+              tc.innerText = cell;
+            }
+          }
+
+          return table;
+        };

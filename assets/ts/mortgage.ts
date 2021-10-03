@@ -1,6 +1,7 @@
 import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
+import {ExpandableElement} from './expandable_element';
 import {InputEntry, keys} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
@@ -234,8 +235,28 @@ const setContents = (ctx: Context): void => {
                            cumulativeSums[cumulativeSums.length - 1]!.data,
                            ['principal', 'interest'])
                        .toNumber())}`;
+
+    utils.removeChildren(utils.getHtmlElt('schedule_tab'));
+    new ExpandableElement(
+        utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
+        () => utils.makeTable(
+            ['Month'].concat(keys),
+            schedule.map(
+                d => [utils.formatMonthNum(d.month)].concat(
+                    keys.map(k => fmt.format(d.data[k].toNumber()))))));
+    new ExpandableElement(
+        utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
+        () => utils.makeTable(
+            ['Month', 'principal', 'interest'],
+            cumulativeSums.map(
+                d =>
+                    [utils.formatMonthNum(d.month),
+                     fmt.format(d.data.principal.toNumber()),
+                     fmt.format(d.data.interest.toNumber()),
+    ])));
   } else {
     document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
+    utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
     lifetimePaymentOutput.innerText = `${fmt.format(0)}`;
   }
 
@@ -384,7 +405,9 @@ const clearMonthlyPaymentOutputs = (): void => {
   utils.getHtmlElt('debt-to-income-ratio-div').style.display = 'none';
 
   document.querySelector('#schedule_viz > svg:first-of-type')?.remove();
+  utils.removeChildren(utils.getHtmlElt('schedule_tab'));
   document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
+  utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
 };
 
 // Reads fields from the URL and from cookies, and populates the UI accordingly.
