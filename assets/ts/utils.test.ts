@@ -32,7 +32,7 @@ test('monthDiff', () => {
 
   expect(utils.computeMonthDiff(new Date(2021, 4, 5), new Date(2021, 4, 1)))
       .toBe(0);
-  expect(utils.computeMonthDiff(new Date(2021, 4, 5), new Date(2021, 4, 30)))
+  expect(utils.computeMonthDiff(new Date(2021, 4, 1), new Date(2021, 4, 31)))
       .toBe(0);
 
   expect(utils.computeMonthDiff(new Date(2021, 4, 5), new Date(2021, 5, 1)))

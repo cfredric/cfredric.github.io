@@ -53,10 +53,7 @@ export const computeMonthDiff = (from: Date, to: Date) =>
     // (Importantly, the user might have specified the first of a month, which
     // if converted to UTC, could become the last of the previous month. We want
     // to avoid artificially changing the month like that.)
-    Math.max(
-        0,
-        to.getMonth() - from.getMonth() +
-            12 * (to.getFullYear() - from.getFullYear()));
+    Math.max(0, d3.timeMonth.count(from, to))
 
 // Sums the given keys in a record.
 export const sumOfKeys = <T extends string,>(data: Record<T, Decimal>, keys: readonly T[]) =>
