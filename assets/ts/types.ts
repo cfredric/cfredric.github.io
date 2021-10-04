@@ -1,6 +1,6 @@
 import {Decimal} from 'decimal.js';
 
-export const keys = [
+export const paymentTypes = [
   'principal',
   'interest',
   'hoa',
@@ -9,10 +9,12 @@ export const keys = [
   'pmi',
 ] as const;
 
-export const nonLoanKeys =
+export const nonLoanPaymentTypes =
     ['hoa', 'property_tax', 'homeowners_insurance'] as const;
 
-export type PaymentType = typeof keys[number];
+export const loanPaymentTypes = ['principal', 'interest'] as const;
+
+export type PaymentType = typeof paymentTypes[number];
 
 export type PaymentRecord = Record<PaymentType, Decimal>;
 

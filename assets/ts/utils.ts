@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
-import {ConditionalOutput, InputEntry, keys, nonLoanKeys, PaymentRecord, PaymentRecordWithMonth, PaymentType} from './types';
+import {ConditionalOutput, InputEntry, nonLoanPaymentTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes} from './types';
 
 // Returns the numeric value of the input element, or 0 if the input was empty.
 export const orZeroN = (elt: HTMLInputElement): number => {
@@ -90,13 +90,13 @@ export const countBurndownMonths =
      monthlyDebt: Decimal): number => {
       let assets = startingAssets;
       for (const [i, data] of schedule.entries()) {
-        const due = sumOfKeys(data, keys).add(monthlyDebt);
+        const due = sumOfKeys(data, paymentTypes).add(monthlyDebt);
         if (due.gt(assets)) return i;
         assets = assets.sub(due);
       }
 
       const totalMonthlyExpenses = monthlyDebt.add(
-          schedule.length ? sumOfKeys(schedule[0]!, nonLoanKeys) : 0);
+          schedule.length ? sumOfKeys(schedule[0]!, nonLoanPaymentTypes) : 0);
       return schedule.length +
           Decimal.floor(assets.div(totalMonthlyExpenses)).toNumber();
     };

@@ -2,7 +2,7 @@ import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
-import {InputEntry, keys} from './types';
+import {InputEntry, loanPaymentTypes, paymentTypes} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -217,15 +217,14 @@ const setContents = (ctx: Context): void => {
   utils.getHtmlElt('monthly-payment-pmi-div').style.display =
       showPmi ? '' : 'none';
   const schedule = utils.calculatePaymentSchedule(ctx, monthlyLoanPayment);
-  viz.buildPaymentScheduleChart(schedule, fmt, keys);
+  viz.buildPaymentScheduleChart(schedule, fmt, paymentTypes);
   const pmiMonths =
       utils.countSatisfying(schedule, payment => !payment.data.pmi.eq(0));
   pmiPaymentTimelineOutput.innerText = `${utils.formatMonthNum(pmiMonths)} (${
       fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`;
-  const cumulativeSums = utils.cumulativeSumByFields(schedule, keys);
+  const cumulativeSums = utils.cumulativeSumByFields(schedule, paymentTypes);
   if (!M.eq(0)) {
-    viz.buildCumulativeChart(
-        cumulativeSums, fmt, ['principal', 'interest', 'pmi']);
+    viz.buildCumulativeChart(cumulativeSums, fmt, loanPaymentTypes);
     lifetimeOfLoanOutput.innerText = `${
         utils.formatMonthNum(
             utils.countSatisfying(schedule, m => m.data.principal.gt(0)))}`
@@ -233,22 +232,22 @@ const setContents = (ctx: Context): void => {
         fmt.format(utils
                        .sumOfKeys(
                            cumulativeSums[cumulativeSums.length - 1]!.data,
-                           ['principal', 'interest'])
+                           loanPaymentTypes)
                        .toNumber())}`;
 
     utils.removeChildren(utils.getHtmlElt('schedule_tab'));
     new ExpandableElement(
         utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
         () => utils.makeTable(
-            ['Month'].concat(keys.map(utils.toCapitalized)),
+            ['Month'].concat(paymentTypes.map(utils.toCapitalized)),
             schedule.map(
                 d => [utils.formatMonthNum(d.month)].concat(
-                    keys.map(k => fmt.format(d.data[k].toNumber()))))));
+                    paymentTypes.map(k => fmt.format(d.data[k].toNumber()))))));
     utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
     new ExpandableElement(
         utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
         () => utils.makeTable(
-            ['Month', 'Principal', 'Interest'],
+            ['Month'].concat(loanPaymentTypes.map(utils.toCapitalized)),
             cumulativeSums.map(
                 d =>
                     [utils.formatMonthNum(d.month),
@@ -277,19 +276,19 @@ const setContents = (ctx: Context): void => {
 
   const absoluteEquityOwned =
       (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
-          .add(cumulativeSums[ctx.paymentsAlreadyMade]!.data['principal']);
+          .add(cumulativeSums[ctx.paymentsAlreadyMade]!.data.principal);
 
   utils.showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, [
     {
       containerName: 'total-paid-so-far-div',
       outputElt: totalPaidSoFarOutput,
       generateOutput: () => `${
-          fmt.format(
-              (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
-                                   new Decimal(0))
-                  .add(utils.sumOfKeys(
-                      cumulativeSums[ctx.paymentsAlreadyMade]!.data, keys))
-                  .toNumber())}`,
+          fmt.format((ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
+                                          new Decimal(0))
+                         .add(utils.sumOfKeys(
+                             cumulativeSums[ctx.paymentsAlreadyMade]!.data,
+                             paymentTypes))
+                         .toNumber())}`,
     },
     {
       containerName: 'equity-owned-so-far-div',
@@ -303,11 +302,9 @@ const setContents = (ctx: Context): void => {
       outputElt: totalLoanOwedOutput,
       generateOutput() {
         const totalPrincipalAndInterestPaid = utils.sumOfKeys(
-            cumulativeSums[ctx.paymentsAlreadyMade]!.data,
-            ['principal', 'interest']);
+            cumulativeSums[ctx.paymentsAlreadyMade]!.data, loanPaymentTypes);
         const totalPrincipalAndInterestToPay = utils.sumOfKeys(
-            cumulativeSums[cumulativeSums.length - 1]!.data,
-            ['principal', 'interest']);
+            cumulativeSums[cumulativeSums.length - 1]!.data, loanPaymentTypes);
         return `${
             fmt.format(totalPrincipalAndInterestToPay
                            .sub(totalPrincipalAndInterestPaid)

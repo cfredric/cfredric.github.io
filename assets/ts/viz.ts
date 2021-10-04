@@ -23,23 +23,6 @@ const fieldColor = (pt: PaymentType): string => {
   }
 };
 
-const fieldDisplay = (pt: PaymentType): string => {
-  switch (pt) {
-    case 'principal':
-      return 'Principal';
-    case 'interest':
-      return 'Interest';
-    case 'hoa':
-      return 'HOA';
-    case 'property_tax':
-      return 'Property Tax';
-    case 'homeowners_insurance':
-      return 'Homeowner\'s Insurance';
-    case 'pmi':
-      return 'PMI';
-  }
-};
-
 // Given the X axis and an X mouse coordinate, finds the month that is being
 // hovered over.
 const bisectMonth =
@@ -248,7 +231,7 @@ const makeTooltip =
 
         const value =
             keys.map(
-                    k => `${fieldDisplay(k)}: ${
+                    k => `${utils.toCapitalized(k)}: ${
                              formatter.format(datum.data[k].toNumber())}` +
                         '\n')
                 .join('') +
@@ -325,7 +308,7 @@ const makeLegend =
           .data(keys)
           .enter()
           .append('text')
-          .text(d => fieldDisplay(d))
+          .text(utils.toCapitalized)
           .attr('x', 18)
           .attr('y', (_, i) => i * 18)
           .attr('text-anchor', 'start')
