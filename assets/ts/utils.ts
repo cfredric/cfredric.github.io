@@ -349,19 +349,17 @@ export const clearDeprecatedStorage =
         if (deprecated) deleteCookie(name);
     };
 
-export const removeChildren =
-    (node: Node) => {
-      while (node.firstChild) {
-        node.removeChild(node.firstChild);
-      }
-    }
+export const removeChildren = (node: Node) => {
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+};
 
 export const makeTable =
     (headers: readonly string[], rows: readonly string[][]):
         HTMLTableElement => {
           const table = document.createElement('table');
-          const head = table.createTHead();
-          const headRow = head.insertRow();
+          const headRow = table.createTHead().insertRow();
           for (const h of headers) {
             const cell = headRow.insertCell();
             cell.innerText = h;
