@@ -244,6 +244,7 @@ const setContents = (ctx: Context): void => {
             schedule.map(
                 d => [utils.formatMonthNum(d.month)].concat(
                     keys.map(k => fmt.format(d.data[k].toNumber()))))));
+    utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
     new ExpandableElement(
         utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
         () => utils.makeTable(
