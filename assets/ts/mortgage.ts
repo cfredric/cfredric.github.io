@@ -240,7 +240,7 @@ const setContents = (ctx: Context): void => {
     new ExpandableElement(
         utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
         () => utils.makeTable(
-            ['Month'].concat(keys),
+            ['Month'].concat(keys.map(utils.toCapitalized)),
             schedule.map(
                 d => [utils.formatMonthNum(d.month)].concat(
                     keys.map(k => fmt.format(d.data[k].toNumber()))))));
@@ -248,7 +248,7 @@ const setContents = (ctx: Context): void => {
     new ExpandableElement(
         utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
         () => utils.makeTable(
-            ['Month', 'principal', 'interest'],
+            ['Month', 'Principal', 'Interest'],
             cumulativeSums.map(
                 d =>
                     [utils.formatMonthNum(d.month),

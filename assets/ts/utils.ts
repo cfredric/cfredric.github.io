@@ -375,3 +375,20 @@ export const makeTable =
 
           return table;
         };
+
+export const toCapitalized = (paymentType: PaymentType): string => {
+  switch (paymentType) {
+    case 'principal':
+      return 'Principal';
+    case 'interest':
+      return 'Interest';
+    case 'hoa':
+      return 'HOA';
+    case 'property_tax':
+      return 'Property Tax';
+    case 'homeowners_insurance':
+      return 'Homeowners\' Insurance';
+    case 'pmi':
+      return 'PMI';
+  }
+};
