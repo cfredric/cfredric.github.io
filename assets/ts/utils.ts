@@ -4,6 +4,8 @@ import {Decimal} from 'decimal.js';
 import {Context} from './context';
 import {ConditionalOutput, InputEntry, nonLoanPaymentTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes} from './types';
 
+const timeFormat = new Intl.DateTimeFormat();
+
 // Returns the numeric value of the input element, or 0 if the input was empty.
 export const orZeroN = (elt: HTMLInputElement): number => {
   const num = Number.parseFloat(elt.value);
@@ -100,6 +102,15 @@ export const countBurndownMonths =
       return schedule.length +
           Decimal.floor(assets.div(totalMonthlyExpenses)).toNumber();
     };
+
+export const formatMonthNumWithDate =
+    (m: number, baseDate: Date|undefined) => {
+      let str = formatMonthNum(m);
+      if (baseDate) {
+        str += ` (${timeFormat.format(d3.timeMonth.offset(baseDate, m))})`;
+      }
+      return str;
+    }
 
 // Formats a number of months into an integral number of years and integral
 // number of months.

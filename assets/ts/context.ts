@@ -1,3 +1,4 @@
+import * as d3 from 'd3';
 import Decimal from 'decimal.js';
 import * as utils from './utils';
 
@@ -60,6 +61,7 @@ export class Context {
   readonly totalAssets: Decimal;
   readonly alreadyClosed: boolean;
   readonly paymentsAlreadyMade: number;
+  readonly closingDate?: Date;
   readonly prepayment: Decimal;
   readonly stocksReturnRate: Decimal;
 
@@ -126,6 +128,8 @@ export class Context {
         (input.closingDate ?
              utils.computeMonthDiff(input.closingDate, new Date()) :
              0);
+    this.closingDate =
+        input.closingDate ? d3.timeMonth.floor(input.closingDate) : undefined;
     this.prepayment = input.prepayment.clamp(0, this.price);
     this.stocksReturnRate = input.stocksReturnRate ?
         input.stocksReturnRate.div(100) :
