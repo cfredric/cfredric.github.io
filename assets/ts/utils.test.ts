@@ -248,6 +248,18 @@ test('formatMonthNum', () => {
   expect(utils.formatMonthNum(-NaN)).toBe('NaN');
 });
 
+test('maxNonEmptyDate', () => {
+  const early = new Date(2010);
+  const mid = new Date(2015);
+  const late = new Date(2020);
+  expect(utils.maxNonEmptyDate()).toBe(undefined);
+  expect(utils.maxNonEmptyDate(undefined)).toBe(undefined);
+  expect(utils.maxNonEmptyDate(undefined, mid)).toBe(mid);
+  expect(utils.maxNonEmptyDate(mid, undefined)).toBe(mid);
+  expect(utils.maxNonEmptyDate(mid, early)).toBe(mid);
+  expect(utils.maxNonEmptyDate(mid, late, undefined, early)).toBe(late);
+});
+
 test('deleteParam', () => {
   const withValue = 'https://example.test/page?foo=bar&baz=quux';
   const withChecked = 'https://example.test/page?foo=&baz=quux';

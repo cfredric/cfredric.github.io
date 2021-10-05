@@ -128,17 +128,8 @@ export const formatMonthNum = (m: number, baseDate?: Date) => {
   return str;
 };
 
-export const maxNonEmptyDate =
-    (...ds: (Date|undefined)[]) => {
-      if (!ds.length) return undefined;
-      let m = undefined;
-      for (const d of ds) {
-        if (d && (!m || d.valueOf() > m.valueOf())) {
-          m = d;
-        }
-      }
-      return m;
-    }
+export const maxNonEmptyDate = (...ds: (Date|undefined)[]) =>
+    d3.greatest(ds, d => d === undefined ? NaN : d.valueOf());
 
 // Deletes the given parameter in `url`, if it exists. Returns true if `url` was
 // modified.
