@@ -1,3 +1,4 @@
+import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
@@ -226,7 +227,7 @@ const setContents = (ctx: Context): void => {
   if (!M.eq(0)) {
     viz.buildCumulativeChart(cumulativeSums, fmt, loanPaymentTypes);
     lifetimeOfLoanOutput.innerText = `${
-        utils.formatMonthNumWithDate(
+        utils.formatMonthNum(
             utils.countSatisfying(schedule, m => m.data.principal.gt(0)),
             ctx.closingDate)}`
     lifetimePaymentOutput.innerText = `${
@@ -242,9 +243,8 @@ const setContents = (ctx: Context): void => {
         () => utils.makeTable(
             ['Month'].concat(paymentTypes.map(utils.toCapitalized)),
             schedule.map(
-                d => [utils.formatMonthNumWithDate(d.month, ctx.closingDate)]
-                         .concat(paymentTypes.map(
-                             k => fmt.format(d.data[k].toNumber()))))));
+                d => [utils.formatMonthNum(d.month, ctx.closingDate)].concat(
+                    paymentTypes.map(k => fmt.format(d.data[k].toNumber()))))));
     utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
     new ExpandableElement(
         utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
@@ -252,7 +252,7 @@ const setContents = (ctx: Context): void => {
             ['Month'].concat(loanPaymentTypes.map(utils.toCapitalized)),
             cumulativeSums.map(
                 d =>
-                    [utils.formatMonthNumWithDate(d.month, ctx.closingDate),
+                    [utils.formatMonthNum(d.month, ctx.closingDate),
                      fmt.format(d.data.principal.toNumber()),
                      fmt.format(d.data.interest.toNumber()),
     ])));
@@ -267,7 +267,7 @@ const setContents = (ctx: Context): void => {
       containerName: 'fired-tomorrow-countdown-div',
       outputElt: firedTomorrowCountdownOutput,
       generateOutput: () => `${
-          utils.formatMonthNumWithDate(
+          utils.formatMonthNum(
               utils.countBurndownMonths(
                   ctx.totalAssets.sub(
                       (ctx.alreadyClosed ?
@@ -275,7 +275,8 @@ const setContents = (ctx: Context): void => {
                            ctx.downPayment.add(ctx.closingCost))),
                   schedule.slice(ctx.paymentsAlreadyMade).map(d => d.data),
                   ctx.monthlyDebt),
-              ctx.closingDate)}`,
+              utils.maxNonEmptyDate(
+                  ctx.closingDate, d3.timeMonth.floor(new Date())))}`,
     },
   ]);
 

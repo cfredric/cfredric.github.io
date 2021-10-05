@@ -103,32 +103,41 @@ export const countBurndownMonths =
           Decimal.floor(assets.div(totalMonthlyExpenses)).toNumber();
     };
 
-export const formatMonthNumWithDate =
-    (m: number, baseDate: Date|undefined) => {
-      let str = formatMonthNum(m);
-      if (baseDate) {
-        str += ` (${timeFormat.format(d3.timeMonth.offset(baseDate, m))})`;
-      }
-      return str;
-    }
-
 // Formats a number of months into an integral number of years and integral
 // number of months.
-export const formatMonthNum = (m: number):
-    string => {
-      if (!Number.isFinite(m)) {
-        if (Number.isNaN(m)) return 'NaN';
-        if (m > 0) return 'forever';
+export const formatMonthNum = (m: number, baseDate?: Date) => {
+  if (!Number.isFinite(m)) {
+    if (Number.isNaN(m)) return 'NaN';
+    if (m > 0) return 'forever';
+  }
+  let str;
+  if (m <= 0) {
+    str = '0mo';
+  } else {
+    const years = Math.floor(m / 12);
+    const months = m % 12;
+
+    str = years !== 0 ? `${years}y ` : '';
+    if (months !== 0) str += `${months}mo`;
+
+    str = str.trim();
+  }
+  if (baseDate) {
+    str += ` (${timeFormat.format(d3.timeMonth.offset(baseDate, m))})`;
+  }
+  return str;
+};
+
+export const maxNonEmptyDate =
+    (...ds: (Date|undefined)[]) => {
+      if (!ds.length) return undefined;
+      let m = undefined;
+      for (const d of ds) {
+        if (d && (!m || d.valueOf() > m.valueOf())) {
+          m = d;
+        }
       }
-      if (m <= 0) return '0mo';
-
-      const years = Math.floor(m / 12);
-      const months = m % 12;
-
-      let output = years !== 0 ? `${years}y ` : '';
-      if (months !== 0) output += `${months}mo`;
-
-      return output.trim();
+      return m;
     }
 
 // Deletes the given parameter in `url`, if it exists. Returns true if `url` was
