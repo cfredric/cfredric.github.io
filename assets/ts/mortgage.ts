@@ -219,14 +219,14 @@ const setContents = (ctx: Context): void => {
   utils.getHtmlElt('monthly-payment-pmi-div').style.display =
       showPmi ? '' : 'none';
   const schedule = utils.calculatePaymentSchedule(ctx, monthlyLoanPayment);
-  viz.buildPaymentScheduleChart(schedule, fmt, paymentTypes);
+  viz.buildPaymentScheduleChart(ctx, schedule, fmt, paymentTypes);
   const pmiMonths =
       utils.countSatisfying(schedule, payment => !payment.data.pmi.eq(0));
   pmiPaymentTimelineOutput.innerText = `${utils.formatMonthNum(pmiMonths)} (${
       fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`;
   const cumulativeSums = utils.cumulativeSumByFields(schedule, paymentTypes);
   if (!M.eq(0)) {
-    viz.buildCumulativeChart(cumulativeSums, fmt, loanPaymentTypes);
+    viz.buildCumulativeChart(ctx, cumulativeSums, fmt, loanPaymentTypes);
     lifetimeOfLoanOutput.innerText = `${
         utils.formatMonthNum(
             utils.countSatisfying(schedule, m => m.data.principal.gt(0)),

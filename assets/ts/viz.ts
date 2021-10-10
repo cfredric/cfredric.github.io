@@ -1,6 +1,7 @@
 import * as d3 from 'd3';
 import Decimal from 'decimal.js';
 
+import {Context} from './context';
 import {Margin, PaymentRecord, PaymentRecordWithMonth, PaymentType} from './types';
 import * as utils from './utils';
 
@@ -38,6 +39,7 @@ const bisectMonth =
 
 // Builds the chart of monthly payments over time.
 export const buildPaymentScheduleChart = (
+    ctx: Context,
     schedule: readonly PaymentRecordWithMonth[],
     formatter: Intl.NumberFormat,
     keys: readonly PaymentType[],
@@ -75,7 +77,7 @@ export const buildPaymentScheduleChart = (
               .y0(d => y(d['0']))
               .y1(d => y(d['1'])));
 
-  makeTooltip(svg, schedule, keys, x, formatter, (mouseY, datum) => {
+  makeTooltip(ctx, svg, schedule, keys, x, formatter, (mouseY, datum) => {
     const yTarget = y.invert(mouseY);
     let cumulative = new Decimal(0);
     for (const [idx, key] of keys.entries()) {
@@ -92,8 +94,8 @@ export const buildPaymentScheduleChart = (
 
 // Builds the chart of cumulative payments over time.
 export const buildCumulativeChart =
-    (data: readonly PaymentRecordWithMonth[], formatter: Intl.NumberFormat,
-     keys: readonly PaymentType[]): void => {
+    (ctx: Context, data: readonly PaymentRecordWithMonth[],
+     formatter: Intl.NumberFormat, keys: readonly PaymentType[]): void => {
       const margin = {top: 50, right: 100, bottom: 120, left: 100};
       const width = 900 - margin.left - margin.right;
       const height = 450 - margin.top - margin.bottom;
@@ -132,7 +134,7 @@ export const buildCumulativeChart =
           .attr('d', d => area(d.values))
           .style('fill', d => transparent(fieldColor(d.key)));
 
-      makeTooltip(svg, data, keys, x, formatter, (mouseY, datum) => {
+      makeTooltip(ctx, svg, data, keys, x, formatter, (mouseY, datum) => {
         const yTarget = y.invert(mouseY);
         const sorted = keys.map(key => ({key, value: datum[key]}))
                            .sort((a, b) => a.value.cmp(b.value));
@@ -216,7 +218,8 @@ const makeAxes =
 
 // Creates a tooltip for the given figure.
 const makeTooltip =
-    (svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
+    (ctx: Context,
+     svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
      data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[],
      x: d3.ScaleLinear<number, number, never>, formatter: Intl.NumberFormat,
      identifyPaymentType: (yCoord: number, d: PaymentRecord) =>
@@ -235,7 +238,7 @@ const makeTooltip =
                              formatter.format(datum.data[k].toNumber())}` +
                         '\n')
                 .join('') +
-            `Month: ${utils.formatMonthNum(datum.month)}`;
+            `Month: ${utils.formatMonthNum(datum.month, ctx.closingDate)}`;
         tooltip.attr('transform', `translate(${x(datum.month)},${pointer[1]})`)
             .call(callout, value, paymentTypeIdx);
       });
