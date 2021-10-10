@@ -157,6 +157,7 @@ const contextFromInputs = () => new Context({
                                         undefined,
   prepayment: utils.orZero(prepaymentInput),
   stocksReturnRate: utils.orUndef(stocksReturnRateInput),
+  now: d3.timeDay(),
 });
 
 // Attaches listeners to react to user input, URL changes.
