@@ -7,7 +7,6 @@ import {InputEntry, loanPaymentTypes, paymentTypes} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
-(function() {
 const fmt = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -478,11 +477,12 @@ const clearInputs = () => {
   setContents(contextFromInputs());
 };
 
-populateFields();
-// To support URL param / cookie deprecations cleanly, we write out the UI
-// fields immediately after populating them. This "upgrades" fields that have
-// been moved from URL params to cookies (or vice versa).
-utils.saveFields(urlParamMap, cookieValueMap);
-utils.clearDeprecatedStorage(urlParamMap, cookieValueMap);
-attachListeners();
-})();
+export function main() {
+  populateFields();
+  // To support URL param / cookie deprecations cleanly, we write out the UI
+  // fields immediately after populating them. This "upgrades" fields that have
+  // been moved from URL params to cookies (or vice versa).
+  utils.saveFields(urlParamMap, cookieValueMap);
+  utils.clearDeprecatedStorage(urlParamMap, cookieValueMap);
+  attachListeners();
+}

@@ -17,8 +17,8 @@
   },
   "scripts": {
     "watchts": "tsc --watch",
-    "watch": "parcel watch -d build --public-url \"/build/\" ./assets/ts/mortgage.ts",
-    "build": "parcel build -d build --public-url \"/build/\" ./assets/ts/mortgage.ts",
+    "watch": "parcel watch -d build --public-url \"/build/\" ./assets/ts/mortgage_script.ts",
+    "build": "parcel build -d build --public-url \"/build/\" ./assets/ts/mortgage_script.ts",
     "start": "jekyll serve",
     "test": "jest",
     "format": "clang-format -style=Google -i assets/ts/*"
