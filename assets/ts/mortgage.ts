@@ -129,60 +129,62 @@ function getCookieValueMap(inputs: Inputs): InputParamMap {
   ]);
 }
 
-const contextFromInputs = (inputs: Inputs) => new Context({
-  price: utils.orZero(inputs.price),
-  homeValue: utils.orZero(inputs.homeValue),
-  hoa: utils.orZero(inputs.hoa),
-  downPaymentPercent: utils.orZero(inputs.downPaymentPercentage),
-  downPaymentAbsolute: utils.orZero(inputs.downPaymentAbsolute),
-  interestRate: utils.orZero(inputs.interestRate),
-  pointValue: utils.orZero(inputs.pointValue),
-  pointsPurchased: utils.orZeroN(inputs.pointsPurchased),
-  pmi: utils.orZero(inputs.mortgageInsurance),
-  pmiEquityPercent: utils.orZero(inputs.pmiEquityPercentage),
-  propertyTaxAbsolute: utils.orZero(inputs.propertyTaxAbsolute),
-  propertyTaxPercent: utils.orZero(inputs.propertyTaxPercentage),
-  residentialExemptionAnnualSavings:
-      utils.orZero(inputs.residentialExemptionSavings),
-  residentialExemptionDeduction:
-      utils.orZero(inputs.residentialExemptionDeduction),
-  homeownersInsurance: utils.orZero(inputs.homeownersInsurance),
-  closingCost: utils.orZero(inputs.closingCost),
-  mortgageTerm: utils.orZeroN(inputs.mortgageTerm),
-  annualIncome: utils.orZero(inputs.annualIncome),
-  monthlyDebt: utils.orZero(inputs.monthlyDebt),
-  totalAssets: utils.orZero(inputs.totalAssets),
-  alreadyClosed: inputs.alreadyClosed.checked,
-  paymentsAlreadyMade: utils.orZeroN(inputs.paymentsAlreadyMade),
-  closingDate: inputs.closingDate.value ? new Date(inputs.closingDate.value) :
-                                          undefined,
-  prepayment: utils.orZero(inputs.prepayment),
-  stocksReturnRate: utils.orUndef(inputs.stocksReturnRate),
-  now: d3.timeDay(),
-});
+function contextFromInputs(inputs: Inputs): Context {
+  return new Context({
+    price: utils.orZero(inputs.price),
+    homeValue: utils.orZero(inputs.homeValue),
+    hoa: utils.orZero(inputs.hoa),
+    downPaymentPercent: utils.orZero(inputs.downPaymentPercentage),
+    downPaymentAbsolute: utils.orZero(inputs.downPaymentAbsolute),
+    interestRate: utils.orZero(inputs.interestRate),
+    pointValue: utils.orZero(inputs.pointValue),
+    pointsPurchased: utils.orZeroN(inputs.pointsPurchased),
+    pmi: utils.orZero(inputs.mortgageInsurance),
+    pmiEquityPercent: utils.orZero(inputs.pmiEquityPercentage),
+    propertyTaxAbsolute: utils.orZero(inputs.propertyTaxAbsolute),
+    propertyTaxPercent: utils.orZero(inputs.propertyTaxPercentage),
+    residentialExemptionAnnualSavings:
+        utils.orZero(inputs.residentialExemptionSavings),
+    residentialExemptionDeduction:
+        utils.orZero(inputs.residentialExemptionDeduction),
+    homeownersInsurance: utils.orZero(inputs.homeownersInsurance),
+    closingCost: utils.orZero(inputs.closingCost),
+    mortgageTerm: utils.orZeroN(inputs.mortgageTerm),
+    annualIncome: utils.orZero(inputs.annualIncome),
+    monthlyDebt: utils.orZero(inputs.monthlyDebt),
+    totalAssets: utils.orZero(inputs.totalAssets),
+    alreadyClosed: inputs.alreadyClosed.checked,
+    paymentsAlreadyMade: utils.orZeroN(inputs.paymentsAlreadyMade),
+    closingDate: inputs.closingDate.value ? new Date(inputs.closingDate.value) :
+                                            undefined,
+    prepayment: utils.orZero(inputs.prepayment),
+    stocksReturnRate: utils.orUndef(inputs.stocksReturnRate),
+    now: d3.timeDay(),
+  });
+}
 
 // Attaches listeners to react to user input, URL changes.
-const attachListeners =
-    (elts: Elements, urlParamMap: InputParamMap,
-     cookieValueMap: InputParamMap): void => {
-      elts.outputs.clearInputsButton.addEventListener(
-          'click', () => void clearInputs(elts, urlParamMap, cookieValueMap));
-      const reactToInput = (elt: HTMLInputElement) => () => {
-        utils.saveFields(urlParamMap, cookieValueMap, elt);
-        setContents(contextFromInputs(elts.inputs), elts);
-      };
-      for (const elt of urlParamMap.keys()) {
-        elt.addEventListener('input', reactToInput(elt));
-      }
-      for (const elt of cookieValueMap.keys()) {
-        elt.addEventListener('input', reactToInput(elt));
-      }
-      window.onpopstate = () =>
-          void populateFields(elts, urlParamMap, cookieValueMap);
-    };
+function attachListeners(
+    elts: Elements, urlParamMap: InputParamMap,
+    cookieValueMap: InputParamMap): void {
+  elts.outputs.clearInputsButton.addEventListener(
+      'click', () => void clearInputs(elts, urlParamMap, cookieValueMap));
+  const reactToInput = (elt: HTMLInputElement) => () => {
+    utils.saveFields(urlParamMap, cookieValueMap, elt);
+    setContents(contextFromInputs(elts.inputs), elts);
+  };
+  for (const elt of urlParamMap.keys()) {
+    elt.addEventListener('input', reactToInput(elt));
+  }
+  for (const elt of cookieValueMap.keys()) {
+    elt.addEventListener('input', reactToInput(elt));
+  }
+  window.onpopstate = () =>
+      void populateFields(elts, urlParamMap, cookieValueMap);
+}
 
 // Set the contents of all the outputs based on the `ctx`.
-const setContents = (ctx: Context, elts: Elements): void => {
+function setContents(ctx: Context, elts: Elements): void {
   showAmountHints(ctx, elts.hints);
   elts.outputs.loanAmount.innerText =
       `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
@@ -377,10 +379,10 @@ const setContents = (ctx: Context, elts: Elements): void => {
                     new Array(ctx.n).fill(ctx.prepayment), ctx.stocksReturnRate)
                 .toNumber())}`;
   }
-};
+}
 
 // Updates the "hints"/previews displayed alongside the input fields.
-const showAmountHints = (ctx: Context, hints: Hints): void => {
+function showAmountHints(ctx: Context, hints: Hints): void {
   hints.homeValue.innerText = `(${fmt.format(ctx.homeValue.toNumber())})`;
   hints.downPayment.innerText = `(${fmt.format(ctx.downPayment.toNumber())})`;
   hints.interestRate.innerText =
@@ -401,10 +403,10 @@ const showAmountHints = (ctx: Context, hints: Hints): void => {
   hints.paymentsAlreadyMade.innerText = `(${ctx.paymentsAlreadyMade} payments)`;
   hints.stocksReturnRate.innerText =
       `(${hundredthsPctFmt.format(ctx.stocksReturnRate.toNumber())})`
-};
+}
 
 // Clears output elements associated with monthly payments.
-const clearMonthlyPaymentOutputs = (outputs: Outputs): void => {
+function clearMonthlyPaymentOutputs(outputs: Outputs): void {
   outputs.principalAndInterest.innerText = '';
   outputs.monthlyPaymentAmount.innerText = '';
   outputs.monthlyPaymentPmi.innerText = '';
@@ -417,77 +419,77 @@ const clearMonthlyPaymentOutputs = (outputs: Outputs): void => {
   utils.removeChildren(utils.getHtmlElt('schedule_tab'));
   document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
   utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
-};
+}
 
 // Reads fields from the URL and from cookies, and populates the UI
 // accordingly.
-const populateFields =
-    (elts: Elements, urlParamMap: InputParamMap,
-     cookieValueMap: InputParamMap): void => {
-      const url = new URL(location.href);
-      let hasValue = false;
-      for (const [elt, {name}] of urlParamMap.entries()) {
-        switch (elt.type) {
-          case 'text':
-          case 'date':
-            const value = url.searchParams.get(name);
-            hasValue = hasValue || value !== null;
-            elt.value = value ? decodeURIComponent(value) : '';
-            break;
-          case 'checkbox':
-            const checked = url.searchParams.has(name);
-            hasValue = hasValue || checked;
-            elt.checked = checked;
-            break;
-          default:
-            throw new Error('unreachable');
-        }
-      }
-      const cookies = document.cookie.split(';').map(x => {
-        const parts = x.split('=');
-        return {name: parts[0]?.trim(), value: decodeURIComponent(parts[1]!)};
-      });
-      for (const [elt, {name}] of cookieValueMap.entries()) {
-        const savedCookie =
-            cookies.find(({name: cookieName}) => name === cookieName);
-        switch (elt.type) {
-          case 'text':
-            hasValue = hasValue || savedCookie !== undefined;
-            elt.value = savedCookie ? savedCookie.value! : '';
-            break;
-          case 'checkbox':
-            const checked = !!savedCookie;
-            hasValue = hasValue || checked;
-            elt.checked = checked;
-            break;
-          default:
-            throw new Error('unreachable');
-        }
-      }
-      if (hasValue) {
-        setContents(contextFromInputs(elts.inputs), elts);
-      }
-    };
+function populateFields(
+    elts: Elements, urlParamMap: InputParamMap,
+    cookieValueMap: InputParamMap): void {
+  const url = new URL(location.href);
+  let hasValue = false;
+  for (const [elt, {name}] of urlParamMap.entries()) {
+    switch (elt.type) {
+      case 'text':
+      case 'date':
+        const value = url.searchParams.get(name);
+        hasValue = hasValue || value !== null;
+        elt.value = value ? decodeURIComponent(value) : '';
+        break;
+      case 'checkbox':
+        const checked = url.searchParams.has(name);
+        hasValue = hasValue || checked;
+        elt.checked = checked;
+        break;
+      default:
+        throw new Error('unreachable');
+    }
+  }
+  const cookies = document.cookie.split(';').map(x => {
+    const parts = x.split('=');
+    return {name: parts[0]?.trim(), value: decodeURIComponent(parts[1]!)};
+  });
+  for (const [elt, {name}] of cookieValueMap.entries()) {
+    const savedCookie =
+        cookies.find(({name: cookieName}) => name === cookieName);
+    switch (elt.type) {
+      case 'text':
+        hasValue = hasValue || savedCookie !== undefined;
+        elt.value = savedCookie ? savedCookie.value! : '';
+        break;
+      case 'checkbox':
+        const checked = !!savedCookie;
+        hasValue = hasValue || checked;
+        elt.checked = checked;
+        break;
+      default:
+        throw new Error('unreachable');
+    }
+  }
+  if (hasValue) {
+    setContents(contextFromInputs(elts.inputs), elts);
+  }
+}
 
 // Clears all parameters from the `url`, and clears all cookies.
-const clearInputs =
-    (elts: Elements, urlParamMap: InputParamMap,
-     cookieValueMap: InputParamMap) => {
-      const url = new URL(location.href);
-      let urlChanged = false;
-      for (const [elt, entry] of urlParamMap.entries()) {
-        elt.value = '';
-        urlChanged = utils.deleteParam(url, entry.name) || urlChanged;
-      }
-      if (urlChanged) history.pushState({}, '', url.toString());
-      for (const [elt, entry] of cookieValueMap.entries()) {
-        elt.value = '';
-        utils.deleteCookie(entry.name);
-      }
-      setContents(contextFromInputs(elts.inputs), elts);
-    };
+function clearInputs(
+    elts: Elements, urlParamMap: InputParamMap,
+    cookieValueMap: InputParamMap): void {
+  const url = new URL(location.href);
+  let urlChanged = false;
+  for (const [elt, entry] of urlParamMap.entries()) {
+    elt.value = '';
+    urlChanged = utils.deleteParam(url, entry.name) || urlChanged;
+  }
+  if (urlChanged) history.pushState({}, '', url.toString());
+  for (const [elt, entry] of cookieValueMap.entries()) {
+    elt.value = '';
+    utils.deleteCookie(entry.name);
+  }
+  setContents(contextFromInputs(elts.inputs), elts);
+}
 
-export function main() {
+export function main(): void {
   const elts = {
     inputs: getInputs(),
     outputs: getOutputs(),

@@ -402,4 +402,4 @@ test('computeStockAssets', () => {
                  new Array(12).fill(new Decimal(1)), new Decimal(0.1))
              .toNumber())
       .toBeGreaterThan(12.54);
-})
+});

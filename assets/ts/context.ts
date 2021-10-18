@@ -4,8 +4,9 @@ import {ContextInput} from './types';
 import * as utils from './utils';
 
 // Clamps the input to within the interval [min, max] (inclusive on each end).
-const clamp = (x: number, {min, max}: {min: number, max: number}): number =>
-    Math.max(min, Math.min(max, x));
+function clamp(x: number, {min, max}: {min: number, max: number}): number {
+  return Math.max(min, Math.min(max, x));
+}
 
 export class Context {
   // This class captures a snapshot of the input fields at construction, and
