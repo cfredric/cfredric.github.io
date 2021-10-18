@@ -1,39 +1,11 @@
 import * as d3 from 'd3';
 import Decimal from 'decimal.js';
+import {ContextInput} from './types';
 import * as utils from './utils';
 
 // Clamps the input to within the interval [min, max] (inclusive on each end).
 const clamp = (x: number, {min, max}: {min: number, max: number}): number =>
     Math.max(min, Math.min(max, x));
-
-interface Input {
-  price: Decimal,                                  //
-      homeValue: Decimal,                          //
-      hoa: Decimal,                                //
-      downPaymentPercent: Decimal,                 //
-      downPaymentAbsolute: Decimal,                //
-      interestRate: Decimal,                       //
-      pointValue: Decimal,                         //
-      pointsPurchased: number,                     //
-      pmi: Decimal,                                //
-      pmiEquityPercent: Decimal,                   //
-      propertyTaxAbsolute: Decimal,                //
-      propertyTaxPercent: Decimal,                 //
-      residentialExemptionAnnualSavings: Decimal,  //
-      residentialExemptionDeduction: Decimal,      //
-      homeownersInsurance: Decimal,                //
-      closingCost: Decimal,                        //
-      mortgageTerm: number,                        //
-      annualIncome: Decimal,                       //
-      monthlyDebt: Decimal,                        //
-      totalAssets: Decimal,                        //
-      alreadyClosed: boolean,                      //
-      paymentsAlreadyMade: number,                 //
-      closingDate?: Date,                          //
-      prepayment: Decimal,                         //
-      stocksReturnRate?: Decimal,                  //
-      now: Date,                                   //
-}
 
 export class Context {
   // This class captures a snapshot of the input fields at construction, and
@@ -68,7 +40,7 @@ export class Context {
 
   readonly n: number;
 
-  constructor(input: Input) {
+  constructor(input: ContextInput) {
     this.price = Decimal.max(0, input.price);
     this.homeValue =
         utils.chooseNonzero(Decimal.max(0, input.homeValue), this.price);

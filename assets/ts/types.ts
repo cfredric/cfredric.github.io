@@ -28,6 +28,35 @@ export interface InputEntry {
   deprecated?: boolean;
 }
 
+export interface ContextInput {
+  price: Decimal,                                  //
+      homeValue: Decimal,                          //
+      hoa: Decimal,                                //
+      downPaymentPercent: Decimal,                 //
+      downPaymentAbsolute: Decimal,                //
+      interestRate: Decimal,                       //
+      pointValue: Decimal,                         //
+      pointsPurchased: number,                     //
+      pmi: Decimal,                                //
+      pmiEquityPercent: Decimal,                   //
+      propertyTaxAbsolute: Decimal,                //
+      propertyTaxPercent: Decimal,                 //
+      residentialExemptionAnnualSavings: Decimal,  //
+      residentialExemptionDeduction: Decimal,      //
+      homeownersInsurance: Decimal,                //
+      closingCost: Decimal,                        //
+      mortgageTerm: number,                        //
+      annualIncome: Decimal,                       //
+      monthlyDebt: Decimal,                        //
+      totalAssets: Decimal,                        //
+      alreadyClosed: boolean,                      //
+      paymentsAlreadyMade: number,                 //
+      closingDate?: Date,                          //
+      prepayment: Decimal,                         //
+      stocksReturnRate?: Decimal,                  //
+      now: Date,                                   //
+}
+
 export interface Inputs {
   price: HTMLInputElement,                              //
       homeValue: HTMLInputElement,                      //
