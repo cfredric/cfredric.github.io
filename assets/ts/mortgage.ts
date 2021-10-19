@@ -88,7 +88,6 @@ function getOutputs(): Outputs {
     firedTomorrowCountdown: utils.getHtmlElt('fired-tomorrow-countdown-output'),
     prepayComparison: utils.getHtmlElt('prepay-comparison-output'),
     stocksComparison: utils.getHtmlElt('stocks-comparison-output'),
-    clearInputsButton: utils.getHtmlElt('clear-inputs-button'),
   };
 }
 
@@ -167,7 +166,7 @@ function contextFromInputs(inputs: Inputs): Context {
 function attachListeners(
     elts: Elements, urlParamMap: InputParamMap,
     cookieValueMap: InputParamMap): void {
-  elts.outputs.clearInputsButton.addEventListener(
+  elts.clearInputsButton.addEventListener(
       'click', () => void clearInputs(elts, urlParamMap, cookieValueMap));
   const reactToInput = (elt: HTMLInputElement) => () => {
     utils.saveFields(urlParamMap, cookieValueMap, elt);
@@ -494,6 +493,7 @@ export function main(): void {
     inputs: getInputs(),
     outputs: getOutputs(),
     hints: getHints(),
+    clearInputsButton: utils.getHtmlElt('clear-inputs-button'),
   };
   const urlParamMap = getUrlParamMap(elts.inputs);
   const cookieValueMap = getCookieValueMap(elts.inputs);

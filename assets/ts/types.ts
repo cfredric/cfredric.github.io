@@ -115,11 +115,10 @@ export interface Outputs {
       firedTomorrowCountdown: HTMLElement,  //
       prepayComparison: HTMLElement,        //
       stocksComparison: HTMLElement,        //
-      clearInputsButton: HTMLElement,       //
 }
 
 export interface Elements {
-  inputs: Inputs, outputs: Outputs, hints: Hints,
+  inputs: Inputs, outputs: Outputs, hints: Hints, clearInputsButton: HTMLElement,
 }
 
 export interface Margin {
