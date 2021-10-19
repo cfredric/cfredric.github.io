@@ -1,4 +1,4 @@
 
 import {main} from './mortgage';
 
-main();
+window.addEventListener("load", () => void main());
