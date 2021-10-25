@@ -124,6 +124,10 @@ export interface Elements {
       hints: Record<HintType, HTMLElement>, clearInputsButton: HTMLElement,
 }
 
+export interface Outputs {
+  hints: Record<HintType, string>,
+}
+
 export interface Margin {
   top: number;
   bottom: number;

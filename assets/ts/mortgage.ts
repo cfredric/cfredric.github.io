@@ -3,7 +3,7 @@ import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
-import {Elements, HintType, hintTypes, InputEntry, Inputs, loanPaymentTypes, OutputType, paymentTypes} from './types';
+import {Elements, HintType, hintTypes, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, paymentTypes} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -191,16 +191,15 @@ function attachListeners(
 
 // Set the contents of all the outputs based on the `ctx`.
 function setContents(ctx: Context, elts: Elements): void {
-  const hints = computeContents(ctx, elts);
+  const {hints} = computeContents(ctx, elts);
 
   for (const h of hintTypes) {
     elts.hints[h].innerText = hints[h];
   }
 }
 
-
-function computeContents(
-    ctx: Context, elts: Elements): Record<HintType, string> {
+// Compute hint strings and set output strings.
+function computeContents(ctx: Context, elts: Elements): Outputs {
   elts.outputs[OutputType.loanAmount].innerText =
       `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
 
@@ -217,7 +216,7 @@ function computeContents(
 
   if (ctx.interestRate.eq(0) && !ctx.downPayment.eq(ctx.price)) {
     clearMonthlyPaymentOutputs(elts.outputs);
-    return computeAmountHints(ctx);
+    return {hints: computeAmountHints(ctx)};
   }
 
   const M = ctx.downPayment.eq(ctx.price) ? new Decimal(0) :
@@ -395,7 +394,7 @@ function computeContents(
                 .toNumber())}`;
   }
 
-  return computeAmountHints(ctx);
+  return {hints: computeAmountHints(ctx)};
 }
 
 // Updates the "hints"/previews displayed alongside the input fields.
