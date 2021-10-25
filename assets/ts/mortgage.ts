@@ -3,7 +3,7 @@ import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
-import {Elements, HintType, InputEntry, Inputs, loanPaymentTypes, OutputType, paymentTypes} from './types';
+import {Elements, HintType, hintTypes, InputEntry, Inputs, loanPaymentTypes, OutputType, paymentTypes} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -56,19 +56,17 @@ function getInputs(): Inputs {
 
 function getHints(): Record<HintType, HTMLElement> {
   return {
-    [HintType.homeValue]: utils.getHtmlElt('home-value-hint'),
-    [HintType.interestRate]: utils.getHtmlElt('interest-rate-hint'),
-    [HintType.pointValue]: utils.getHtmlElt('point-value-hint'),
-    [HintType.pmiEquityPercentage]:
+    'homeValue': utils.getHtmlElt('home-value-hint'),
+    'interestRate': utils.getHtmlElt('interest-rate-hint'),
+    'pointValue': utils.getHtmlElt('point-value-hint'),
+    'pmiEquityPercentage':
         utils.getHtmlElt('mortgage-insurance-equity-percent-hint'),
-    [HintType.propertyTax]: utils.getHtmlElt('property-tax-percentage-hint'),
-    [HintType.residentialExemption]:
-        utils.getHtmlElt('residential-exemption-hint'),
-    [HintType.mortgageTerm]: utils.getHtmlElt('mortgage-term-hint'),
-    [HintType.downPayment]: utils.getHtmlElt('down-payment-hint'),
-    [HintType.paymentsAlreadyMade]:
-        utils.getHtmlElt('payments-already-made-hint'),
-    [HintType.stocksReturnRate]: utils.getHtmlElt('stocks-return-rate-hint'),
+    'propertyTax': utils.getHtmlElt('property-tax-percentage-hint'),
+    'residentialExemption': utils.getHtmlElt('residential-exemption-hint'),
+    'mortgageTerm': utils.getHtmlElt('mortgage-term-hint'),
+    'downPayment': utils.getHtmlElt('down-payment-hint'),
+    'paymentsAlreadyMade': utils.getHtmlElt('payments-already-made-hint'),
+    'stocksReturnRate': utils.getHtmlElt('stocks-return-rate-hint'),
   };
 }
 
@@ -193,7 +191,16 @@ function attachListeners(
 
 // Set the contents of all the outputs based on the `ctx`.
 function setContents(ctx: Context, elts: Elements): void {
-  showAmountHints(ctx, elts.hints);
+  const hints = computeContents(ctx, elts);
+
+  for (const h of hintTypes) {
+    elts.hints[h].innerText = hints[h];
+  }
+}
+
+
+function computeContents(
+    ctx: Context, elts: Elements): Record<HintType, string> {
   elts.outputs[OutputType.loanAmount].innerText =
       `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
 
@@ -210,7 +217,7 @@ function setContents(ctx: Context, elts: Elements): void {
 
   if (ctx.interestRate.eq(0) && !ctx.downPayment.eq(ctx.price)) {
     clearMonthlyPaymentOutputs(elts.outputs);
-    return;
+    return computeAmountHints(ctx);
   }
 
   const M = ctx.downPayment.eq(ctx.price) ? new Decimal(0) :
@@ -387,34 +394,31 @@ function setContents(ctx: Context, elts: Elements): void {
                     new Array(ctx.n).fill(ctx.prepayment), ctx.stocksReturnRate)
                 .toNumber())}`;
   }
+
+  return computeAmountHints(ctx);
 }
 
 // Updates the "hints"/previews displayed alongside the input fields.
-function showAmountHints(
-    ctx: Context, hints: Record<HintType, HTMLElement>): void {
-  hints[HintType.homeValue].innerText =
-      `(${fmt.format(ctx.homeValue.toNumber())})`;
-  hints[HintType.downPayment].innerText =
-      `(${fmt.format(ctx.downPayment.toNumber())})`;
-  hints[HintType.interestRate].innerText =
-      `(${hundredthsPctFmt.format(ctx.interestRate.toNumber())})`;
-  hints[HintType.pointValue].innerText =
-      `(${hundredthsPctFmt.format(ctx.pointValue.toNumber())})`;
-  hints[HintType.pmiEquityPercentage].innerText =
-      `(${pctFmt.format(ctx.pmiEquityPct.toNumber())})`;
-  hints[HintType.propertyTax].innerText = `(Effective ${
-      fmt.format(ctx.propertyTax.mul(12)
-                     .div(ctx.homeValue)
-                     .mul(1000)
-                     .toNumber())} / $1000; ${
-      fmt.format(ctx.propertyTax.toNumber())}/mo)`;
-  hints[HintType.residentialExemption].innerText =
-      `(${fmt.format(ctx.residentialExemptionPerMonth.toNumber())}/mo)`
-  hints[HintType.mortgageTerm].innerText = `(${ctx.mortgageTerm} yrs)`;
-  hints[HintType.paymentsAlreadyMade].innerText =
-      `(${ctx.paymentsAlreadyMade} payments)`;
-  hints[HintType.stocksReturnRate].innerText =
-      `(${hundredthsPctFmt.format(ctx.stocksReturnRate.toNumber())})`
+function computeAmountHints(ctx: Context): Record<HintType, string> {
+  return {
+    'homeValue': `(${fmt.format(ctx.homeValue.toNumber())})`,
+    'downPayment': `(${fmt.format(ctx.downPayment.toNumber())})`,
+    'interestRate': `(${hundredthsPctFmt.format(ctx.interestRate.toNumber())})`,
+    'pointValue': `(${hundredthsPctFmt.format(ctx.pointValue.toNumber())})`,
+    'pmiEquityPercentage': `(${pctFmt.format(ctx.pmiEquityPct.toNumber())})`,
+    'propertyTax': `(Effective ${
+        fmt.format(ctx.propertyTax.mul(12)
+                       .div(ctx.homeValue)
+                       .mul(1000)
+                       .toNumber())} / $1000; ${
+        fmt.format(ctx.propertyTax.toNumber())}/mo)`,
+    'residentialExemption':
+        `(${fmt.format(ctx.residentialExemptionPerMonth.toNumber())}/mo)`,
+    'mortgageTerm': `(${ctx.mortgageTerm} yrs)`,
+    'paymentsAlreadyMade': `(${ctx.paymentsAlreadyMade} payments)`,
+    'stocksReturnRate':
+        `(${hundredthsPctFmt.format(ctx.stocksReturnRate.toNumber())})`,
+  };
 }
 
 // Clears output elements associated with monthly payments.

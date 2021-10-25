@@ -85,18 +85,20 @@ export interface Inputs {
       stocksReturnRate: HTMLInputElement,               //
 }
 
-export enum HintType {
-  homeValue,
-  interestRate,
-  pointValue,
-  pmiEquityPercentage,
-  propertyTax,
-  residentialExemption,
-  mortgageTerm,
-  downPayment,
-  paymentsAlreadyMade,
-  stocksReturnRate,
-}
+export const hintTypes = [
+  'homeValue',
+  'interestRate',
+  'pointValue',
+  'pmiEquityPercentage',
+  'propertyTax',
+  'residentialExemption',
+  'mortgageTerm',
+  'downPayment',
+  'paymentsAlreadyMade',
+  'stocksReturnRate',
+] as const;
+
+export type HintType = typeof hintTypes[number];
 
 export enum OutputType {
   loanAmount,
