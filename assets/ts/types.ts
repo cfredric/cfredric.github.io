@@ -85,17 +85,17 @@ export interface Inputs {
       stocksReturnRate: HTMLInputElement,               //
 }
 
-export interface Hints {
-  homeValue: HTMLElement,                 //
-      interestRate: HTMLElement,          //
-      pointValue: HTMLElement,            //
-      pmiEquityPercentage: HTMLElement,   //
-      propertyTax: HTMLElement,           //
-      residentialExemption: HTMLElement,  //
-      mortgageTerm: HTMLElement,          //
-      downPayment: HTMLElement,           //
-      paymentsAlreadyMade: HTMLElement,   //
-      stocksReturnRate: HTMLElement,      //
+export enum HintType {
+  homeValue,
+  interestRate,
+  pointValue,
+  pmiEquityPercentage,
+  propertyTax,
+  residentialExemption,
+  mortgageTerm,
+  downPayment,
+  paymentsAlreadyMade,
+  stocksReturnRate,
 }
 
 export enum OutputType {
@@ -118,8 +118,8 @@ export enum OutputType {
 }
 
 export interface Elements {
-  inputs: Inputs, outputs: Record<OutputType, HTMLElement>, hints: Hints,
-      clearInputsButton: HTMLElement,
+  inputs: Inputs, outputs: Record<OutputType, HTMLElement>,
+      hints: Record<HintType, HTMLElement>, clearInputsButton: HTMLElement,
 }
 
 export interface Margin {
