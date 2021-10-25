@@ -3,7 +3,7 @@ import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
-import {Elements, HintType, hintTypes, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, outputTypes, paymentTypes} from './types';
+import {Elements, HintType, hintTypes, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, outputTypes, paymentTypes, templateTypes} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -185,7 +185,7 @@ function attachListeners(
 
 // Set the contents of all the outputs based on the `ctx`.
 function setContents(ctx: Context, elts: Elements): void {
-  const {hints, outputs} = computeContents(ctx);
+  const {hints, outputs, templates} = computeContents(ctx);
 
   for (const h of hintTypes) {
     elts.hints[h].innerText = hints[h];
@@ -193,12 +193,16 @@ function setContents(ctx: Context, elts: Elements): void {
   for (const o of outputTypes) {
     elts.outputs[o].innerText = outputs[o];
   }
+  for (const t of templateTypes) {
+    utils.fillTemplateElts(t, templates[t]);
+  }
 }
 
 // Compute hint strings and set output strings.
 function computeContents(ctx: Context): Outputs {
   const outputs = utils.emptyOutputs();
   const hints = computeAmountHints(ctx);
+  const templates = utils.emptyTemplates();
   outputs['loanAmount'] =
       `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
 
@@ -216,6 +220,7 @@ function computeContents(ctx: Context): Outputs {
   if (ctx.interestRate.eq(0) && !ctx.downPayment.eq(ctx.price)) {
     return {
       hints,
+      templates,
       outputs: utils.merge(clearMonthlyPaymentOutputs(), outputs),
     };
   }
@@ -377,9 +382,8 @@ function computeContents(ctx: Context): Outputs {
       if (!(elt instanceof HTMLElement)) continue;
       elt.style.display = '';
     }
-    utils.fillTemplateElts('mortgage-term', utils.formatMonthNum(ctx.n));
-    utils.fillTemplateElts(
-        'prepay-amount', fmt.format(ctx.prepayment.toNumber()));
+    templates['mortgage-term'] = utils.formatMonthNum(ctx.n);
+    templates['prepay-amount'] = fmt.format(ctx.prepayment.toNumber());
     outputs['prepayComparison'] = `${
         fmt.format(utils
                        .computeStockAssets(
@@ -402,6 +406,7 @@ function computeContents(ctx: Context): Outputs {
   return {
     hints,
     outputs,
+    templates,
   };
 }
 

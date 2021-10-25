@@ -121,6 +121,13 @@ export const outputTypes = [
 
 export type OutputType = typeof outputTypes[number];
 
+export const templateTypes = [
+  'mortgage-term',
+  'prepay-amount',
+] as const;
+
+export type TemplateType = typeof templateTypes[number];
+
 export interface Elements {
   inputs: Inputs, outputs: Record<OutputType, HTMLElement>,
       hints: Record<HintType, HTMLElement>, clearInputsButton: HTMLElement,
@@ -128,6 +135,7 @@ export interface Elements {
 
 export interface Outputs {
   outputs: Record<OutputType, string>, hints: Record<HintType, string>,
+      templates: Record<TemplateType, string>,
 }
 
 export interface Margin {

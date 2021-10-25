@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
-import {ConditionalOutput, InputEntry, nonLoanPaymentTypes, OutputType, outputTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes} from './types';
+import {ConditionalOutput, InputEntry, nonLoanPaymentTypes, OutputType, outputTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType, templateTypes} from './types';
 
 const timeFormat = new Intl.DateTimeFormat();
 
@@ -405,6 +405,16 @@ export function toCapitalized(paymentType: PaymentType): string {
 export function emptyOutputs(): Record<OutputType, string> {
   const record: Record<OutputType, string> = {} as Record<OutputType, string>;
   for (const o of outputTypes) {
+    record[o] = '';
+  }
+  return record;
+}
+
+// Creates empty templates.
+export function emptyTemplates(): Record<TemplateType, string> {
+  const record: Record<TemplateType, string> = {} as
+      Record<TemplateType, string>;
+  for (const o of templateTypes) {
     record[o] = '';
   }
   return record;
