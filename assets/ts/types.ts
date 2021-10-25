@@ -98,27 +98,28 @@ export interface Hints {
       stocksReturnRate: HTMLElement,      //
 }
 
-export interface Outputs {
-  loanAmount: HTMLElement,                  //
-      principalAndInterest: HTMLElement,    //
-      monthlyPaymentAmount: HTMLElement,    //
-      monthlyPaymentPmi: HTMLElement,       //
-      pmiPaymentTimeline: HTMLElement,      //
-      lifetimeOfLoan: HTMLElement,          //
-      lifetimePayment: HTMLElement,         //
-      purchasePayment: HTMLElement,         //
-      totalPaidSoFar: HTMLElement,          //
-      equityOwnedSoFar: HTMLElement,        //
-      totalLoanOwed: HTMLElement,           //
-      remainingEquity: HTMLElement,         //
-      debtToIncome: HTMLElement,            //
-      firedTomorrowCountdown: HTMLElement,  //
-      prepayComparison: HTMLElement,        //
-      stocksComparison: HTMLElement,        //
+export enum OutputType {
+  loanAmount,
+  principalAndInterest,
+  monthlyPaymentAmount,
+  monthlyPaymentPmi,
+  pmiPaymentTimeline,
+  lifetimeOfLoan,
+  lifetimePayment,
+  purchasePayment,
+  totalPaidSoFar,
+  equityOwnedSoFar,
+  totalLoanOwed,
+  remainingEquity,
+  debtToIncome,
+  firedTomorrowCountdown,
+  prepayComparison,
+  stocksComparison,
 }
 
 export interface Elements {
-  inputs: Inputs, outputs: Outputs, hints: Hints, clearInputsButton: HTMLElement,
+  inputs: Inputs, outputs: Record<OutputType, HTMLElement>, hints: Hints,
+      clearInputsButton: HTMLElement,
 }
 
 export interface Margin {
