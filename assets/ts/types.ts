@@ -127,7 +127,7 @@ export interface Elements {
 }
 
 export interface Outputs {
-  hints: Record<HintType, string>,
+  outputs: Record<OutputType, string>, hints: Record<HintType, string>,
 }
 
 export interface Margin {
@@ -139,6 +139,6 @@ export interface Margin {
 
 export interface ConditionalOutput {
   containerName: string;
-  outputElt: HTMLElement;
+  outputType: OutputType;
   generateOutput(): string;
 }

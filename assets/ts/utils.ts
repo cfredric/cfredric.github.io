@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
-import {ConditionalOutput, InputEntry, nonLoanPaymentTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes} from './types';
+import {ConditionalOutput, InputEntry, nonLoanPaymentTypes, OutputType, outputTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes} from './types';
 
 const timeFormat = new Intl.DateTimeFormat();
 
@@ -228,10 +228,11 @@ export function computeAmortizedPaymentAmount(
 
 // Conditionally shows or hides an output.
 export function showConditionalOutput(
-    condition: boolean, outputs: readonly ConditionalOutput[]) {
-  for (const output of outputs) {
-    output.outputElt.innerText = condition ? output.generateOutput() : '';
-    getHtmlElt(output.containerName).style.display = condition ? '' : 'none';
+    condition: boolean, outputs: Record<OutputType, string>,
+    conditionals: readonly ConditionalOutput[]) {
+  for (const c of conditionals) {
+    outputs[c.outputType] = condition ? c.generateOutput() : '';
+    getHtmlElt(c.containerName).style.display = condition ? '' : 'none';
   }
 }
 
@@ -398,4 +399,23 @@ export function toCapitalized(paymentType: PaymentType): string {
     case 'pmi':
       return 'PMI';
   }
+}
+
+// Creates empty outputs.
+export function emptyOutputs(): Record<OutputType, string> {
+  const record: Record<OutputType, string> = {} as Record<OutputType, string>;
+  for (const o of outputTypes) {
+    record[o] = '';
+  }
+  return record;
+}
+
+// Merges values in `parts` into `full`. Returns `full` for convenience.
+export function merge<V>(
+    parts: Readonly<Partial<Record<OutputType, V>>>,
+    full: Record<OutputType, V>): Record<OutputType, V> {
+  for (const o of outputTypes) {
+    if (parts[o]) full[o] = parts[o]!;
+  }
+  return full;
 }
