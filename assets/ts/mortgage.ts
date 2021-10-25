@@ -72,29 +72,23 @@ function getHints(): Record<HintType, HTMLElement> {
 
 function getOutputs(): Record<OutputType, HTMLElement> {
   return {
-    [OutputType.loanAmount]: utils.getHtmlElt('loan-amount-output'),
-    [OutputType.principalAndInterest]:
-        utils.getHtmlElt('principal-and-interest-output'),
-    [OutputType.monthlyPaymentAmount]:
-        utils.getHtmlElt('monthly-payment-output'),
-    [OutputType.monthlyPaymentPmi]:
-        utils.getHtmlElt('monthly-payment-pmi-output'),
-    [OutputType.pmiPaymentTimeline]:
-        utils.getHtmlElt('pmi-payment-timeline-output'),
-    [OutputType.lifetimeOfLoan]: utils.getHtmlElt('lifetime-of-loan-output'),
-    [OutputType.lifetimePayment]: utils.getHtmlElt('lifetime-payment-output'),
-    [OutputType.purchasePayment]: utils.getHtmlElt('purchase-payment-output'),
-    [OutputType.totalPaidSoFar]: utils.getHtmlElt('total-paid-so-far-output'),
-    [OutputType.equityOwnedSoFar]:
-        utils.getHtmlElt('equity-owned-so-far-output'),
-    [OutputType.totalLoanOwed]: utils.getHtmlElt('total-loan-owed-output'),
-    [OutputType.remainingEquity]:
-        utils.getHtmlElt('remaining-equity-to-pay-for-output'),
-    [OutputType.debtToIncome]: utils.getHtmlElt('debt-to-income-ratio-output'),
-    [OutputType.firedTomorrowCountdown]:
+    'loanAmount': utils.getHtmlElt('loan-amount-output'),
+    'principalAndInterest': utils.getHtmlElt('principal-and-interest-output'),
+    'monthlyPaymentAmount': utils.getHtmlElt('monthly-payment-output'),
+    'monthlyPaymentPmi': utils.getHtmlElt('monthly-payment-pmi-output'),
+    'pmiPaymentTimeline': utils.getHtmlElt('pmi-payment-timeline-output'),
+    'lifetimeOfLoan': utils.getHtmlElt('lifetime-of-loan-output'),
+    'lifetimePayment': utils.getHtmlElt('lifetime-payment-output'),
+    'purchasePayment': utils.getHtmlElt('purchase-payment-output'),
+    'totalPaidSoFar': utils.getHtmlElt('total-paid-so-far-output'),
+    'equityOwnedSoFar': utils.getHtmlElt('equity-owned-so-far-output'),
+    'totalLoanOwed': utils.getHtmlElt('total-loan-owed-output'),
+    'remainingEquity': utils.getHtmlElt('remaining-equity-to-pay-for-output'),
+    'debtToIncome': utils.getHtmlElt('debt-to-income-ratio-output'),
+    'firedTomorrowCountdown':
         utils.getHtmlElt('fired-tomorrow-countdown-output'),
-    [OutputType.prepayComparison]: utils.getHtmlElt('prepay-comparison-output'),
-    [OutputType.stocksComparison]: utils.getHtmlElt('stocks-comparison-output'),
+    'prepayComparison': utils.getHtmlElt('prepay-comparison-output'),
+    'stocksComparison': utils.getHtmlElt('stocks-comparison-output'),
   };
 }
 
@@ -200,10 +194,10 @@ function setContents(ctx: Context, elts: Elements): void {
 
 // Compute hint strings and set output strings.
 function computeContents(ctx: Context, elts: Elements): Outputs {
-  elts.outputs[OutputType.loanAmount].innerText =
+  elts.outputs['loanAmount'].innerText =
       `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
 
-  elts.outputs[OutputType.purchasePayment].innerText = `${
+  elts.outputs['purchasePayment'].innerText = `${
       fmt.format(Decimal
                      .sum(
                          ctx.downPayment,
@@ -226,13 +220,13 @@ function computeContents(ctx: Context, elts: Elements): Outputs {
                                                 ctx.n,
                                             );
   const monthlyLoanPayment = M.add(ctx.prepayment);
-  elts.outputs[OutputType.principalAndInterest].innerText =
+  elts.outputs['principalAndInterest'].innerText =
       `${fmt.format(monthlyLoanPayment.toNumber())}`;
   const extras = Decimal.sum(ctx.hoa, ctx.propertyTax, ctx.homeownersInsurance);
 
-  elts.outputs[OutputType.monthlyPaymentAmount].innerText =
+  elts.outputs['monthlyPaymentAmount'].innerText =
       `${fmt.format(monthlyLoanPayment.add(extras).toNumber())}`;
-  elts.outputs[OutputType.monthlyPaymentPmi].innerText = `${
+  elts.outputs['monthlyPaymentPmi'].innerText = `${
       fmt.format(Decimal.sum(monthlyLoanPayment, extras, ctx.pmi).toNumber())}`;
   const showPmi = ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct);
   utils.getHtmlElt('monthly-payment-without-pmi-span').style.display =
@@ -243,17 +237,17 @@ function computeContents(ctx: Context, elts: Elements): Outputs {
   viz.buildPaymentScheduleChart(ctx, schedule, fmt, paymentTypes);
   const pmiMonths =
       utils.countSatisfying(schedule, payment => !payment.data.pmi.eq(0));
-  elts.outputs[OutputType.pmiPaymentTimeline].innerText =
+  elts.outputs['pmiPaymentTimeline'].innerText =
       `${utils.formatMonthNum(pmiMonths)} (${
           fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`;
   const cumulativeSums = utils.cumulativeSumByFields(schedule, paymentTypes);
   if (!M.eq(0)) {
     viz.buildCumulativeChart(ctx, cumulativeSums, fmt, loanPaymentTypes);
-    elts.outputs[OutputType.lifetimeOfLoan].innerText = `${
+    elts.outputs['lifetimeOfLoan'].innerText = `${
         utils.formatMonthNum(
             utils.countSatisfying(schedule, m => m.data.principal.gt(0)),
             ctx.closingDate)}`
-    elts.outputs[OutputType.lifetimePayment].innerText = `${
+    elts.outputs['lifetimePayment'].innerText = `${
         fmt.format(utils
                        .sumOfKeys(
                            cumulativeSums[cumulativeSums.length - 1]!.data,
@@ -282,13 +276,13 @@ function computeContents(ctx: Context, elts: Elements): Outputs {
   } else {
     document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
     utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
-    elts.outputs[OutputType.lifetimePayment].innerText = `${fmt.format(0)}`;
+    elts.outputs['lifetimePayment'].innerText = `${fmt.format(0)}`;
   }
 
   utils.showConditionalOutput(!ctx.totalAssets.eq(0), [
     {
       containerName: 'fired-tomorrow-countdown-div',
-      outputElt: elts.outputs[OutputType.firedTomorrowCountdown],
+      outputElt: elts.outputs['firedTomorrowCountdown'],
       generateOutput: () => `${
           utils.formatMonthNum(
               utils.countBurndownMonths(
@@ -310,7 +304,7 @@ function computeContents(ctx: Context, elts: Elements): Outputs {
   utils.showConditionalOutput(!!ctx.paymentsAlreadyMade || ctx.alreadyClosed, [
     {
       containerName: 'total-paid-so-far-div',
-      outputElt: elts.outputs[OutputType.totalPaidSoFar],
+      outputElt: elts.outputs['totalPaidSoFar'],
       generateOutput: () => `${
           fmt.format((ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
                                           new Decimal(0))
@@ -321,14 +315,14 @@ function computeContents(ctx: Context, elts: Elements): Outputs {
     },
     {
       containerName: 'equity-owned-so-far-div',
-      outputElt: elts.outputs[OutputType.equityOwnedSoFar],
+      outputElt: elts.outputs['equityOwnedSoFar'],
       generateOutput: () => `${
           pctFmt.format(absoluteEquityOwned.div(ctx.homeValue).toNumber())} (${
           fmt.format(absoluteEquityOwned.toNumber())})`,
     },
     {
       containerName: 'total-loan-owed-div',
-      outputElt: elts.outputs[OutputType.totalLoanOwed],
+      outputElt: elts.outputs['totalLoanOwed'],
       generateOutput() {
         const totalPrincipalAndInterestPaid = utils.sumOfKeys(
             cumulativeSums[ctx.paymentsAlreadyMade]!.data, loanPaymentTypes);
@@ -342,7 +336,7 @@ function computeContents(ctx: Context, elts: Elements): Outputs {
     },
     {
       containerName: 'remaining-equity-to-pay-for-div',
-      outputElt: elts.outputs[OutputType.remainingEquity],
+      outputElt: elts.outputs['remainingEquity'],
       generateOutput: () =>
           `${fmt.format(ctx.price.sub(absoluteEquityOwned).toNumber())}`,
     },
@@ -351,7 +345,7 @@ function computeContents(ctx: Context, elts: Elements): Outputs {
   utils.showConditionalOutput(!!ctx.annualIncome, [
     {
       containerName: 'debt-to-income-ratio-div',
-      outputElt: elts.outputs[OutputType.debtToIncome],
+      outputElt: elts.outputs['debtToIncome'],
       generateOutput: () => `${
           pctFmt.format(
               Decimal.sum(ctx.monthlyDebt, monthlyLoanPayment, extras, ctx.pmi)
@@ -375,7 +369,7 @@ function computeContents(ctx: Context, elts: Elements): Outputs {
     utils.fillTemplateElts('mortgage-term', utils.formatMonthNum(ctx.n));
     utils.fillTemplateElts(
         'prepay-amount', fmt.format(ctx.prepayment.toNumber()));
-    elts.outputs[OutputType.prepayComparison].innerText = `${
+    elts.outputs['prepayComparison'].innerText = `${
         fmt.format(utils
                        .computeStockAssets(
                            schedule
@@ -386,7 +380,7 @@ function computeContents(ctx: Context, elts: Elements): Outputs {
                            ctx.stocksReturnRate)
                        .toNumber())}`;
 
-    elts.outputs[OutputType.stocksComparison].innerText = `${
+    elts.outputs['stocksComparison'].innerText = `${
         fmt.format(
             utils
                 .computeStockAssets(
@@ -423,12 +417,12 @@ function computeAmountHints(ctx: Context): Record<HintType, string> {
 // Clears output elements associated with monthly payments.
 function clearMonthlyPaymentOutputs(outputs: Record<OutputType, HTMLElement>):
     void {
-  outputs[OutputType.principalAndInterest].innerText = '';
-  outputs[OutputType.monthlyPaymentAmount].innerText = '';
-  outputs[OutputType.monthlyPaymentPmi].innerText = '';
-  outputs[OutputType.lifetimePayment].innerText = '';
+  outputs['principalAndInterest'].innerText = '';
+  outputs['monthlyPaymentAmount'].innerText = '';
+  outputs['monthlyPaymentPmi'].innerText = '';
+  outputs['lifetimePayment'].innerText = '';
 
-  outputs[OutputType.debtToIncome].innerText = '';
+  outputs['debtToIncome'].innerText = '';
   utils.getHtmlElt('debt-to-income-ratio-div').style.display = 'none';
 
   document.querySelector('#schedule_viz > svg:first-of-type')?.remove();

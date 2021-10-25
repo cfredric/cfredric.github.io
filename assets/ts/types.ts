@@ -100,24 +100,26 @@ export const hintTypes = [
 
 export type HintType = typeof hintTypes[number];
 
-export enum OutputType {
-  loanAmount,
-  principalAndInterest,
-  monthlyPaymentAmount,
-  monthlyPaymentPmi,
-  pmiPaymentTimeline,
-  lifetimeOfLoan,
-  lifetimePayment,
-  purchasePayment,
-  totalPaidSoFar,
-  equityOwnedSoFar,
-  totalLoanOwed,
-  remainingEquity,
-  debtToIncome,
-  firedTomorrowCountdown,
-  prepayComparison,
-  stocksComparison,
-}
+export const outputTypes = [
+  'loanAmount',
+  'principalAndInterest',
+  'monthlyPaymentAmount',
+  'monthlyPaymentPmi',
+  'pmiPaymentTimeline',
+  'lifetimeOfLoan',
+  'lifetimePayment',
+  'purchasePayment',
+  'totalPaidSoFar',
+  'equityOwnedSoFar',
+  'totalLoanOwed',
+  'remainingEquity',
+  'debtToIncome',
+  'firedTomorrowCountdown',
+  'prepayComparison',
+  'stocksComparison',
+] as const;
+
+export type OutputType = typeof outputTypes[number];
 
 export interface Elements {
   inputs: Inputs, outputs: Record<OutputType, HTMLElement>,
