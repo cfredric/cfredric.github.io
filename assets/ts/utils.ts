@@ -3,7 +3,7 @@ import {Decimal} from 'decimal.js';
 import {ConditionalOutput} from './conditional_output';
 
 import {Context} from './context';
-import {Conditional, ConditionalContainer, conditionalContainers, InputEntry, nonLoanPaymentTypes, OutputType, outputTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType, templateTypes} from './types';
+import {ConditionalContainer, conditionalContainers, InputEntry, nonLoanPaymentTypes, OutputType, outputTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType, templateTypes} from './types';
 
 const timeFormat = new Intl.DateTimeFormat();
 
@@ -227,18 +227,6 @@ export function computeAmortizedPaymentAmount(
   return P.mul(r).mul(onePlusRToTheN).div(onePlusRToTheN.sub(1));
 }
 
-// Conditionally shows or hides an output.
-export function makeConditionalOutputs(
-    condition: boolean, conditionals: readonly Conditional[]):
-    Partial<Record<ConditionalContainer, ConditionalOutput>> {
-  const result = {} as Partial<Record<ConditionalContainer, ConditionalOutput>>;
-  for (const c of conditionals) {
-    result[c.container] =
-        new ConditionalOutput(condition, c.container, c.generateOutput);
-  }
-  return result;
-}
-
 // Computes the payment for each month of the loan.
 export function calculatePaymentSchedule(
     ctx: Context, monthlyLoanPayment: Decimal): PaymentRecordWithMonth[] {
@@ -418,7 +406,7 @@ export function emptyConditionalOutputs():
     Record<ConditionalContainer, ConditionalOutput> {
   const record = {} as Record<ConditionalContainer, ConditionalOutput>;
   for (const c of conditionalContainers) {
-    record[c] = new ConditionalOutput(false, c, () => '');
+    record[c] = new ConditionalOutput();
   }
   return record;
 }
