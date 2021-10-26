@@ -3,7 +3,7 @@ import {Decimal} from 'decimal.js';
 import {ConditionalOutput} from './conditional_output';
 
 import {Context} from './context';
-import {Conditional, conditionalContainerMap, conditionalContainers, InputEntry, nonLoanPaymentTypes, OutputType, outputTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType, templateTypes} from './types';
+import {Conditional, ConditionalContainer, conditionalContainers, InputEntry, nonLoanPaymentTypes, OutputType, outputTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType, templateTypes} from './types';
 
 const timeFormat = new Intl.DateTimeFormat();
 
@@ -230,10 +230,10 @@ export function computeAmortizedPaymentAmount(
 // Conditionally shows or hides an output.
 export function makeConditionalOutputs(
     condition: boolean, conditionals: readonly Conditional[]):
-    Partial<Record<OutputType, string|ConditionalOutput>> {
-  const result = {} as Partial<Record<OutputType, ConditionalOutput>>;
+    Partial<Record<ConditionalContainer, ConditionalOutput>> {
+  const result = {} as Partial<Record<ConditionalContainer, ConditionalOutput>>;
   for (const c of conditionals) {
-    result[conditionalContainerMap[c.container]] =
+    result[c.container] =
         new ConditionalOutput(condition, c.container, c.generateOutput);
   }
   return result;
@@ -404,15 +404,21 @@ export function toCapitalized(paymentType: PaymentType): string {
   }
 }
 
-// Creates empty outputs.
-export function emptyOutputs(): Record<OutputType, string|ConditionalOutput> {
-  const record = {} as Record<OutputType, string|ConditionalOutput>;
+// Creates empty unconditional outputs.
+export function emptyUnconditionals(): Record<OutputType, string> {
+  const record = {} as Record<OutputType, string>;
   for (const o of outputTypes) {
     record[o] = '';
   }
+  return record;
+}
+
+// Creates empty conditionals.
+export function emptyConditionalOutputs():
+    Record<ConditionalContainer, ConditionalOutput> {
+  const record = {} as Record<ConditionalContainer, ConditionalOutput>;
   for (const c of conditionalContainers) {
-    const o: OutputType = conditionalContainerMap[c];
-    record[o] = new ConditionalOutput(false, c, () => '');
+    record[c] = new ConditionalOutput(false, c, () => '');
   }
   return record;
 }
@@ -428,11 +434,11 @@ export function emptyTemplates(): Record<TemplateType, string> {
 }
 
 // Merges values in `parts` into `full`. Returns `full` for convenience.
-export function merge<V>(
-    full: Record<OutputType, V>,
-    parts: Readonly<Partial<Record<OutputType, V>>>): Record<OutputType, V> {
-  for (const o of outputTypes) {
-    if (parts[o]) full[o] = parts[o]!;
+export function merge<K extends string, V>(
+    full: Record<K, V>, parts: Readonly<Partial<Record<K, V>>>,
+    ks: readonly K[]): Record<K, V> {
+  for (const k of ks) {
+    if (parts[k]) full[k] = parts[k]!;
   }
   return full;
 }

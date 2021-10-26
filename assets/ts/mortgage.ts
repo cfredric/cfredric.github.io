@@ -1,10 +1,9 @@
 import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
-import {ConditionalOutput} from './conditional_output';
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
-import {Elements, HintType, hintTypes, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, outputTypes, paymentTypes, templateTypes} from './types';
+import {conditionalContainerMap, conditionalContainers, ConditionalOutputType, Elements, HintType, hintTypes, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, outputTypes, paymentTypes, templateTypes} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -76,11 +75,18 @@ function getOutputs(): Record<OutputType, HTMLElement> {
     'loanAmount': utils.getHtmlElt('loan-amount-output'),
     'principalAndInterest': utils.getHtmlElt('principal-and-interest-output'),
     'monthlyPaymentAmount': utils.getHtmlElt('monthly-payment-output'),
-    'monthlyPaymentPmi': utils.getHtmlElt('monthly-payment-pmi-output'),
-    'pmiPaymentTimeline': utils.getHtmlElt('pmi-payment-timeline-output'),
     'lifetimeOfLoan': utils.getHtmlElt('lifetime-of-loan-output'),
     'lifetimePayment': utils.getHtmlElt('lifetime-payment-output'),
     'purchasePayment': utils.getHtmlElt('purchase-payment-output'),
+    'prepayComparison': utils.getHtmlElt('prepay-comparison-output'),
+    'stocksComparison': utils.getHtmlElt('stocks-comparison-output'),
+  };
+}
+
+function getConditionalOutputs(): Record<ConditionalOutputType, HTMLElement> {
+  return {
+    'monthlyPaymentPmi': utils.getHtmlElt('monthly-payment-pmi-output'),
+    'pmiPaymentTimeline': utils.getHtmlElt('pmi-payment-timeline-output'),
     'totalPaidSoFar': utils.getHtmlElt('total-paid-so-far-output'),
     'equityOwnedSoFar': utils.getHtmlElt('equity-owned-so-far-output'),
     'totalLoanOwed': utils.getHtmlElt('total-loan-owed-output'),
@@ -88,8 +94,6 @@ function getOutputs(): Record<OutputType, HTMLElement> {
     'debtToIncome': utils.getHtmlElt('debt-to-income-ratio-output'),
     'firedTomorrowCountdown':
         utils.getHtmlElt('fired-tomorrow-countdown-output'),
-    'prepayComparison': utils.getHtmlElt('prepay-comparison-output'),
-    'stocksComparison': utils.getHtmlElt('stocks-comparison-output'),
   };
 }
 
@@ -186,19 +190,18 @@ function attachListeners(
 
 // Set the contents of all the outputs based on the `ctx`.
 function setContents(ctx: Context, elts: Elements): void {
-  const {hints, outputs, templates} = computeContents(ctx);
+  const {hints, unconditionals, templates, conditionals} = computeContents(ctx);
 
   for (const h of hintTypes) {
     elts.hints[h].innerText = hints[h];
   }
   for (const o of outputTypes) {
-    const val = outputs[o];
-    if (val instanceof ConditionalOutput) {
-      val.display();
-      elts.outputs[o].innerText = val.output();
-    } else {
-      elts.outputs[o].innerText = val;
-    }
+    elts.outputs[o].innerText = unconditionals[o];
+  }
+  for (const c of conditionalContainers) {
+    const co = conditionals[c];
+    co.display();
+    elts.conditionals[conditionalContainerMap[c]].innerText = co.output();
   }
   for (const t of templateTypes) {
     utils.fillTemplateElts(t, templates[t]);
@@ -207,13 +210,14 @@ function setContents(ctx: Context, elts: Elements): void {
 
 // Compute hint strings and set output strings.
 function computeContents(ctx: Context): Outputs {
-  const outputs = utils.emptyOutputs();
+  const unconditionals = utils.emptyUnconditionals();
   const hints = computeAmountHints(ctx);
   const templates = utils.emptyTemplates();
-  outputs['loanAmount'] =
+  const conditionals = utils.emptyConditionalOutputs();
+  unconditionals['loanAmount'] =
       `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
 
-  outputs['purchasePayment'] = `${
+  unconditionals['purchasePayment'] = `${
       fmt.format(Decimal
                      .sum(
                          ctx.downPayment,
@@ -225,10 +229,12 @@ function computeContents(ctx: Context): Outputs {
                      .toNumber())}`;
 
   if (ctx.interestRate.eq(0) && !ctx.downPayment.eq(ctx.price)) {
+    clearMonthlyPaymentOutputs();
     return {
       hints,
       templates,
-      outputs: utils.merge(outputs, clearMonthlyPaymentOutputs()),
+      conditionals,
+      unconditionals,
     };
   }
 
@@ -239,17 +245,18 @@ function computeContents(ctx: Context): Outputs {
                                                 ctx.n,
                                             );
   const monthlyLoanPayment = M.add(ctx.prepayment);
-  outputs['principalAndInterest'] =
+  unconditionals['principalAndInterest'] =
       `${fmt.format(monthlyLoanPayment.toNumber())}`;
   const extras = Decimal.sum(ctx.hoa, ctx.propertyTax, ctx.homeownersInsurance);
 
-  outputs['monthlyPaymentAmount'] =
+  unconditionals['monthlyPaymentAmount'] =
       `${fmt.format(monthlyLoanPayment.add(extras).toNumber())}`;
   const schedule = utils.calculatePaymentSchedule(ctx, monthlyLoanPayment);
   utils.merge(
-      outputs,
+      conditionals,
       utils.makeConditionalOutputs(
-          ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct), [
+          ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct),
+          [
             {
               container: 'monthly-payment-pmi-div',
               generateOutput: () => `${
@@ -265,16 +272,17 @@ function computeContents(ctx: Context): Outputs {
                     fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`;
               },
             },
-          ]));
+          ]),
+      conditionalContainers);
   viz.buildPaymentScheduleChart(ctx, schedule, fmt, paymentTypes);
   const cumulativeSums = utils.cumulativeSumByFields(schedule, paymentTypes);
   if (!M.eq(0)) {
     viz.buildCumulativeChart(ctx, cumulativeSums, fmt, loanPaymentTypes);
-    outputs['lifetimeOfLoan'] = `${
+    unconditionals['lifetimeOfLoan'] = `${
         utils.formatMonthNum(
             utils.countSatisfying(schedule, m => m.data.principal.gt(0)),
             ctx.closingDate)}`
-    outputs['lifetimePayment'] = `${
+    unconditionals['lifetimePayment'] = `${
         fmt.format(utils
                        .sumOfKeys(
                            cumulativeSums[cumulativeSums.length - 1]!.data,
@@ -303,10 +311,10 @@ function computeContents(ctx: Context): Outputs {
   } else {
     document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
     utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
-    outputs['lifetimePayment'] = `${fmt.format(0)}`;
+    unconditionals['lifetimePayment'] = `${fmt.format(0)}`;
   }
 
-  utils.merge(outputs, utils.makeConditionalOutputs(!ctx.totalAssets.eq(0), [
+  utils.merge(conditionals, utils.makeConditionalOutputs(!ctx.totalAssets.eq(0), [
     {
       container: 'fired-tomorrow-countdown-div',
       generateOutput: () => `${
@@ -321,14 +329,14 @@ function computeContents(ctx: Context): Outputs {
               utils.maxNonEmptyDate(
                   ctx.closingDate, d3.timeMonth.floor(new Date())))}`,
     },
-  ]));
+  ]), conditionalContainers);
 
   const absoluteEquityOwned =
       (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
           .add(cumulativeSums[ctx.paymentsAlreadyMade]!.data.principal);
 
   utils.merge(
-      outputs,
+      conditionals,
       utils.makeConditionalOutputs(
           !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, [
             {
@@ -370,19 +378,26 @@ function computeContents(ctx: Context): Outputs {
               generateOutput: () => `${
                   fmt.format(ctx.price.sub(absoluteEquityOwned).toNumber())}`,
             },
-          ]));
+          ]), conditionalContainers);
 
-  utils.merge(outputs, utils.makeConditionalOutputs(ctx.annualIncome.gt(0), [
-    {
-      container: 'debt-to-income-ratio-div',
-      generateOutput: () => `${
-          pctFmt.format(
-              Decimal.sum(ctx.monthlyDebt, monthlyLoanPayment, extras, ctx.pmi)
-                  .div(ctx.annualIncome)
-                  .mul(12)
-                  .toNumber())}`,
-    },
-  ]));
+  utils.merge(
+      conditionals,
+      utils.makeConditionalOutputs(
+          ctx.annualIncome.gt(0),
+          [
+            {
+              container: 'debt-to-income-ratio-div',
+              generateOutput: () => `${
+                  pctFmt.format(Decimal
+                                    .sum(
+                                        ctx.monthlyDebt, monthlyLoanPayment,
+                                        extras, ctx.pmi)
+                                    .div(ctx.annualIncome)
+                                    .mul(12)
+                                    .toNumber())}`,
+            },
+          ]),
+      conditionalContainers);
 
   // Show the comparison between prepayment and investment, if relevant.
   if (ctx.prepayment.eq(0)) {
@@ -397,7 +412,7 @@ function computeContents(ctx: Context): Outputs {
     }
     templates['mortgage-term'] = utils.formatMonthNum(ctx.n);
     templates['prepay-amount'] = fmt.format(ctx.prepayment.toNumber());
-    outputs['prepayComparison'] = `${
+    unconditionals['prepayComparison'] = `${
         fmt.format(utils
                        .computeStockAssets(
                            schedule
@@ -408,7 +423,7 @@ function computeContents(ctx: Context): Outputs {
                            ctx.stocksReturnRate)
                        .toNumber())}`;
 
-    outputs['stocksComparison'] = `${
+    unconditionals['stocksComparison'] = `${
         fmt.format(
             utils
                 .computeStockAssets(
@@ -418,7 +433,8 @@ function computeContents(ctx: Context): Outputs {
 
   return {
     hints,
-    outputs,
+    unconditionals,
+    conditionals,
     templates,
   };
 }
@@ -447,19 +463,11 @@ function computeAmountHints(ctx: Context): Record<HintType, string> {
 }
 
 // Clears output elements associated with monthly payments.
-function clearMonthlyPaymentOutputs(): Partial<Record<OutputType, string>> {
+function clearMonthlyPaymentOutputs(): void {
   document.querySelector('#schedule_viz > svg:first-of-type')?.remove();
   utils.removeChildren(utils.getHtmlElt('schedule_tab'));
   document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
   utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
-
-  return {
-    'principalAndInterest': '',
-    'monthlyPaymentAmount': '',
-    'monthlyPaymentPmi': '',
-    'lifetimePayment': '',
-    'debtToIncome': '',
-  };
 }
 
 // Reads fields from the URL and from cookies, and populates the UI
@@ -531,10 +539,11 @@ function clearInputs(
 }
 
 export function main(): void {
-  const elts = {
+  const elts: Elements = {
     inputs: getInputs(),
     outputs: getOutputs(),
     hints: getHints(),
+    conditionals: getConditionalOutputs(),
     clearInputsButton: utils.getHtmlElt('clear-inputs-button'),
   };
   const urlParamMap = getUrlParamMap(elts.inputs);

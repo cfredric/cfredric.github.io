@@ -106,22 +106,27 @@ export const outputTypes = [
   'loanAmount',
   'principalAndInterest',
   'monthlyPaymentAmount',
-  'monthlyPaymentPmi',
-  'pmiPaymentTimeline',
   'lifetimeOfLoan',
   'lifetimePayment',
   'purchasePayment',
+  'prepayComparison',
+  'stocksComparison',
+] as const;
+
+export type OutputType = typeof outputTypes[number];
+
+export const conditionalOutputTypes = [
+  'monthlyPaymentPmi',
+  'pmiPaymentTimeline',
   'totalPaidSoFar',
   'equityOwnedSoFar',
   'totalLoanOwed',
   'remainingEquity',
   'debtToIncome',
   'firedTomorrowCountdown',
-  'prepayComparison',
-  'stocksComparison',
 ] as const;
 
-export type OutputType = typeof outputTypes[number];
+export type ConditionalOutputType = typeof conditionalOutputTypes[number];
 
 export const conditionalContainers = [
   'monthly-payment-pmi-div',
@@ -137,7 +142,7 @@ export const conditionalContainers = [
 export type ConditionalContainer = typeof conditionalContainers[number];
 
 export const conditionalContainerMap:
-    Record<ConditionalContainer, OutputType> = {
+    Record<ConditionalContainer, ConditionalOutputType> = {
       'monthly-payment-pmi-div': 'monthlyPaymentPmi',
       'months-of-pmi-div': 'pmiPaymentTimeline',
       'fired-tomorrow-countdown-div': 'firedTomorrowCountdown',
@@ -156,16 +161,18 @@ export const templateTypes = [
 export type TemplateType = typeof templateTypes[number];
 
 export interface Elements {
-  inputs: Inputs,                                //
-      outputs: Record<OutputType, HTMLElement>,  //
-      hints: Record<HintType, HTMLElement>,      //
-      clearInputsButton: HTMLElement,            //
+  inputs: Inputs,                                                //
+      outputs: Record<OutputType, HTMLElement>,                  //
+      conditionals: Record<ConditionalOutputType, HTMLElement>,  //
+      hints: Record<HintType, HTMLElement>,                      //
+      clearInputsButton: HTMLElement,                            //
 }
 
 export interface Outputs {
-  outputs: Record<OutputType, string|ConditionalOutput>,  //
-      hints: Record<HintType, string>,                    //
-      templates: Record<TemplateType, string>,            //
+  unconditionals: Record<OutputType, string>,                         //
+      conditionals: Record<ConditionalContainer, ConditionalOutput>,  //
+      hints: Record<HintType, string>,                                //
+      templates: Record<TemplateType, string>,                        //
 }
 
 export interface Margin {
