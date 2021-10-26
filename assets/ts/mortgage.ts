@@ -238,19 +238,28 @@ function computeContents(ctx: Context): Outputs {
 
   outputs['monthlyPaymentAmount'] =
       `${fmt.format(monthlyLoanPayment.add(extras).toNumber())}`;
-  outputs['monthlyPaymentPmi'] = `${
-      fmt.format(Decimal.sum(monthlyLoanPayment, extras, ctx.pmi).toNumber())}`;
-  const showPmi = ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct);
-  utils.getHtmlElt('monthly-payment-without-pmi-span').style.display =
-      showPmi ? '' : 'none';
-  utils.getHtmlElt('monthly-payment-pmi-div').style.display =
-      showPmi ? '' : 'none';
   const schedule = utils.calculatePaymentSchedule(ctx, monthlyLoanPayment);
+  utils.showConditionalOutput(
+      ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct), outputs, [
+        {
+          containerName: 'monthly-payment-pmi-div',
+          outputType: 'monthlyPaymentPmi',
+          generateOutput: () => `${
+              fmt.format(Decimal.sum(monthlyLoanPayment, extras, ctx.pmi)
+                             .toNumber())}`,
+        },
+        {
+          containerName: 'months-of-pmi-div',
+          outputType: 'pmiPaymentTimeline',
+          generateOutput: () => {
+            const pmiMonths = utils.countSatisfying(
+                schedule, payment => !payment.data.pmi.eq(0));
+            return `${utils.formatMonthNum(pmiMonths)} (${
+                fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`;
+          },
+        },
+      ]);
   viz.buildPaymentScheduleChart(ctx, schedule, fmt, paymentTypes);
-  const pmiMonths =
-      utils.countSatisfying(schedule, payment => !payment.data.pmi.eq(0));
-  outputs['pmiPaymentTimeline'] = `${utils.formatMonthNum(pmiMonths)} (${
-      fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`;
   const cumulativeSums = utils.cumulativeSumByFields(schedule, paymentTypes);
   if (!M.eq(0)) {
     viz.buildCumulativeChart(ctx, cumulativeSums, fmt, loanPaymentTypes);
@@ -435,8 +444,6 @@ function computeAmountHints(ctx: Context): Record<HintType, string> {
 
 // Clears output elements associated with monthly payments.
 function clearMonthlyPaymentOutputs(): Partial<Record<OutputType, string>> {
-  utils.getHtmlElt('debt-to-income-ratio-div').style.display = 'none';
-
   document.querySelector('#schedule_viz > svg:first-of-type')?.remove();
   utils.removeChildren(utils.getHtmlElt('schedule_tab'));
   document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
