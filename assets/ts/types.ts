@@ -1,6 +1,6 @@
 import {Decimal} from 'decimal.js';
 
-import {ConditionalOutput} from './conditional_output';
+import {HidableOutput} from './hidable_output';
 
 export const paymentTypes = [
   'principal',
@@ -115,7 +115,7 @@ export const outputTypes = [
 
 export type OutputType = typeof outputTypes[number];
 
-export const conditionalOutputTypes = [
+export const hidableOutputTypes = [
   'monthlyPaymentPmi',
   'pmiPaymentTimeline',
   'totalPaidSoFar',
@@ -126,9 +126,9 @@ export const conditionalOutputTypes = [
   'firedTomorrowCountdown',
 ] as const;
 
-export type ConditionalOutputType = typeof conditionalOutputTypes[number];
+export type HidableOutputType = typeof hidableOutputTypes[number];
 
-export const conditionalContainers = [
+export const hidableContainers = [
   'monthly-payment-pmi-div',
   'months-of-pmi-div',
   'fired-tomorrow-countdown-div',
@@ -139,10 +139,10 @@ export const conditionalContainers = [
   'debt-to-income-ratio-div',
 ] as const;
 
-export type ConditionalContainer = typeof conditionalContainers[number];
+export type HidableContainer = typeof hidableContainers[number];
 
-export const conditionalContainerMap:
-    Record<ConditionalContainer, ConditionalOutputType> = {
+export const hidableContainerMap:
+    Record<HidableContainer, HidableOutputType> = {
       'monthly-payment-pmi-div': 'monthlyPaymentPmi',
       'months-of-pmi-div': 'pmiPaymentTimeline',
       'fired-tomorrow-countdown-div': 'firedTomorrowCountdown',
@@ -161,18 +161,18 @@ export const templateTypes = [
 export type TemplateType = typeof templateTypes[number];
 
 export interface Elements {
-  inputs: Inputs,                                                //
-      outputs: Record<OutputType, HTMLElement>,                  //
-      conditionals: Record<ConditionalOutputType, HTMLElement>,  //
-      hints: Record<HintType, HTMLElement>,                      //
-      clearInputsButton: HTMLElement,                            //
+  inputs: Inputs,                                        //
+      outputs: Record<OutputType, HTMLElement>,          //
+      hidables: Record<HidableOutputType, HTMLElement>,  //
+      hints: Record<HintType, HTMLElement>,              //
+      clearInputsButton: HTMLElement,                    //
 }
 
 export interface Outputs {
-  unconditionals: Record<OutputType, string>,                         //
-      conditionals: Record<ConditionalContainer, ConditionalOutput>,  //
-      hints: Record<HintType, string>,                                //
-      templates: Record<TemplateType, string>,                        //
+  unconditionals: Record<OutputType, string>,             //
+      hidables: Record<HidableContainer, HidableOutput>,  //
+      hints: Record<HintType, string>,                    //
+      templates: Record<TemplateType, string>,            //
 }
 
 export interface Margin {
@@ -180,9 +180,4 @@ export interface Margin {
   bottom: number;
   left: number;
   right: number;
-}
-
-export interface Conditional {
-  container: ConditionalContainer;
-  generateOutput(): string;
 }

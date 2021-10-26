@@ -1,10 +1,10 @@
 import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
-import {ConditionalOutput} from './conditional_output';
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
-import {conditionalContainerMap, conditionalContainers, ConditionalOutputType, Elements, HintType, hintTypes, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, outputTypes, paymentTypes, templateTypes,} from './types';
+import {HidableOutput} from './hidable_output';
+import {Elements, hidableContainerMap, hidableContainers, HidableOutputType, HintType, hintTypes, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, outputTypes, paymentTypes, templateTypes,} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -84,7 +84,7 @@ function getOutputs(): Record<OutputType, HTMLElement> {
   };
 }
 
-function getConditionalOutputs(): Record<ConditionalOutputType, HTMLElement> {
+function getHidableOutputs(): Record<HidableOutputType, HTMLElement> {
   return {
     'monthlyPaymentPmi': utils.getHtmlElt('monthly-payment-pmi-output'),
     'pmiPaymentTimeline': utils.getHtmlElt('pmi-payment-timeline-output'),
@@ -191,7 +191,7 @@ function attachListeners(
 
 // Set the contents of all the outputs based on the `ctx`.
 function setContents(ctx: Context, elts: Elements): void {
-  const {hints, unconditionals, templates, conditionals} = computeContents(ctx);
+  const {hints, unconditionals, templates, hidables} = computeContents(ctx);
 
   for (const h of hintTypes) {
     elts.hints[h].innerText = hints[h];
@@ -199,10 +199,10 @@ function setContents(ctx: Context, elts: Elements): void {
   for (const o of outputTypes) {
     elts.outputs[o].innerText = unconditionals[o];
   }
-  for (const c of conditionalContainers) {
-    const co = conditionals[c];
-    co.display(c);
-    elts.conditionals[conditionalContainerMap[c]].innerText = co.output();
+  for (const hc of hidableContainers) {
+    const ho = hidables[hc];
+    ho.display(hc);
+    elts.hidables[hidableContainerMap[hc]].innerText = ho.output();
   }
   for (const t of templateTypes) {
     utils.fillTemplateElts(t, templates[t]);
@@ -214,7 +214,7 @@ function computeContents(ctx: Context): Outputs {
   const unconditionals = utils.emptyUnconditionals();
   const hints = computeAmountHints(ctx);
   const templates = utils.emptyTemplates();
-  const conditionals = utils.emptyConditionalOutputs();
+  const hidables = utils.emptyHidableOutputs();
   unconditionals['loanAmount'] =
       `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
 
@@ -234,7 +234,7 @@ function computeContents(ctx: Context): Outputs {
     return {
       hints,
       templates,
-      conditionals,
+      hidables,
       unconditionals,
     };
   }
@@ -254,15 +254,15 @@ function computeContents(ctx: Context): Outputs {
       `${fmt.format(monthlyLoanPayment.add(extras).toNumber())}`;
   const schedule = utils.calculatePaymentSchedule(ctx, monthlyLoanPayment);
   if (ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct)) {
-    conditionals['monthly-payment-pmi-div'] = new ConditionalOutput(
+    hidables['monthly-payment-pmi-div'] = new HidableOutput(
         `${
             fmt.format(
                 Decimal.sum(monthlyLoanPayment, extras, ctx.pmi).toNumber())}`,
     );
     const pmiMonths =
         utils.countSatisfying(schedule, payment => !payment.data.pmi.eq(0));
-    conditionals['months-of-pmi-div'] =
-        new ConditionalOutput(`${utils.formatMonthNum(pmiMonths)} (${
+    hidables['months-of-pmi-div'] =
+        new HidableOutput(`${utils.formatMonthNum(pmiMonths)} (${
             fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`);
   }
   viz.buildPaymentScheduleChart(ctx, schedule, fmt, paymentTypes);
@@ -306,7 +306,7 @@ function computeContents(ctx: Context): Outputs {
   }
 
   if (!ctx.totalAssets.eq(0)) {
-    conditionals['fired-tomorrow-countdown-div'] = new ConditionalOutput(`${
+    hidables['fired-tomorrow-countdown-div'] = new HidableOutput(`${
         utils.formatMonthNum(
             utils.countBurndownMonths(
                 ctx.totalAssets.sub(
@@ -323,30 +323,30 @@ function computeContents(ctx: Context): Outputs {
         (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
             .add(cumulativeSums[ctx.paymentsAlreadyMade]!.data.principal);
 
-    conditionals['total-paid-so-far-div'] = new ConditionalOutput(`${
+    hidables['total-paid-so-far-div'] = new HidableOutput(`${
         fmt.format((ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
                                         new Decimal(0))
                        .add(utils.sumOfKeys(
                            cumulativeSums[ctx.paymentsAlreadyMade]!.data,
                            paymentTypes))
                        .toNumber())}`);
-    conditionals['equity-owned-so-far-div'] = new ConditionalOutput(
+    hidables['equity-owned-so-far-div'] = new HidableOutput(
         `${pctFmt.format(absoluteEquityOwned.div(ctx.homeValue).toNumber())} (${
             fmt.format(absoluteEquityOwned.toNumber())})`);
     const totalPrincipalAndInterestPaid = utils.sumOfKeys(
         cumulativeSums[ctx.paymentsAlreadyMade]!.data, loanPaymentTypes);
     const totalPrincipalAndInterestToPay = utils.sumOfKeys(
         cumulativeSums[cumulativeSums.length - 1]!.data, loanPaymentTypes);
-    conditionals['total-loan-owed-div'] = new ConditionalOutput(`${
+    hidables['total-loan-owed-div'] = new HidableOutput(`${
         fmt.format(
             totalPrincipalAndInterestToPay.sub(totalPrincipalAndInterestPaid)
                 .toNumber())}`);
-    conditionals['remaining-equity-to-pay-for-div'] = new ConditionalOutput(
+    hidables['remaining-equity-to-pay-for-div'] = new HidableOutput(
         `${fmt.format(ctx.price.sub(absoluteEquityOwned).toNumber())}`);
   }
 
   if (ctx.annualIncome.gt(0)) {
-    conditionals['debt-to-income-ratio-div'] = new ConditionalOutput(
+    hidables['debt-to-income-ratio-div'] = new HidableOutput(
         `${
             pctFmt.format(
                 Decimal
@@ -392,7 +392,7 @@ function computeContents(ctx: Context): Outputs {
   return {
     hints,
     unconditionals,
-    conditionals,
+    hidables,
     templates,
   };
 }
@@ -501,7 +501,7 @@ export function main(): void {
     inputs: getInputs(),
     outputs: getOutputs(),
     hints: getHints(),
-    conditionals: getConditionalOutputs(),
+    hidables: getHidableOutputs(),
     clearInputsButton: utils.getHtmlElt('clear-inputs-button'),
   };
   const urlParamMap = getUrlParamMap(elts.inputs);

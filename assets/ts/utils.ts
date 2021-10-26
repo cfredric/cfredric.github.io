@@ -1,9 +1,9 @@
 import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
-import {ConditionalOutput} from './conditional_output';
 
 import {Context} from './context';
-import {ConditionalContainer, conditionalContainers, InputEntry, nonLoanPaymentTypes, OutputType, outputTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType, templateTypes} from './types';
+import {HidableOutput} from './hidable_output';
+import {HidableContainer, hidableContainers, InputEntry, nonLoanPaymentTypes, OutputType, outputTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType, templateTypes} from './types';
 
 const timeFormat = new Intl.DateTimeFormat();
 
@@ -402,11 +402,10 @@ export function emptyUnconditionals(): Record<OutputType, string> {
 }
 
 // Creates empty conditionals.
-export function emptyConditionalOutputs():
-    Record<ConditionalContainer, ConditionalOutput> {
-  const record = {} as Record<ConditionalContainer, ConditionalOutput>;
-  for (const c of conditionalContainers) {
-    record[c] = new ConditionalOutput();
+export function emptyHidableOutputs(): Record<HidableContainer, HidableOutput> {
+  const record = {} as Record<HidableContainer, HidableOutput>;
+  for (const c of hidableContainers) {
+    record[c] = new HidableOutput();
   }
   return record;
 }
