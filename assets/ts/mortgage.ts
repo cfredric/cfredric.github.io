@@ -1,6 +1,7 @@
 import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
+import {ConditionalOutput} from './conditional_output';
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
 import {Elements, HintType, hintTypes, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, outputTypes, paymentTypes, templateTypes} from './types';
@@ -191,7 +192,13 @@ function setContents(ctx: Context, elts: Elements): void {
     elts.hints[h].innerText = hints[h];
   }
   for (const o of outputTypes) {
-    elts.outputs[o].innerText = outputs[o];
+    const val = outputs[o];
+    if (val instanceof ConditionalOutput) {
+      val.display();
+      elts.outputs[o].innerText = val.output();
+    } else {
+      elts.outputs[o].innerText = val;
+    }
   }
   for (const t of templateTypes) {
     utils.fillTemplateElts(t, templates[t]);
@@ -221,7 +228,7 @@ function computeContents(ctx: Context): Outputs {
     return {
       hints,
       templates,
-      outputs: utils.merge(clearMonthlyPaymentOutputs(), outputs),
+      outputs: utils.merge(outputs, clearMonthlyPaymentOutputs()),
     };
   }
 
@@ -239,26 +246,26 @@ function computeContents(ctx: Context): Outputs {
   outputs['monthlyPaymentAmount'] =
       `${fmt.format(monthlyLoanPayment.add(extras).toNumber())}`;
   const schedule = utils.calculatePaymentSchedule(ctx, monthlyLoanPayment);
-  utils.showConditionalOutput(
-      ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct), outputs, [
-        {
-          containerName: 'monthly-payment-pmi-div',
-          outputType: 'monthlyPaymentPmi',
-          generateOutput: () => `${
-              fmt.format(Decimal.sum(monthlyLoanPayment, extras, ctx.pmi)
-                             .toNumber())}`,
-        },
-        {
-          containerName: 'months-of-pmi-div',
-          outputType: 'pmiPaymentTimeline',
-          generateOutput: () => {
-            const pmiMonths = utils.countSatisfying(
-                schedule, payment => !payment.data.pmi.eq(0));
-            return `${utils.formatMonthNum(pmiMonths)} (${
-                fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`;
-          },
-        },
-      ]);
+  utils.merge(
+      outputs,
+      utils.makeConditionalOutputs(
+          ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct), [
+            {
+              container: 'monthly-payment-pmi-div',
+              generateOutput: () => `${
+                  fmt.format(Decimal.sum(monthlyLoanPayment, extras, ctx.pmi)
+                                 .toNumber())}`,
+            },
+            {
+              container: 'months-of-pmi-div',
+              generateOutput: () => {
+                const pmiMonths = utils.countSatisfying(
+                    schedule, payment => !payment.data.pmi.eq(0));
+                return `${utils.formatMonthNum(pmiMonths)} (${
+                    fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`;
+              },
+            },
+          ]));
   viz.buildPaymentScheduleChart(ctx, schedule, fmt, paymentTypes);
   const cumulativeSums = utils.cumulativeSumByFields(schedule, paymentTypes);
   if (!M.eq(0)) {
@@ -299,10 +306,9 @@ function computeContents(ctx: Context): Outputs {
     outputs['lifetimePayment'] = `${fmt.format(0)}`;
   }
 
-  utils.showConditionalOutput(!ctx.totalAssets.eq(0), outputs, [
+  utils.merge(outputs, utils.makeConditionalOutputs(!ctx.totalAssets.eq(0), [
     {
-      containerName: 'fired-tomorrow-countdown-div',
-      outputType: 'firedTomorrowCountdown',
+      container: 'fired-tomorrow-countdown-div',
       generateOutput: () => `${
           utils.formatMonthNum(
               utils.countBurndownMonths(
@@ -315,62 +321,60 @@ function computeContents(ctx: Context): Outputs {
               utils.maxNonEmptyDate(
                   ctx.closingDate, d3.timeMonth.floor(new Date())))}`,
     },
-  ]);
+  ]));
 
   const absoluteEquityOwned =
       (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
           .add(cumulativeSums[ctx.paymentsAlreadyMade]!.data.principal);
 
-  utils.showConditionalOutput(
-      !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, outputs, [
-        {
-          containerName: 'total-paid-so-far-div',
-          outputType: 'totalPaidSoFar',
-          generateOutput: () => `${
-              fmt.format((ctx.alreadyClosed ?
-                              ctx.closingCost.add(ctx.downPayment) :
-                              new Decimal(0))
-                             .add(utils.sumOfKeys(
-                                 cumulativeSums[ctx.paymentsAlreadyMade]!.data,
-                                 paymentTypes))
-                             .toNumber())}`,
-        },
-        {
-          containerName: 'equity-owned-so-far-div',
-          outputType: 'equityOwnedSoFar',
-          generateOutput: () => `${
-              pctFmt.format(
-                  absoluteEquityOwned.div(ctx.homeValue).toNumber())} (${
-              fmt.format(absoluteEquityOwned.toNumber())})`,
-        },
-        {
-          containerName: 'total-loan-owed-div',
-          outputType: 'totalLoanOwed',
-          generateOutput() {
-            const totalPrincipalAndInterestPaid = utils.sumOfKeys(
-                cumulativeSums[ctx.paymentsAlreadyMade]!.data,
-                loanPaymentTypes);
-            const totalPrincipalAndInterestToPay = utils.sumOfKeys(
-                cumulativeSums[cumulativeSums.length - 1]!.data,
-                loanPaymentTypes);
-            return `${
-                fmt.format(totalPrincipalAndInterestToPay
-                               .sub(totalPrincipalAndInterestPaid)
-                               .toNumber())}`;
-          },
-        },
-        {
-          containerName: 'remaining-equity-to-pay-for-div',
-          outputType: 'remainingEquity',
-          generateOutput: () =>
-              `${fmt.format(ctx.price.sub(absoluteEquityOwned).toNumber())}`,
-        },
-      ]);
+  utils.merge(
+      outputs,
+      utils.makeConditionalOutputs(
+          !!ctx.paymentsAlreadyMade || ctx.alreadyClosed, [
+            {
+              container: 'total-paid-so-far-div',
+              generateOutput: () => `${
+                  fmt.format(
+                      (ctx.alreadyClosed ?
+                           ctx.closingCost.add(ctx.downPayment) :
+                           new Decimal(0))
+                          .add(utils.sumOfKeys(
+                              cumulativeSums[ctx.paymentsAlreadyMade]!.data,
+                              paymentTypes))
+                          .toNumber())}`,
+            },
+            {
+              container: 'equity-owned-so-far-div',
+              generateOutput: () => `${
+                  pctFmt.format(
+                      absoluteEquityOwned.div(ctx.homeValue).toNumber())} (${
+                  fmt.format(absoluteEquityOwned.toNumber())})`,
+            },
+            {
+              container: 'total-loan-owed-div',
+              generateOutput() {
+                const totalPrincipalAndInterestPaid = utils.sumOfKeys(
+                    cumulativeSums[ctx.paymentsAlreadyMade]!.data,
+                    loanPaymentTypes);
+                const totalPrincipalAndInterestToPay = utils.sumOfKeys(
+                    cumulativeSums[cumulativeSums.length - 1]!.data,
+                    loanPaymentTypes);
+                return `${
+                    fmt.format(totalPrincipalAndInterestToPay
+                                   .sub(totalPrincipalAndInterestPaid)
+                                   .toNumber())}`;
+              },
+            },
+            {
+              container: 'remaining-equity-to-pay-for-div',
+              generateOutput: () => `${
+                  fmt.format(ctx.price.sub(absoluteEquityOwned).toNumber())}`,
+            },
+          ]));
 
-  utils.showConditionalOutput(!!ctx.annualIncome, outputs, [
+  utils.merge(outputs, utils.makeConditionalOutputs(ctx.annualIncome.gt(0), [
     {
-      containerName: 'debt-to-income-ratio-div',
-      outputType: 'debtToIncome',
+      container: 'debt-to-income-ratio-div',
       generateOutput: () => `${
           pctFmt.format(
               Decimal.sum(ctx.monthlyDebt, monthlyLoanPayment, extras, ctx.pmi)
@@ -378,7 +382,7 @@ function computeContents(ctx: Context): Outputs {
                   .mul(12)
                   .toNumber())}`,
     },
-  ]);
+  ]));
 
   // Show the comparison between prepayment and investment, if relevant.
   if (ctx.prepayment.eq(0)) {

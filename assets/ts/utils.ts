@@ -1,8 +1,9 @@
 import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
+import {ConditionalOutput} from './conditional_output';
 
 import {Context} from './context';
-import {ConditionalOutput, InputEntry, nonLoanPaymentTypes, OutputType, outputTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType, templateTypes} from './types';
+import {Conditional, conditionalContainerMap, conditionalContainers, InputEntry, nonLoanPaymentTypes, OutputType, outputTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType, templateTypes} from './types';
 
 const timeFormat = new Intl.DateTimeFormat();
 
@@ -227,13 +228,15 @@ export function computeAmortizedPaymentAmount(
 }
 
 // Conditionally shows or hides an output.
-export function showConditionalOutput(
-    condition: boolean, outputs: Record<OutputType, string>,
-    conditionals: readonly ConditionalOutput[]) {
+export function makeConditionalOutputs(
+    condition: boolean, conditionals: readonly Conditional[]):
+    Partial<Record<OutputType, string|ConditionalOutput>> {
+  const result = {} as Partial<Record<OutputType, ConditionalOutput>>;
   for (const c of conditionals) {
-    outputs[c.outputType] = condition ? c.generateOutput() : '';
-    getHtmlElt(c.containerName).style.display = condition ? '' : 'none';
+    result[conditionalContainerMap[c.container]] =
+        new ConditionalOutput(condition, c.container, c.generateOutput);
   }
+  return result;
 }
 
 // Computes the payment for each month of the loan.
@@ -402,10 +405,14 @@ export function toCapitalized(paymentType: PaymentType): string {
 }
 
 // Creates empty outputs.
-export function emptyOutputs(): Record<OutputType, string> {
-  const record: Record<OutputType, string> = {} as Record<OutputType, string>;
+export function emptyOutputs(): Record<OutputType, string|ConditionalOutput> {
+  const record = {} as Record<OutputType, string|ConditionalOutput>;
   for (const o of outputTypes) {
     record[o] = '';
+  }
+  for (const c of conditionalContainers) {
+    const o: OutputType = conditionalContainerMap[c];
+    record[o] = new ConditionalOutput(false, c, () => '');
   }
   return record;
 }
@@ -422,8 +429,8 @@ export function emptyTemplates(): Record<TemplateType, string> {
 
 // Merges values in `parts` into `full`. Returns `full` for convenience.
 export function merge<V>(
-    parts: Readonly<Partial<Record<OutputType, V>>>,
-    full: Record<OutputType, V>): Record<OutputType, V> {
+    full: Record<OutputType, V>,
+    parts: Readonly<Partial<Record<OutputType, V>>>): Record<OutputType, V> {
   for (const o of outputTypes) {
     if (parts[o]) full[o] = parts[o]!;
   }

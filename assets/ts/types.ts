@@ -1,5 +1,7 @@
 import {Decimal} from 'decimal.js';
 
+import {ConditionalOutput} from './conditional_output';
+
 export const paymentTypes = [
   'principal',
   'interest',
@@ -121,6 +123,31 @@ export const outputTypes = [
 
 export type OutputType = typeof outputTypes[number];
 
+export const conditionalContainers = [
+  'monthly-payment-pmi-div',
+  'months-of-pmi-div',
+  'fired-tomorrow-countdown-div',
+  'total-paid-so-far-div',
+  'equity-owned-so-far-div',
+  'total-loan-owed-div',
+  'remaining-equity-to-pay-for-div',
+  'debt-to-income-ratio-div',
+] as const;
+
+export type ConditionalContainer = typeof conditionalContainers[number];
+
+export const conditionalContainerMap:
+    Record<ConditionalContainer, OutputType> = {
+      'monthly-payment-pmi-div': 'monthlyPaymentPmi',
+      'months-of-pmi-div': 'pmiPaymentTimeline',
+      'fired-tomorrow-countdown-div': 'firedTomorrowCountdown',
+      'total-paid-so-far-div': 'totalPaidSoFar',
+      'equity-owned-so-far-div': 'equityOwnedSoFar',
+      'total-loan-owed-div': 'totalLoanOwed',
+      'remaining-equity-to-pay-for-div': 'remainingEquity',
+      'debt-to-income-ratio-div': 'debtToIncome',
+    };
+
 export const templateTypes = [
   'mortgage-term',
   'prepay-amount',
@@ -129,13 +156,16 @@ export const templateTypes = [
 export type TemplateType = typeof templateTypes[number];
 
 export interface Elements {
-  inputs: Inputs, outputs: Record<OutputType, HTMLElement>,
-      hints: Record<HintType, HTMLElement>, clearInputsButton: HTMLElement,
+  inputs: Inputs,                                //
+      outputs: Record<OutputType, HTMLElement>,  //
+      hints: Record<HintType, HTMLElement>,      //
+      clearInputsButton: HTMLElement,            //
 }
 
 export interface Outputs {
-  outputs: Record<OutputType, string>, hints: Record<HintType, string>,
-      templates: Record<TemplateType, string>,
+  outputs: Record<OutputType, string|ConditionalOutput>,  //
+      hints: Record<HintType, string>,                    //
+      templates: Record<TemplateType, string>,            //
 }
 
 export interface Margin {
@@ -145,8 +175,7 @@ export interface Margin {
   right: number;
 }
 
-export interface ConditionalOutput {
-  containerName: string;
-  outputType: OutputType;
+export interface Conditional {
+  container: ConditionalContainer;
   generateOutput(): string;
 }
