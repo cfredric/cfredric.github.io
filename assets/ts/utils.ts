@@ -70,18 +70,13 @@ export function cumulativeSumByFields(
     data: readonly PaymentRecordWithMonth[],
     fields: readonly PaymentType[]): PaymentRecordWithMonth[] {
   const results = new Array<PaymentRecordWithMonth>(data.length + 1);
-  const record = {month: 0, data: {} as PaymentRecord};
-  for (const k of fields) {
-    record.data[k] = new Decimal(0);
-  }
-  results[0] = record;
+  results[0] = {
+    month: 0,
+    data: mkRecord(fields, () => new Decimal(0)),
+  };
   for (const [idx, datum] of data.entries()) {
-    const newData = {} as PaymentRecord;
-    for (const field of fields) {
-      newData[field] = datum.data[field].add(results[idx]!.data[field]);
-    }
     results[idx + 1] = {
-      data: newData,
+      data: mkRecord(fields, (f) => datum.data[f].add(results[idx]!.data[f])),
       month: datum.month,
     };
   }
@@ -391,12 +386,12 @@ export function toCapitalized(paymentType: PaymentType): string {
   }
 }
 
-// Creates a record with a default value for every key.
-export function defaultRecord<T extends string, V>(
-    ts: readonly T[], mkV: () => V): Record<T, V> {
+// Creates a record with a specific value for each key.
+export function mkRecord<T extends string, V>(
+    ts: readonly T[], mkV: (t: T) => V): Record<T, V> {
   const record = {} as Record<T, V>;
   for (const t of ts) {
-    record[t] = mkV();
+    record[t] = mkV(t);
   }
   return record;
 }
