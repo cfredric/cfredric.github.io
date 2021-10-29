@@ -211,10 +211,11 @@ function setContents(ctx: Context, elts: Elements): void {
 
 // Compute hint strings and set output strings.
 function computeContents(ctx: Context): Outputs {
-  const unconditionals = utils.emptyUnconditionals();
+  const unconditionals = utils.defaultRecord(outputTypes, () => '');
   const hints = computeAmountHints(ctx);
-  const templates = utils.emptyTemplates();
-  const hidables = utils.emptyHidableOutputs();
+  const templates = utils.defaultRecord(templateTypes, () => '');
+  const hidables =
+      utils.defaultRecord(hidableContainers, () => new HidableOutput);
   unconditionals['loanAmount'] =
       `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
 

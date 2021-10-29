@@ -2,8 +2,7 @@ import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
-import {HidableOutput} from './hidable_output';
-import {HidableContainer, hidableContainers, InputEntry, nonLoanPaymentTypes, OutputType, outputTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType, templateTypes} from './types';
+import {InputEntry, nonLoanPaymentTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes} from './types';
 
 const timeFormat = new Intl.DateTimeFormat();
 
@@ -392,40 +391,12 @@ export function toCapitalized(paymentType: PaymentType): string {
   }
 }
 
-// Creates empty unconditional outputs.
-export function emptyUnconditionals(): Record<OutputType, string> {
-  const record = {} as Record<OutputType, string>;
-  for (const o of outputTypes) {
-    record[o] = '';
+// Creates a record with a default value for every key.
+export function defaultRecord<T extends string, V>(
+    ts: readonly T[], mkV: () => V): Record<T, V> {
+  const record = {} as Record<T, V>;
+  for (const t of ts) {
+    record[t] = mkV();
   }
   return record;
-}
-
-// Creates empty conditionals.
-export function emptyHidableOutputs(): Record<HidableContainer, HidableOutput> {
-  const record = {} as Record<HidableContainer, HidableOutput>;
-  for (const c of hidableContainers) {
-    record[c] = new HidableOutput();
-  }
-  return record;
-}
-
-// Creates empty templates.
-export function emptyTemplates(): Record<TemplateType, string> {
-  const record: Record<TemplateType, string> = {} as
-      Record<TemplateType, string>;
-  for (const o of templateTypes) {
-    record[o] = '';
-  }
-  return record;
-}
-
-// Merges values in `parts` into `full`. Returns `full` for convenience.
-export function merge<K extends string, V>(
-    full: Record<K, V>, parts: Readonly<Partial<Record<K, V>>>,
-    ks: readonly K[]): Record<K, V> {
-  for (const k of ks) {
-    if (parts[k]) full[k] = parts[k]!;
-  }
-  return full;
 }

@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
 import Decimal from 'decimal.js';
+
 import {ContextInput} from './types';
 import * as utils from './utils';
 

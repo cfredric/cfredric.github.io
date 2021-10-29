@@ -4,6 +4,7 @@
 
 import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
+
 import * as utils from './utils';
 
 test('countSatisfying no matches', () => {
