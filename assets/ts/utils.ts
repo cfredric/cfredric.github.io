@@ -313,8 +313,8 @@ export function deleteCookie(name: string) {
 
 // Saves fields to the URL and cookies.
 export function saveFields(
-    urlParams: Map<HTMLInputElement, InputEntry>,
-    cookieValues: Map<HTMLInputElement, InputEntry>,
+    urlParams: Readonly<Map<HTMLInputElement, InputEntry>>,
+    cookieValues: Readonly<Map<HTMLInputElement, InputEntry>>,
     changed?: HTMLInputElement): void {
   const url = new URL(location.href);
   let urlChanged = false;
@@ -338,8 +338,8 @@ export function saveFields(
 
 // Clears out deprecated URL params and cookies.
 export function clearDeprecatedStorage(
-    urlParams: Map<HTMLInputElement, InputEntry>,
-    cookieValues: Map<HTMLInputElement, InputEntry>) {
+    urlParams: Readonly<Map<HTMLInputElement, InputEntry>>,
+    cookieValues: Readonly<Map<HTMLInputElement, InputEntry>>) {
   const url = new URL(location.href);
   let modified = false;
   for (const {name, deprecated} of urlParams.values())
