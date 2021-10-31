@@ -4,7 +4,7 @@ import {Decimal} from 'decimal.js';
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
 import {HidableOutput} from './hidable_output';
-import {Elements, hidableContainerMap, hidableContainers, HidableOutputType, HintType, hintTypes, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, outputTypes, paymentTypes, templateTypes,} from './types';
+import {Elements, hidableContainerMap, hidableContainers, HidableOutputType, HintType, hintTypes, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, outputTypes, PaymentRecordWithMonth, PaymentType, paymentTypes, templateTypes,} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -285,23 +285,21 @@ function computeContents(ctx: Context): Outputs {
                            loanPaymentTypes)
                        .toNumber())}`;
 
+    const makeTabler =
+        (data: readonly PaymentRecordWithMonth[], ts: readonly PaymentType[]):
+            () => HTMLTableElement => () => utils.makeTable(
+                ['Month', ...ts.map(utils.toCapitalized)],
+                data.map(
+                    d =>
+                        [utils.formatMonthNum(d.month, ctx.closingDate),
+                         ...ts.map(k => fmt.format(d.data[k].toNumber())),
+    ]));
     new ExpandableElement(
         utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
-        () => utils.makeTable(
-            ['Month'].concat(paymentTypes.map(utils.toCapitalized)),
-            schedule.map(
-                d => [utils.formatMonthNum(d.month, ctx.closingDate)].concat(
-                    paymentTypes.map(k => fmt.format(d.data[k].toNumber()))))));
+        makeTabler(schedule, paymentTypes));
     new ExpandableElement(
         utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
-        () => utils.makeTable(
-            ['Month'].concat(loanPaymentTypes.map(utils.toCapitalized)),
-            cumulativeSums.map(
-                d =>
-                    [utils.formatMonthNum(d.month, ctx.closingDate),
-                     fmt.format(d.data.principal.toNumber()),
-                     fmt.format(d.data.interest.toNumber()),
-    ])));
+        makeTabler(cumulativeSums, loanPaymentTypes));
   } else {
     viz.clearCumulativeChart();
     unconditionals['lifetimePayment'] = `${fmt.format(0)}`;
