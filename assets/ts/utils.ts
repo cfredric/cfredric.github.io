@@ -39,6 +39,14 @@ export function getHtmlElt(id: string): HTMLElement {
   return elt;
 }
 
+export function setClassVisibility(className: string, visible: boolean) {
+  const value = visible ? '' : 'none';
+  for (const elt of Array.from(document.getElementsByClassName(className))) {
+    if (!(elt instanceof HTMLElement)) continue;
+    elt.style.display = value;
+  }
+}
+
 // Counts the number of elements of `data` which satisfy `predicate`.
 export function countSatisfying<T>(
     data: readonly T[], predicate: (t: T) => boolean): number {

@@ -217,6 +217,8 @@ function computeContents(ctx: Context): Outputs {
   const hidables = utils.mkRecord(hidableContainers, () => new HidableOutput());
 
   viz.clearTables()
+  const showPrepaymentComparison = ctx.prepayment.gt(0);
+  utils.setClassVisibility('prepay', showPrepaymentComparison);
 
   unconditionals['loanAmount'] =
       `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
@@ -358,16 +360,7 @@ function computeContents(ctx: Context): Outputs {
   }
 
   // Show the comparison between prepayment and investment, if relevant.
-  if (ctx.prepayment.eq(0)) {
-    for (const elt of Array.from(document.getElementsByClassName('prepay'))) {
-      if (!(elt instanceof HTMLElement)) continue;
-      elt.style.display = 'none';
-    }
-  } else {
-    for (const elt of Array.from(document.getElementsByClassName('prepay'))) {
-      if (!(elt instanceof HTMLElement)) continue;
-      elt.style.display = '';
-    }
+  if (showPrepaymentComparison) {
     templates['mortgage-term'] = utils.formatMonthNum(ctx.n);
     templates['prepay-amount'] = fmt.format(ctx.prepayment.toNumber());
     unconditionals['prepayComparison'] = `${
