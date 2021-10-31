@@ -37,6 +37,20 @@ function bisectMonth(
   return b && month - a.month > b.month - month ? b : a;
 }
 
+export function clearCharts() {
+  document.querySelector('#schedule_viz > svg:first-of-type')?.remove();
+  clearCumulativeChart();
+}
+
+export function clearCumulativeChart() {
+  document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
+}
+
+export function clearTables() {
+  utils.removeChildren(utils.getHtmlElt('schedule_tab'));
+  utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
+}
+
 // Builds the chart of monthly payments over time.
 export function buildPaymentScheduleChart(
     ctx: Context,

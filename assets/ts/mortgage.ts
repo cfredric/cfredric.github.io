@@ -214,7 +214,10 @@ function computeContents(ctx: Context): Outputs {
   const unconditionals = utils.mkRecord(outputTypes, () => '');
   const hints = computeAmountHints(ctx);
   const templates = utils.mkRecord(templateTypes, () => '');
-  const hidables = utils.mkRecord(hidableContainers, () => new HidableOutput);
+  const hidables = utils.mkRecord(hidableContainers, () => new HidableOutput());
+
+  viz.clearTables()
+
   unconditionals['loanAmount'] =
       `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
 
@@ -230,7 +233,7 @@ function computeContents(ctx: Context): Outputs {
                      .toNumber())}`;
 
   if (ctx.interestRate.eq(0) && !ctx.downPayment.eq(ctx.price)) {
-    clearMonthlyPaymentOutputs();
+    viz.clearCharts();
     return {
       hints,
       templates,
@@ -280,7 +283,6 @@ function computeContents(ctx: Context): Outputs {
                            loanPaymentTypes)
                        .toNumber())}`;
 
-    utils.removeChildren(utils.getHtmlElt('schedule_tab'));
     new ExpandableElement(
         utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
         () => utils.makeTable(
@@ -288,7 +290,6 @@ function computeContents(ctx: Context): Outputs {
             schedule.map(
                 d => [utils.formatMonthNum(d.month, ctx.closingDate)].concat(
                     paymentTypes.map(k => fmt.format(d.data[k].toNumber()))))));
-    utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
     new ExpandableElement(
         utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
         () => utils.makeTable(
@@ -300,8 +301,7 @@ function computeContents(ctx: Context): Outputs {
                      fmt.format(d.data.interest.toNumber()),
     ])));
   } else {
-    document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
-    utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
+    viz.clearCumulativeChart();
     unconditionals['lifetimePayment'] = `${fmt.format(0)}`;
   }
 
@@ -418,14 +418,6 @@ function computeAmountHints(ctx: Context): Record<HintType, string> {
     'stocksReturnRate':
         `(${hundredthsPctFmt.format(ctx.stocksReturnRate.toNumber())})`,
   };
-}
-
-// Clears output elements associated with monthly payments.
-function clearMonthlyPaymentOutputs(): void {
-  document.querySelector('#schedule_viz > svg:first-of-type')?.remove();
-  utils.removeChildren(utils.getHtmlElt('schedule_tab'));
-  document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
-  utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
 }
 
 // Reads fields from the URL and from cookies, and populates the UI
