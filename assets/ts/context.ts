@@ -42,6 +42,11 @@ export class Context {
 
   readonly n: number;
 
+  readonly hasLoan: boolean;
+  readonly m: Decimal;
+  readonly monthlyLoanPayment: Decimal;
+  readonly monthlyNonLoanPayment: Decimal;
+
   constructor(input: ContextInput) {
     this.price = Decimal.max(0, input.price);
     this.homeValue =
@@ -112,5 +117,22 @@ export class Context {
     this.stocksReturnRate = input.stocksReturnRate ?
         input.stocksReturnRate.div(100) :
         new Decimal(0.07);
+
+    this.hasLoan = !this.interestRate.eq(0) || this.downPayment.eq(this.price);
+    if (this.hasLoan) {
+      this.m = this.downPayment.eq(this.price) ?
+          new Decimal(0) :
+          utils.computeAmortizedPaymentAmount(
+              this.price.sub(this.downPayment),
+              this.interestRate.div(12),
+              this.n,
+          );
+      this.monthlyLoanPayment = this.m.add(this.prepayment);
+    } else {
+      this.m = new Decimal(0);
+      this.monthlyLoanPayment = new Decimal(0);
+    }
+    this.monthlyNonLoanPayment =
+        Decimal.sum(this.hoa, this.propertyTax, this.homeownersInsurance);
   }
 }
