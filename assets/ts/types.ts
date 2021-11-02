@@ -171,7 +171,6 @@ export interface Elements {
 export interface Outputs {
   unconditionals: Record<OutputType, string>,             //
       hidables: Record<HidableContainer, HidableOutput>,  //
-      hints: Record<HintType, string>,                    //
       templates: Record<TemplateType, string>,            //
 }
 

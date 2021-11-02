@@ -118,7 +118,8 @@ export class Context {
         input.stocksReturnRate.div(100) :
         new Decimal(0.07);
 
-    this.showMonthlySchedule = !this.interestRate.eq(0) || this.downPayment.eq(this.price);
+    this.showMonthlySchedule =
+        !this.interestRate.eq(0) || this.downPayment.eq(this.price);
     if (this.showMonthlySchedule) {
       this.m = this.downPayment.eq(this.price) ?
           new Decimal(0) :
