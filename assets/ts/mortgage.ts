@@ -284,10 +284,8 @@ function computeContents(ctx: Context): Outputs {
     unconditionals['lifetimePayment'] = `${fmt.format(0)}`;
   }
 
-  let templates;
   // Show the comparison between prepayment and investment, if relevant.
   if (showPrepaymentComparison) {
-    templates = computeTemplates(ctx);
     unconditionals['prepayComparison'] = `${
         fmt.format(utils
                        .computeStockAssets(
@@ -305,14 +303,12 @@ function computeContents(ctx: Context): Outputs {
                 .computeStockAssets(
                     new Array(ctx.n).fill(ctx.prepayment), ctx.stocksReturnRate)
                 .toNumber())}`;
-  } else {
-    templates = utils.mkRecord(templateTypes, () => '');
   }
 
   return {
     hints,
     unconditionals,
-    templates,
+    templates: computeTemplates(ctx),
     hidables: computeHidables(ctx, schedule, cumulativeSums),
   };
 }
@@ -422,10 +418,13 @@ function computeHidables(
 }
 
 function computeTemplates(ctx: Context): Record<TemplateType, string> {
-  return {
-    'mortgage-term': utils.formatMonthNum(ctx.n),
-    'prepay-amount': fmt.format(ctx.prepayment.toNumber()),
-  };
+  if (ctx.prepayment.gt(0)) {
+    return {
+      'mortgage-term': utils.formatMonthNum(ctx.n),
+      'prepay-amount': fmt.format(ctx.prepayment.toNumber()),
+    };
+  }
+  return utils.mkRecord(templateTypes, () => '');
 }
 
 // Updates the "hints"/previews displayed alongside the input fields.
