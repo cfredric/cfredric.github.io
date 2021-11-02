@@ -4,7 +4,7 @@ import {Decimal} from 'decimal.js';
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
 import {HidableOutput} from './hidable_output';
-import {Elements, HidableContainer, hidableContainerMap, hidableContainers, HidableOutputType, HintType, hintTypes, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, outputTypes, PaymentRecordWithMonth, PaymentType, paymentTypes, templateTypes,} from './types';
+import {Elements, HidableContainer, hidableContainerMap, hidableContainers, HidableOutputType, HintType, hintTypes, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, outputTypes, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType, templateTypes,} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -213,7 +213,6 @@ function setContents(ctx: Context, elts: Elements): void {
 function computeContents(ctx: Context): Outputs {
   const unconditionals = utils.mkRecord(outputTypes, () => '');
   const hints = computeAmountHints(ctx);
-  const templates = utils.mkRecord(templateTypes, () => '');
 
   viz.clearTables()
   const showPrepaymentComparison = ctx.prepayment.gt(0);
@@ -237,8 +236,8 @@ function computeContents(ctx: Context): Outputs {
     viz.clearCharts();
     return {
       hints,
-      templates,
       unconditionals,
+      templates: utils.mkRecord(templateTypes, () => ''),
       hidables: utils.mkRecord(hidableContainers, () => new HidableOutput()),
     };
   }
@@ -285,10 +284,10 @@ function computeContents(ctx: Context): Outputs {
     unconditionals['lifetimePayment'] = `${fmt.format(0)}`;
   }
 
+  let templates;
   // Show the comparison between prepayment and investment, if relevant.
   if (showPrepaymentComparison) {
-    templates['mortgage-term'] = utils.formatMonthNum(ctx.n);
-    templates['prepay-amount'] = fmt.format(ctx.prepayment.toNumber());
+    templates = computeTemplates(ctx);
     unconditionals['prepayComparison'] = `${
         fmt.format(utils
                        .computeStockAssets(
@@ -306,6 +305,8 @@ function computeContents(ctx: Context): Outputs {
                 .computeStockAssets(
                     new Array(ctx.n).fill(ctx.prepayment), ctx.stocksReturnRate)
                 .toNumber())}`;
+  } else {
+    templates = utils.mkRecord(templateTypes, () => '');
   }
 
   return {
@@ -417,6 +418,13 @@ function computeHidables(
     ['total-loan-owed-div']: totalLoanOwed,
     ['remaining-equity-to-pay-for-div']: remainingEquityToPayFor,
     ['debt-to-income-ratio-div']: debtToIncomeRatio,
+  };
+}
+
+function computeTemplates(ctx: Context): Record<TemplateType, string> {
+  return {
+    'mortgage-term': utils.formatMonthNum(ctx.n),
+    'prepay-amount': fmt.format(ctx.prepayment.toNumber()),
   };
 }
 
