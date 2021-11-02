@@ -232,7 +232,7 @@ function computeContents(ctx: Context): Outputs {
                          )
                      .toNumber())}`;
 
-  if (!ctx.hasLoan) {
+  if (!ctx.showMonthlySchedule) {
     viz.clearCharts();
     return {
       hints,
