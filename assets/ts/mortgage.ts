@@ -4,7 +4,7 @@ import {Decimal} from 'decimal.js';
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
 import {HidableOutput} from './hidable_output';
-import {Elements, HidableContainer, hidableContainerMap, hidableContainers, HidableOutputType, HintType, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, outputTypes, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType, templateTypes,} from './types';
+import {Elements, HidableContainer, hidableContainerMap, hidableContainers, HidableOutputType, HintType, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, outputTypes, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType, templateTypes,} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -191,7 +191,7 @@ function attachListeners(
 
 // Set the contents of all the outputs based on the `ctx`.
 function setContents(ctx: Context, elts: Elements): void {
-  const {unconditionals, hidables} = computeContents(ctx);
+  const {unconditionals, schedules} = computeContents(ctx);
 
   for (const [h, v] of Object.entries(computeAmountHints(ctx))) {
     elts.hints[h as HintType].innerText = v;
@@ -199,10 +199,10 @@ function setContents(ctx: Context, elts: Elements): void {
   for (const o of outputTypes) {
     elts.outputs[o].innerText = unconditionals[o];
   }
-  for (const hc of hidableContainers) {
-    const ho = hidables[hc];
-    ho.display(hc);
-    elts.hidables[hidableContainerMap[hc]].innerText = ho.output();
+  for (const [k, v] of Object.entries(computeHidables(ctx, schedules))) {
+    const hc = k as HidableContainer;
+    v.display(hc);
+    elts.hidables[hidableContainerMap[hc]].innerText = v.output();
   }
   for (const [t, v] of Object.entries(computeTemplates(ctx))) {
     utils.fillTemplateElts(t as TemplateType, v);
@@ -233,10 +233,7 @@ function computeContents(ctx: Context): Outputs {
 
   if (!ctx.showMonthlySchedule) {
     viz.clearCharts();
-    return {
-      unconditionals,
-      hidables: utils.mkRecord(hidableContainers, () => new HidableOutput()),
-    };
+    return {unconditionals};
   }
 
   unconditionals['principalAndInterest'] =
@@ -245,21 +242,21 @@ function computeContents(ctx: Context): Outputs {
   unconditionals['monthlyPaymentAmount'] = `${
       fmt.format(
           ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment).toNumber())}`;
-  const schedule = utils.calculatePaymentSchedule(ctx, ctx.monthlyLoanPayment);
-  viz.buildPaymentScheduleChart(ctx, schedule, fmt, paymentTypes);
-  const cumulativeSums = utils.cumulativeSumByFields(schedule, paymentTypes);
+  const pointwise = utils.calculatePaymentSchedule(ctx, ctx.monthlyLoanPayment);
+  viz.buildPaymentScheduleChart(ctx, pointwise, fmt, paymentTypes);
+  const cumulative = utils.cumulativeSumByFields(pointwise, paymentTypes);
   if (!ctx.m.eq(0)) {
-    viz.buildCumulativeChart(ctx, cumulativeSums, fmt, loanPaymentTypes);
+    viz.buildCumulativeChart(ctx, cumulative, fmt, loanPaymentTypes);
     unconditionals['lifetimeOfLoan'] = `${
         utils.formatMonthNum(
-            utils.countSatisfying(schedule, m => m.data.principal.gt(0)),
+            utils.countSatisfying(pointwise, m => m.data.principal.gt(0)),
             ctx.closingDate)}`
     unconditionals['lifetimePayment'] = `${
-        fmt.format(utils
-                       .sumOfKeys(
-                           cumulativeSums[cumulativeSums.length - 1]!.data,
-                           loanPaymentTypes)
-                       .toNumber())}`;
+        fmt.format(
+            utils
+                .sumOfKeys(
+                    cumulative[cumulative.length - 1]!.data, loanPaymentTypes)
+                .toNumber())}`;
 
     const makeTabler =
         (data: readonly PaymentRecordWithMonth[], ts: readonly PaymentType[]):
@@ -272,10 +269,10 @@ function computeContents(ctx: Context): Outputs {
     ]));
     new ExpandableElement(
         utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
-        makeTabler(schedule, paymentTypes));
+        makeTabler(pointwise, paymentTypes));
     new ExpandableElement(
         utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
-        makeTabler(cumulativeSums, loanPaymentTypes));
+        makeTabler(cumulative, loanPaymentTypes));
   } else {
     viz.clearCumulativeChart();
     unconditionals['lifetimePayment'] = `${fmt.format(0)}`;
@@ -286,7 +283,7 @@ function computeContents(ctx: Context): Outputs {
     unconditionals['prepayComparison'] = `${
         fmt.format(utils
                        .computeStockAssets(
-                           schedule
+                           pointwise
                                .map(
                                    m => ctx.monthlyLoanPayment.sub(Decimal.sum(
                                        m.data.interest, m.data.principal)))
@@ -304,14 +301,15 @@ function computeContents(ctx: Context): Outputs {
 
   return {
     unconditionals,
-    hidables: computeHidables(ctx, schedule, cumulativeSums),
+    schedules: {pointwise, cumulative},
   };
 }
 
-function computeHidables(
-    ctx: Context, schedule: readonly PaymentRecordWithMonth[],
-    cumulativeSums: readonly PaymentRecordWithMonth[]):
+function computeHidables(ctx: Context, schedules?: Schedules):
     Record<HidableContainer, HidableOutput> {
+  if (!schedules)
+    return utils.mkRecord(hidableContainers, () => new HidableOutput());
+  const {pointwise, cumulative} = schedules;
   let monthlyPaymentPmi;
   let monthsOfPmi;
   if (ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct)) {
@@ -324,7 +322,7 @@ function computeHidables(
                            .toNumber())}`,
     );
     const pmiMonths =
-        utils.countSatisfying(schedule, payment => !payment.data.pmi.eq(0));
+        utils.countSatisfying(pointwise, payment => !payment.data.pmi.eq(0));
     monthsOfPmi = new HidableOutput(`${utils.formatMonthNum(pmiMonths)} (${
         fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`);
   } else {
@@ -340,7 +338,7 @@ function computeHidables(
                 ctx.totalAssets.sub(
                     (ctx.alreadyClosed ? new Decimal(0) :
                                          ctx.downPayment.add(ctx.closingCost))),
-                schedule.slice(ctx.paymentsAlreadyMade).map(d => d.data),
+                pointwise.slice(ctx.paymentsAlreadyMade).map(d => d.data),
                 ctx.monthlyDebt),
             utils.maxNonEmptyDate(
                 ctx.closingDate, d3.timeMonth.floor(new Date())))}`);
@@ -355,22 +353,22 @@ function computeHidables(
   if (!!ctx.paymentsAlreadyMade || ctx.alreadyClosed) {
     const absoluteEquityOwned =
         (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
-            .add(cumulativeSums[ctx.paymentsAlreadyMade]!.data.principal);
+            .add(cumulative[ctx.paymentsAlreadyMade]!.data.principal);
 
     totalPaidSoFar = new HidableOutput(`${
-        fmt.format((ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
-                                        new Decimal(0))
-                       .add(utils.sumOfKeys(
-                           cumulativeSums[ctx.paymentsAlreadyMade]!.data,
-                           paymentTypes))
-                       .toNumber())}`);
+        fmt.format(
+            (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
+                                 new Decimal(0))
+                .add(utils.sumOfKeys(
+                    cumulative[ctx.paymentsAlreadyMade]!.data, paymentTypes))
+                .toNumber())}`);
     equityOwnedSoFar = new HidableOutput(
         `${pctFmt.format(absoluteEquityOwned.div(ctx.homeValue).toNumber())} (${
             fmt.format(absoluteEquityOwned.toNumber())})`);
     const totalPrincipalAndInterestPaid = utils.sumOfKeys(
-        cumulativeSums[ctx.paymentsAlreadyMade]!.data, loanPaymentTypes);
+        cumulative[ctx.paymentsAlreadyMade]!.data, loanPaymentTypes);
     const totalPrincipalAndInterestToPay = utils.sumOfKeys(
-        cumulativeSums[cumulativeSums.length - 1]!.data, loanPaymentTypes);
+        cumulative[cumulative.length - 1]!.data, loanPaymentTypes);
     totalLoanOwed = new HidableOutput(`${
         fmt.format(
             totalPrincipalAndInterestToPay.sub(totalPrincipalAndInterestPaid)

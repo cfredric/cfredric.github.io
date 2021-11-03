@@ -1,7 +1,5 @@
 import {Decimal} from 'decimal.js';
 
-import {HidableOutput} from './hidable_output';
-
 export const paymentTypes = [
   'principal',
   'interest',
@@ -169,8 +167,12 @@ export interface Elements {
 }
 
 export interface Outputs {
-  unconditionals: Record<OutputType, string>,             //
-      hidables: Record<HidableContainer, HidableOutput>,  //
+  unconditionals: Record<OutputType, string>, schedules?: Schedules,
+}
+
+export interface Schedules {
+  pointwise: readonly PaymentRecordWithMonth[],
+      cumulative: readonly PaymentRecordWithMonth[],
 }
 
 export interface Margin {
