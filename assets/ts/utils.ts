@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
-import {InputEntry, nonLoanPaymentTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes} from './types';
+import {InputEntry, nonLoanPaymentTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType} from './types';
 
 const timeFormat = new Intl.DateTimeFormat();
 
@@ -208,7 +208,7 @@ export function computeStockAssets(
   return assets;
 }
 
-export function fillTemplateElts(className: string, value: string) {
+export function fillTemplateElts(className: TemplateType, value: string) {
   for (const elt of Array.from(document.getElementsByClassName(className))) {
     if (!(elt instanceof HTMLElement)) continue;
     elt.innerText = value;

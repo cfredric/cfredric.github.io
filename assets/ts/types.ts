@@ -171,7 +171,6 @@ export interface Elements {
 export interface Outputs {
   unconditionals: Record<OutputType, string>,             //
       hidables: Record<HidableContainer, HidableOutput>,  //
-      templates: Record<TemplateType, string>,            //
 }
 
 export interface Margin {

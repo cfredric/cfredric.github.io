@@ -191,7 +191,7 @@ function attachListeners(
 
 // Set the contents of all the outputs based on the `ctx`.
 function setContents(ctx: Context, elts: Elements): void {
-  const {unconditionals, templates, hidables} = computeContents(ctx);
+  const {unconditionals, hidables} = computeContents(ctx);
 
   for (const [h, v] of Object.entries(computeAmountHints(ctx))) {
     elts.hints[h as HintType].innerText = v;
@@ -204,8 +204,8 @@ function setContents(ctx: Context, elts: Elements): void {
     ho.display(hc);
     elts.hidables[hidableContainerMap[hc]].innerText = ho.output();
   }
-  for (const t of templateTypes) {
-    utils.fillTemplateElts(t, templates[t]);
+  for (const [t, v] of Object.entries(computeTemplates(ctx))) {
+    utils.fillTemplateElts(t as TemplateType, v);
   }
 }
 
@@ -235,7 +235,6 @@ function computeContents(ctx: Context): Outputs {
     viz.clearCharts();
     return {
       unconditionals,
-      templates: utils.mkRecord(templateTypes, () => ''),
       hidables: utils.mkRecord(hidableContainers, () => new HidableOutput()),
     };
   }
@@ -305,7 +304,6 @@ function computeContents(ctx: Context): Outputs {
 
   return {
     unconditionals,
-    templates: computeTemplates(ctx),
     hidables: computeHidables(ctx, schedule, cumulativeSums),
   };
 }
