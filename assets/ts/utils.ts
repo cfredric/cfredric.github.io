@@ -2,7 +2,8 @@ import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
-import {InputEntry, nonLoanPaymentTypes, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType} from './types';
+import {HidableOutput} from './hidable_output';
+import {HidableContainer, hidableContainers, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType, templateTypes} from './types';
 
 const timeFormat = new Intl.DateTimeFormat();
 
@@ -402,4 +403,249 @@ export function mkRecord<K extends string, V>(
     record[k] = v(k);
   }
   return record;
+}
+
+export function computeSchedules(ctx: Context): Schedules|undefined {
+  if (!ctx.showMonthlySchedule) return undefined;
+
+  const pointwise = calculatePaymentSchedule(ctx);
+  return {
+    pointwise,
+    cumulative: cumulativeSumByFields(pointwise, paymentTypes),
+  };
+}
+
+// Compute hint strings and set output strings.
+export function computeContents(
+    ctx: Context, fmt: Intl.NumberFormat,
+    schedules: Schedules|undefined): Record<OutputType, string> {
+  const showPrepaymentComparison = ctx.prepayment.gt(0);
+  setClassVisibility('prepay', showPrepaymentComparison);
+
+  const loanAmount = `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
+
+  const purchasePayment = `${
+      fmt.format(Decimal
+                     .sum(
+                         ctx.downPayment,
+                         ctx.closingCost,
+                         ctx.price.sub(ctx.downPayment)
+                             .mul(ctx.pointsPurchased)
+                             .div(100),
+                         )
+                     .toNumber())}`;
+
+  if (!schedules) {
+    return {
+      loanAmount,
+      purchasePayment,
+      lifetimeOfLoan: '',
+      lifetimePayment: '',
+      monthlyPaymentAmount: '',
+      prepayComparison: '',
+      principalAndInterest: '',
+      stocksComparison: '',
+    };
+  }
+
+  const {pointwise, cumulative} = schedules;
+
+  const principalAndInterest =
+      `${fmt.format(ctx.monthlyLoanPayment.toNumber())}`;
+
+  const monthlyPaymentAmount = `${
+      fmt.format(
+          ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment).toNumber())}`;
+  let lifetimeOfLoan;
+  let lifetimePayment;
+  if (!ctx.m.eq(0)) {
+    lifetimeOfLoan = `${
+        formatMonthNum(
+            countSatisfying(pointwise, m => m.data.principal.gt(0)),
+            ctx.closingDate)}`
+    lifetimePayment = `${
+        fmt.format(
+
+            sumOfKeys(cumulative[cumulative.length - 1]!.data, loanPaymentTypes)
+                .toNumber())}`;
+  } else {
+    lifetimePayment = `${fmt.format(0)}`;
+    lifetimeOfLoan = '';
+  }
+
+  // Show the comparison between prepayment and investment, if relevant.
+  let prepayComparison;
+  let stocksComparison;
+  if (showPrepaymentComparison) {
+    prepayComparison = `${
+        fmt.format(computeStockAssets(
+                       pointwise
+                           .map(
+                               m => ctx.monthlyLoanPayment.sub(Decimal.sum(
+                                   m.data.interest, m.data.principal)))
+                           .filter(x => !x.eq(0)),
+                       ctx.stocksReturnRate)
+                       .toNumber())}`;
+
+    stocksComparison = `${
+        fmt.format(
+            computeStockAssets(
+                new Array(ctx.n).fill(ctx.prepayment), ctx.stocksReturnRate)
+                .toNumber())}`;
+  } else {
+    prepayComparison = '';
+    stocksComparison = '';
+  }
+
+  return {
+    loanAmount,
+    purchasePayment,
+    principalAndInterest,
+    monthlyPaymentAmount,
+    lifetimeOfLoan,
+    lifetimePayment,
+    prepayComparison,
+    stocksComparison,
+  };
+}
+
+export function computeHidables(
+    ctx: Context, fmt: Intl.NumberFormat, pctFmt: Intl.NumberFormat,
+    schedules: Schedules|undefined): Record<HidableContainer, HidableOutput> {
+  if (!schedules) return mkRecord(hidableContainers, () => new HidableOutput());
+  const {pointwise, cumulative} = schedules;
+  let monthlyPaymentPmi;
+  let monthsOfPmi;
+  if (ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct)) {
+    monthlyPaymentPmi = new HidableOutput(
+        `${
+            fmt.format(Decimal
+                           .sum(
+                               ctx.monthlyLoanPayment,
+                               ctx.monthlyNonLoanPayment, ctx.pmi)
+                           .toNumber())}`,
+    );
+    const pmiMonths =
+        countSatisfying(pointwise, payment => !payment.data.pmi.eq(0));
+    monthsOfPmi = new HidableOutput(`${formatMonthNum(pmiMonths)} (${
+        fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`);
+  } else {
+    monthlyPaymentPmi = new HidableOutput();
+    monthsOfPmi = new HidableOutput();
+  }
+
+  let firedTomorrowCountdown;
+  if (!ctx.totalAssets.eq(0)) {
+    firedTomorrowCountdown = new HidableOutput(`${
+        formatMonthNum(
+            countBurndownMonths(
+                ctx.totalAssets.sub(
+                    (ctx.alreadyClosed ? new Decimal(0) :
+                                         ctx.downPayment.add(ctx.closingCost))),
+                pointwise.slice(ctx.paymentsAlreadyMade).map(d => d.data),
+                ctx.monthlyDebt),
+            maxNonEmptyDate(
+                ctx.closingDate, d3.timeMonth.floor(new Date())))}`);
+  } else {
+    firedTomorrowCountdown = new HidableOutput();
+  }
+
+  let totalPaidSoFar;
+  let equityOwnedSoFar;
+  let totalLoanOwed;
+  let remainingEquityToPayFor;
+  if (!!ctx.paymentsAlreadyMade || ctx.alreadyClosed) {
+    const absoluteEquityOwned =
+        (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
+            .add(cumulative[ctx.paymentsAlreadyMade]!.data.principal);
+
+    totalPaidSoFar = new HidableOutput(`${
+        fmt.format(
+            (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
+                                 new Decimal(0))
+                .add(sumOfKeys(
+                    cumulative[ctx.paymentsAlreadyMade]!.data, paymentTypes))
+                .toNumber())}`);
+    equityOwnedSoFar = new HidableOutput(
+        `${pctFmt.format(absoluteEquityOwned.div(ctx.homeValue).toNumber())} (${
+            fmt.format(absoluteEquityOwned.toNumber())})`);
+    const totalPrincipalAndInterestPaid =
+        sumOfKeys(cumulative[ctx.paymentsAlreadyMade]!.data, loanPaymentTypes);
+    const totalPrincipalAndInterestToPay =
+        sumOfKeys(cumulative[cumulative.length - 1]!.data, loanPaymentTypes);
+    totalLoanOwed = new HidableOutput(`${
+        fmt.format(
+            totalPrincipalAndInterestToPay.sub(totalPrincipalAndInterestPaid)
+                .toNumber())}`);
+    remainingEquityToPayFor = new HidableOutput(
+        `${fmt.format(ctx.price.sub(absoluteEquityOwned).toNumber())}`);
+  } else {
+    totalPaidSoFar = new HidableOutput();
+    equityOwnedSoFar = new HidableOutput();
+    totalLoanOwed = new HidableOutput();
+    remainingEquityToPayFor = new HidableOutput();
+  }
+
+  let debtToIncomeRatio;
+  if (ctx.annualIncome.gt(0)) {
+    debtToIncomeRatio = new HidableOutput(
+        `${
+            pctFmt.format(Decimal
+                              .sum(
+                                  ctx.monthlyDebt, ctx.monthlyLoanPayment,
+                                  ctx.monthlyNonLoanPayment, ctx.pmi)
+                              .div(ctx.annualIncome)
+                              .mul(12)
+                              .toNumber())}`,
+    );
+  } else {
+    debtToIncomeRatio = new HidableOutput();
+  }
+
+  return {
+    ['monthly-payment-pmi-div']: monthlyPaymentPmi,
+    ['months-of-pmi-div']: monthsOfPmi,
+    ['fired-tomorrow-countdown-div']: firedTomorrowCountdown,
+    ['total-paid-so-far-div']: totalPaidSoFar,
+    ['equity-owned-so-far-div']: equityOwnedSoFar,
+    ['total-loan-owed-div']: totalLoanOwed,
+    ['remaining-equity-to-pay-for-div']: remainingEquityToPayFor,
+    ['debt-to-income-ratio-div']: debtToIncomeRatio,
+  };
+}
+
+export function computeTemplates(
+    ctx: Context, fmt: Intl.NumberFormat): Record<TemplateType, string> {
+  if (ctx.prepayment.gt(0)) {
+    return {
+      'mortgage-term': formatMonthNum(ctx.n),
+      'prepay-amount': fmt.format(ctx.prepayment.toNumber()),
+    };
+  }
+  return mkRecord(templateTypes, () => '');
+}
+
+// Updates the "hints"/previews displayed alongside the input fields.
+export function computeAmountHints(
+    ctx: Context, fmt: Intl.NumberFormat, pctFmt: Intl.NumberFormat,
+    hundredthsPctFmt: Intl.NumberFormat): Record<HintType, string> {
+  return {
+    'homeValue': `(${fmt.format(ctx.homeValue.toNumber())})`,
+    'downPayment': `(${fmt.format(ctx.downPayment.toNumber())})`,
+    'interestRate': `(${hundredthsPctFmt.format(ctx.interestRate.toNumber())})`,
+    'pointValue': `(${hundredthsPctFmt.format(ctx.pointValue.toNumber())})`,
+    'pmiEquityPercentage': `(${pctFmt.format(ctx.pmiEquityPct.toNumber())})`,
+    'propertyTax': `(Effective ${
+        fmt.format(ctx.propertyTax.mul(12)
+                       .div(ctx.homeValue)
+                       .mul(1000)
+                       .toNumber())} / $1000; ${
+        fmt.format(ctx.propertyTax.toNumber())}/mo)`,
+    'residentialExemption':
+        `(${fmt.format(ctx.residentialExemptionPerMonth.toNumber())}/mo)`,
+    'mortgageTerm': `(${ctx.mortgageTerm} yrs)`,
+    'paymentsAlreadyMade': `(${ctx.paymentsAlreadyMade} payments)`,
+    'stocksReturnRate':
+        `(${hundredthsPctFmt.format(ctx.stocksReturnRate.toNumber())})`,
+  };
 }

@@ -1,10 +1,8 @@
 import * as d3 from 'd3';
-import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
-import {HidableOutput} from './hidable_output';
-import {Elements, HidableContainer, hidableContainerMap, hidableContainers, HidableOutputType, HintType, InputEntry, Inputs, loanPaymentTypes, OutputType, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType, templateTypes,} from './types';
+import {Elements, HidableContainer, hidableContainerMap, HidableOutputType, HintType, InputEntry, Inputs, loanPaymentTypes, OutputType, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -191,129 +189,26 @@ function attachListeners(
 
 // Set the contents of all the outputs based on the `ctx`.
 function setContents(ctx: Context, elts: Elements): void {
-  const schedules = computeSchedules(ctx);
+  const schedules = utils.computeSchedules(ctx);
 
-  for (const [h, v] of Object.entries(computeAmountHints(ctx))) {
+  for (const [h, v] of Object.entries(
+           utils.computeAmountHints(ctx, fmt, pctFmt, hundredthsPctFmt))) {
     elts.hints[h as HintType].innerText = v;
   }
-  for (const [o, v] of Object.entries(computeContents(ctx, schedules))) {
+  for (const [o, v] of Object.entries(
+           utils.computeContents(ctx, fmt, schedules))) {
     elts.outputs[o as OutputType].innerText = v;
   }
-  for (const [k, v] of Object.entries(computeHidables(ctx, schedules))) {
+  for (const [k, v] of Object.entries(
+           utils.computeHidables(ctx, fmt, pctFmt, schedules))) {
     const hc = k as HidableContainer;
     v.display(hc);
     elts.hidables[hidableContainerMap[hc]].innerText = v.output();
   }
-  for (const [t, v] of Object.entries(computeTemplates(ctx))) {
+  for (const [t, v] of Object.entries(utils.computeTemplates(ctx, fmt))) {
     utils.fillTemplateElts(t as TemplateType, v);
   }
   setChartsAndButtonsContent(ctx, schedules);
-}
-
-function computeSchedules(ctx: Context): Schedules|undefined {
-  if (!ctx.showMonthlySchedule) return undefined;
-
-  const pointwise = utils.calculatePaymentSchedule(ctx);
-  return {
-    pointwise,
-    cumulative: utils.cumulativeSumByFields(pointwise, paymentTypes),
-  };
-}
-
-// Compute hint strings and set output strings.
-function computeContents(
-    ctx: Context, schedules: Schedules|undefined): Record<OutputType, string> {
-  const showPrepaymentComparison = ctx.prepayment.gt(0);
-  utils.setClassVisibility('prepay', showPrepaymentComparison);
-
-  const loanAmount = `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
-
-  const purchasePayment = `${
-      fmt.format(Decimal
-                     .sum(
-                         ctx.downPayment,
-                         ctx.closingCost,
-                         ctx.price.sub(ctx.downPayment)
-                             .mul(ctx.pointsPurchased)
-                             .div(100),
-                         )
-                     .toNumber())}`;
-
-  if (!schedules) {
-    return {
-      loanAmount,
-      purchasePayment,
-      lifetimeOfLoan: '',
-      lifetimePayment: '',
-      monthlyPaymentAmount: '',
-      prepayComparison: '',
-      principalAndInterest: '',
-      stocksComparison: '',
-    };
-  }
-
-  const {pointwise, cumulative} = schedules;
-
-  const principalAndInterest =
-      `${fmt.format(ctx.monthlyLoanPayment.toNumber())}`;
-
-  const monthlyPaymentAmount = `${
-      fmt.format(
-          ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment).toNumber())}`;
-  let lifetimeOfLoan;
-  let lifetimePayment;
-  if (!ctx.m.eq(0)) {
-    lifetimeOfLoan = `${
-        utils.formatMonthNum(
-            utils.countSatisfying(pointwise, m => m.data.principal.gt(0)),
-            ctx.closingDate)}`
-    lifetimePayment = `${
-        fmt.format(
-            utils
-                .sumOfKeys(
-                    cumulative[cumulative.length - 1]!.data, loanPaymentTypes)
-                .toNumber())}`;
-  } else {
-    lifetimePayment = `${fmt.format(0)}`;
-    lifetimeOfLoan = '';
-  }
-
-  // Show the comparison between prepayment and investment, if relevant.
-  let prepayComparison;
-  let stocksComparison;
-  if (showPrepaymentComparison) {
-    prepayComparison = `${
-        fmt.format(utils
-                       .computeStockAssets(
-                           pointwise
-                               .map(
-                                   m => ctx.monthlyLoanPayment.sub(Decimal.sum(
-                                       m.data.interest, m.data.principal)))
-                               .filter(x => !x.eq(0)),
-                           ctx.stocksReturnRate)
-                       .toNumber())}`;
-
-    stocksComparison = `${
-        fmt.format(
-            utils
-                .computeStockAssets(
-                    new Array(ctx.n).fill(ctx.prepayment), ctx.stocksReturnRate)
-                .toNumber())}`;
-  } else {
-    prepayComparison = '';
-    stocksComparison = '';
-  }
-
-  return {
-    loanAmount,
-    purchasePayment,
-    principalAndInterest,
-    monthlyPaymentAmount,
-    lifetimeOfLoan,
-    lifetimePayment,
-    prepayComparison,
-    stocksComparison,
-  };
 }
 
 function setChartsAndButtonsContent(
@@ -350,144 +245,6 @@ function setChartsAndButtonsContent(
   new ExpandableElement(
       utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
       makeTabler(cumulative, loanPaymentTypes));
-}
-
-function computeHidables(ctx: Context, schedules: Schedules|undefined):
-    Record<HidableContainer, HidableOutput> {
-  if (!schedules)
-    return utils.mkRecord(hidableContainers, () => new HidableOutput());
-  const {pointwise, cumulative} = schedules;
-  let monthlyPaymentPmi;
-  let monthsOfPmi;
-  if (ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct)) {
-    monthlyPaymentPmi = new HidableOutput(
-        `${
-            fmt.format(Decimal
-                           .sum(
-                               ctx.monthlyLoanPayment,
-                               ctx.monthlyNonLoanPayment, ctx.pmi)
-                           .toNumber())}`,
-    );
-    const pmiMonths =
-        utils.countSatisfying(pointwise, payment => !payment.data.pmi.eq(0));
-    monthsOfPmi = new HidableOutput(`${utils.formatMonthNum(pmiMonths)} (${
-        fmt.format(ctx.pmi.mul(pmiMonths).toNumber())} total)`);
-  } else {
-    monthlyPaymentPmi = new HidableOutput();
-    monthsOfPmi = new HidableOutput();
-  }
-
-  let firedTomorrowCountdown;
-  if (!ctx.totalAssets.eq(0)) {
-    firedTomorrowCountdown = new HidableOutput(`${
-        utils.formatMonthNum(
-            utils.countBurndownMonths(
-                ctx.totalAssets.sub(
-                    (ctx.alreadyClosed ? new Decimal(0) :
-                                         ctx.downPayment.add(ctx.closingCost))),
-                pointwise.slice(ctx.paymentsAlreadyMade).map(d => d.data),
-                ctx.monthlyDebt),
-            utils.maxNonEmptyDate(
-                ctx.closingDate, d3.timeMonth.floor(new Date())))}`);
-  } else {
-    firedTomorrowCountdown = new HidableOutput();
-  }
-
-  let totalPaidSoFar;
-  let equityOwnedSoFar;
-  let totalLoanOwed;
-  let remainingEquityToPayFor;
-  if (!!ctx.paymentsAlreadyMade || ctx.alreadyClosed) {
-    const absoluteEquityOwned =
-        (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
-            .add(cumulative[ctx.paymentsAlreadyMade]!.data.principal);
-
-    totalPaidSoFar = new HidableOutput(`${
-        fmt.format(
-            (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
-                                 new Decimal(0))
-                .add(utils.sumOfKeys(
-                    cumulative[ctx.paymentsAlreadyMade]!.data, paymentTypes))
-                .toNumber())}`);
-    equityOwnedSoFar = new HidableOutput(
-        `${pctFmt.format(absoluteEquityOwned.div(ctx.homeValue).toNumber())} (${
-            fmt.format(absoluteEquityOwned.toNumber())})`);
-    const totalPrincipalAndInterestPaid = utils.sumOfKeys(
-        cumulative[ctx.paymentsAlreadyMade]!.data, loanPaymentTypes);
-    const totalPrincipalAndInterestToPay = utils.sumOfKeys(
-        cumulative[cumulative.length - 1]!.data, loanPaymentTypes);
-    totalLoanOwed = new HidableOutput(`${
-        fmt.format(
-            totalPrincipalAndInterestToPay.sub(totalPrincipalAndInterestPaid)
-                .toNumber())}`);
-    remainingEquityToPayFor = new HidableOutput(
-        `${fmt.format(ctx.price.sub(absoluteEquityOwned).toNumber())}`);
-  } else {
-    totalPaidSoFar = new HidableOutput();
-    equityOwnedSoFar = new HidableOutput();
-    totalLoanOwed = new HidableOutput();
-    remainingEquityToPayFor = new HidableOutput();
-  }
-
-  let debtToIncomeRatio;
-  if (ctx.annualIncome.gt(0)) {
-    debtToIncomeRatio = new HidableOutput(
-        `${
-            pctFmt.format(Decimal
-                              .sum(
-                                  ctx.monthlyDebt, ctx.monthlyLoanPayment,
-                                  ctx.monthlyNonLoanPayment, ctx.pmi)
-                              .div(ctx.annualIncome)
-                              .mul(12)
-                              .toNumber())}`,
-    );
-  } else {
-    debtToIncomeRatio = new HidableOutput();
-  }
-
-  return {
-    ['monthly-payment-pmi-div']: monthlyPaymentPmi,
-    ['months-of-pmi-div']: monthsOfPmi,
-    ['fired-tomorrow-countdown-div']: firedTomorrowCountdown,
-    ['total-paid-so-far-div']: totalPaidSoFar,
-    ['equity-owned-so-far-div']: equityOwnedSoFar,
-    ['total-loan-owed-div']: totalLoanOwed,
-    ['remaining-equity-to-pay-for-div']: remainingEquityToPayFor,
-    ['debt-to-income-ratio-div']: debtToIncomeRatio,
-  };
-}
-
-function computeTemplates(ctx: Context): Record<TemplateType, string> {
-  if (ctx.prepayment.gt(0)) {
-    return {
-      'mortgage-term': utils.formatMonthNum(ctx.n),
-      'prepay-amount': fmt.format(ctx.prepayment.toNumber()),
-    };
-  }
-  return utils.mkRecord(templateTypes, () => '');
-}
-
-// Updates the "hints"/previews displayed alongside the input fields.
-function computeAmountHints(ctx: Context): Record<HintType, string> {
-  return {
-    'homeValue': `(${fmt.format(ctx.homeValue.toNumber())})`,
-    'downPayment': `(${fmt.format(ctx.downPayment.toNumber())})`,
-    'interestRate': `(${hundredthsPctFmt.format(ctx.interestRate.toNumber())})`,
-    'pointValue': `(${hundredthsPctFmt.format(ctx.pointValue.toNumber())})`,
-    'pmiEquityPercentage': `(${pctFmt.format(ctx.pmiEquityPct.toNumber())})`,
-    'propertyTax': `(Effective ${
-        fmt.format(ctx.propertyTax.mul(12)
-                       .div(ctx.homeValue)
-                       .mul(1000)
-                       .toNumber())} / $1000; ${
-        fmt.format(ctx.propertyTax.toNumber())}/mo)`,
-    'residentialExemption':
-        `(${fmt.format(ctx.residentialExemptionPerMonth.toNumber())}/mo)`,
-    'mortgageTerm': `(${ctx.mortgageTerm} yrs)`,
-    'paymentsAlreadyMade': `(${ctx.paymentsAlreadyMade} payments)`,
-    'stocksReturnRate':
-        `(${hundredthsPctFmt.format(ctx.stocksReturnRate.toNumber())})`,
-  };
 }
 
 // Reads fields from the URL and from cookies, and populates the UI
