@@ -2,21 +2,23 @@ import * as d3 from 'd3';
 
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
+import {Formatter} from './formatter';
 import {Elements, HidableContainer, hidableContainerMap, HidableOutputType, HintType, InputEntry, Inputs, loanPaymentTypes, OutputType, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
-const fmt = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-});
-const pctFmt = new Intl.NumberFormat('en-US', {
-  style: 'percent',
-});
-const hundredthsPctFmt = new Intl.NumberFormat('en-US', {
-  style: 'percent',
-  maximumFractionDigits: 2,
-});
+const fmt = new Formatter(
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }),
+    new Intl.NumberFormat('en-US', {
+      style: 'percent',
+    }),
+    new Intl.NumberFormat('en-US', {
+      style: 'percent',
+      maximumFractionDigits: 2,
+    }));
 
 type InputParamMap = Readonly<Map<HTMLInputElement, InputEntry>>;
 
@@ -191,8 +193,7 @@ function attachListeners(
 function setContents(ctx: Context, elts: Elements): void {
   const schedules = utils.computeSchedules(ctx);
 
-  for (const [h, v] of Object.entries(
-           utils.computeAmountHints(ctx, fmt, pctFmt, hundredthsPctFmt))) {
+  for (const [h, v] of Object.entries(utils.computeAmountHints(ctx, fmt))) {
     elts.hints[h as HintType].innerText = v;
   }
   for (const [o, v] of Object.entries(
@@ -200,7 +201,7 @@ function setContents(ctx: Context, elts: Elements): void {
     elts.outputs[o as OutputType].innerText = v;
   }
   for (const [k, v] of Object.entries(
-           utils.computeHidables(ctx, fmt, pctFmt, schedules))) {
+           utils.computeHidables(ctx, fmt, schedules))) {
     const hc = k as HidableContainer;
     v.display(hc);
     elts.hidables[hidableContainerMap[hc]].innerText = v.output();
@@ -237,7 +238,7 @@ function setChartsAndButtonsContent(
               data.map(
                   d =>
                       [utils.formatMonthNum(d.month, ctx.closingDate),
-                       ...ts.map(k => fmt.format(d.data[k].toNumber())),
+                       ...ts.map(k => fmt.formatCurrency(d.data[k].toNumber())),
   ]));
   new ExpandableElement(
       utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
