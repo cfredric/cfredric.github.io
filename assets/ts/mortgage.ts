@@ -4,7 +4,7 @@ import {Decimal} from 'decimal.js';
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
 import {HidableOutput} from './hidable_output';
-import {Elements, HidableContainer, hidableContainerMap, hidableContainers, HidableOutputType, HintType, InputEntry, Inputs, loanPaymentTypes, OutputType, outputTypes, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType, templateTypes,} from './types';
+import {Elements, HidableContainer, hidableContainerMap, hidableContainers, HidableOutputType, HintType, InputEntry, Inputs, loanPaymentTypes, OutputType, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType, templateTypes,} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -222,16 +222,13 @@ function computeSchedules(ctx: Context): Schedules|undefined {
 // Compute hint strings and set output strings.
 function computeContents(
     ctx: Context, schedules: Schedules|undefined): Record<OutputType, string> {
-  const outputs = utils.mkRecord(outputTypes, () => '');
-
   viz.clearTables()
   const showPrepaymentComparison = ctx.prepayment.gt(0);
   utils.setClassVisibility('prepay', showPrepaymentComparison);
 
-  outputs['loanAmount'] =
-      `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
+  const loanAmount = `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
 
-  outputs['purchasePayment'] = `${
+  const purchasePayment = `${
       fmt.format(Decimal
                      .sum(
                          ctx.downPayment,
@@ -244,25 +241,36 @@ function computeContents(
 
   if (!schedules) {
     viz.clearCharts();
-    return outputs;
+    return {
+      loanAmount,
+      purchasePayment,
+      lifetimeOfLoan: '',
+      lifetimePayment: '',
+      monthlyPaymentAmount: '',
+      prepayComparison: '',
+      principalAndInterest: '',
+      stocksComparison: '',
+    };
   }
 
   const {pointwise, cumulative} = schedules;
 
-  outputs['principalAndInterest'] =
+  const principalAndInterest =
       `${fmt.format(ctx.monthlyLoanPayment.toNumber())}`;
 
-  outputs['monthlyPaymentAmount'] = `${
+  const monthlyPaymentAmount = `${
       fmt.format(
           ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment).toNumber())}`;
   viz.buildPaymentScheduleChart(ctx, pointwise, fmt, paymentTypes);
+  let lifetimeOfLoan;
+  let lifetimePayment;
   if (!ctx.m.eq(0)) {
     viz.buildCumulativeChart(ctx, cumulative, fmt, loanPaymentTypes);
-    outputs['lifetimeOfLoan'] = `${
+    lifetimeOfLoan = `${
         utils.formatMonthNum(
             utils.countSatisfying(pointwise, m => m.data.principal.gt(0)),
             ctx.closingDate)}`
-    outputs['lifetimePayment'] = `${
+    lifetimePayment = `${
         fmt.format(
             utils
                 .sumOfKeys(
@@ -286,12 +294,15 @@ function computeContents(
         makeTabler(cumulative, loanPaymentTypes));
   } else {
     viz.clearCumulativeChart();
-    outputs['lifetimePayment'] = `${fmt.format(0)}`;
+    lifetimePayment = `${fmt.format(0)}`;
+    lifetimeOfLoan = '';
   }
 
   // Show the comparison between prepayment and investment, if relevant.
+  let prepayComparison;
+  let stocksComparison;
   if (showPrepaymentComparison) {
-    outputs['prepayComparison'] = `${
+    prepayComparison = `${
         fmt.format(utils
                        .computeStockAssets(
                            pointwise
@@ -302,15 +313,27 @@ function computeContents(
                            ctx.stocksReturnRate)
                        .toNumber())}`;
 
-    outputs['stocksComparison'] = `${
+    stocksComparison = `${
         fmt.format(
             utils
                 .computeStockAssets(
                     new Array(ctx.n).fill(ctx.prepayment), ctx.stocksReturnRate)
                 .toNumber())}`;
+  } else {
+    prepayComparison = '';
+    stocksComparison = '';
   }
 
-  return outputs;
+  return {
+    loanAmount,
+    purchasePayment,
+    principalAndInterest,
+    monthlyPaymentAmount,
+    lifetimeOfLoan,
+    lifetimePayment,
+    prepayComparison,
+    stocksComparison,
+  };
 }
 
 function computeHidables(ctx: Context, schedules?: Schedules):
