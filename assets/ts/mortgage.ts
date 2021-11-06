@@ -207,6 +207,7 @@ function setContents(ctx: Context, elts: Elements): void {
   for (const [t, v] of Object.entries(computeTemplates(ctx))) {
     utils.fillTemplateElts(t as TemplateType, v);
   }
+  setChartsAndButtonsContent(ctx, schedules);
 }
 
 function computeSchedules(ctx: Context): Schedules|undefined {
@@ -222,7 +223,6 @@ function computeSchedules(ctx: Context): Schedules|undefined {
 // Compute hint strings and set output strings.
 function computeContents(
     ctx: Context, schedules: Schedules|undefined): Record<OutputType, string> {
-  viz.clearTables()
   const showPrepaymentComparison = ctx.prepayment.gt(0);
   utils.setClassVisibility('prepay', showPrepaymentComparison);
 
@@ -240,7 +240,6 @@ function computeContents(
                      .toNumber())}`;
 
   if (!schedules) {
-    viz.clearCharts();
     return {
       loanAmount,
       purchasePayment,
@@ -261,11 +260,9 @@ function computeContents(
   const monthlyPaymentAmount = `${
       fmt.format(
           ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment).toNumber())}`;
-  viz.buildPaymentScheduleChart(ctx, pointwise, fmt, paymentTypes);
   let lifetimeOfLoan;
   let lifetimePayment;
   if (!ctx.m.eq(0)) {
-    viz.buildCumulativeChart(ctx, cumulative, fmt, loanPaymentTypes);
     lifetimeOfLoan = `${
         utils.formatMonthNum(
             utils.countSatisfying(pointwise, m => m.data.principal.gt(0)),
@@ -276,24 +273,7 @@ function computeContents(
                 .sumOfKeys(
                     cumulative[cumulative.length - 1]!.data, loanPaymentTypes)
                 .toNumber())}`;
-
-    const makeTabler =
-        (data: readonly PaymentRecordWithMonth[], ts: readonly PaymentType[]):
-            () => HTMLTableElement => () => utils.makeTable(
-                ['Month', ...ts.map(utils.toCapitalized)],
-                data.map(
-                    d =>
-                        [utils.formatMonthNum(d.month, ctx.closingDate),
-                         ...ts.map(k => fmt.format(d.data[k].toNumber())),
-    ]));
-    new ExpandableElement(
-        utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
-        makeTabler(pointwise, paymentTypes));
-    new ExpandableElement(
-        utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
-        makeTabler(cumulative, loanPaymentTypes));
   } else {
-    viz.clearCumulativeChart();
     lifetimePayment = `${fmt.format(0)}`;
     lifetimeOfLoan = '';
   }
@@ -334,6 +314,42 @@ function computeContents(
     prepayComparison,
     stocksComparison,
   };
+}
+
+function setChartsAndButtonsContent(
+    ctx: Context, schedules: Schedules|undefined): void {
+  viz.clearTables();
+
+  if (!schedules) {
+    viz.clearCharts();
+    return;
+  }
+
+  const {pointwise, cumulative} = schedules;
+
+  viz.buildPaymentScheduleChart(ctx, pointwise, fmt, paymentTypes);
+  if (ctx.m.eq(0)) {
+    viz.clearCumulativeChart();
+    return;
+  }
+
+  viz.buildCumulativeChart(ctx, cumulative, fmt, loanPaymentTypes);
+
+  const makeTabler =
+      (data: readonly PaymentRecordWithMonth[], ts: readonly PaymentType[]):
+          () => HTMLTableElement => () => utils.makeTable(
+              ['Month', ...ts.map(utils.toCapitalized)],
+              data.map(
+                  d =>
+                      [utils.formatMonthNum(d.month, ctx.closingDate),
+                       ...ts.map(k => fmt.format(d.data[k].toNumber())),
+  ]));
+  new ExpandableElement(
+      utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
+      makeTabler(pointwise, paymentTypes));
+  new ExpandableElement(
+      utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
+      makeTabler(cumulative, loanPaymentTypes));
 }
 
 function computeHidables(ctx: Context, schedules?: Schedules):
