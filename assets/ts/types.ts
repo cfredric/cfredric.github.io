@@ -166,10 +166,6 @@ export interface Elements {
       clearInputsButton: HTMLElement,                    //
 }
 
-export interface Outputs {
-  unconditionals: Record<OutputType, string>, schedules?: Schedules,
-}
-
 export interface Schedules {
   pointwise: readonly PaymentRecordWithMonth[],
       cumulative: readonly PaymentRecordWithMonth[],

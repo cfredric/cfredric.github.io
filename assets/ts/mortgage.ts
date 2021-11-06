@@ -4,7 +4,7 @@ import {Decimal} from 'decimal.js';
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
 import {HidableOutput} from './hidable_output';
-import {Elements, HidableContainer, hidableContainerMap, hidableContainers, HidableOutputType, HintType, InputEntry, Inputs, loanPaymentTypes, Outputs, OutputType, outputTypes, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType, templateTypes,} from './types';
+import {Elements, HidableContainer, hidableContainerMap, hidableContainers, HidableOutputType, HintType, InputEntry, Inputs, loanPaymentTypes, OutputType, outputTypes, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType, templateTypes,} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -191,13 +191,13 @@ function attachListeners(
 
 // Set the contents of all the outputs based on the `ctx`.
 function setContents(ctx: Context, elts: Elements): void {
-  const {unconditionals, schedules} = computeContents(ctx);
+  const schedules = computeSchedules(ctx);
 
   for (const [h, v] of Object.entries(computeAmountHints(ctx))) {
     elts.hints[h as HintType].innerText = v;
   }
-  for (const o of outputTypes) {
-    elts.outputs[o].innerText = unconditionals[o];
+  for (const [o, v] of Object.entries(computeContents(ctx, schedules))) {
+    elts.outputs[o as OutputType].innerText = v;
   }
   for (const [k, v] of Object.entries(computeHidables(ctx, schedules))) {
     const hc = k as HidableContainer;
@@ -209,8 +209,19 @@ function setContents(ctx: Context, elts: Elements): void {
   }
 }
 
+function computeSchedules(ctx: Context): Schedules|undefined {
+  if (!ctx.showMonthlySchedule) return undefined;
+
+  const pointwise = utils.calculatePaymentSchedule(ctx);
+  return {
+    pointwise,
+    cumulative: utils.cumulativeSumByFields(pointwise, paymentTypes),
+  };
+}
+
 // Compute hint strings and set output strings.
-function computeContents(ctx: Context): Outputs {
+function computeContents(
+    ctx: Context, schedules: Schedules|undefined): Record<OutputType, string> {
   const unconditionals = utils.mkRecord(outputTypes, () => '');
 
   viz.clearTables()
@@ -231,10 +242,12 @@ function computeContents(ctx: Context): Outputs {
                          )
                      .toNumber())}`;
 
-  if (!ctx.showMonthlySchedule) {
+  if (!schedules) {
     viz.clearCharts();
-    return {unconditionals};
+    return unconditionals;
   }
+
+  const {pointwise, cumulative} = schedules;
 
   unconditionals['principalAndInterest'] =
       `${fmt.format(ctx.monthlyLoanPayment.toNumber())}`;
@@ -242,9 +255,7 @@ function computeContents(ctx: Context): Outputs {
   unconditionals['monthlyPaymentAmount'] = `${
       fmt.format(
           ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment).toNumber())}`;
-  const pointwise = utils.calculatePaymentSchedule(ctx, ctx.monthlyLoanPayment);
   viz.buildPaymentScheduleChart(ctx, pointwise, fmt, paymentTypes);
-  const cumulative = utils.cumulativeSumByFields(pointwise, paymentTypes);
   if (!ctx.m.eq(0)) {
     viz.buildCumulativeChart(ctx, cumulative, fmt, loanPaymentTypes);
     unconditionals['lifetimeOfLoan'] = `${
@@ -299,10 +310,7 @@ function computeContents(ctx: Context): Outputs {
                 .toNumber())}`;
   }
 
-  return {
-    unconditionals,
-    schedules: {pointwise, cumulative},
-  };
+  return unconditionals;
 }
 
 function computeHidables(ctx: Context, schedules?: Schedules):

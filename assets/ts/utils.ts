@@ -230,8 +230,8 @@ export function computeAmortizedPaymentAmount(
 }
 
 // Computes the payment for each month of the loan.
-export function calculatePaymentSchedule(
-    ctx: Context, monthlyLoanPayment: Decimal): PaymentRecordWithMonth[] {
+export function calculatePaymentSchedule(ctx: Context):
+    PaymentRecordWithMonth[] {
   let equityOwned = ctx.downPayment;
   const schedule: PaymentRecordWithMonth[] = [];
   for (const month of d3.range(ctx.n)) {
@@ -240,8 +240,8 @@ export function calculatePaymentSchedule(
     const pmiPayment = equityOwned.lt(ctx.pmiEquityPct.mul(ctx.price)) ?
         ctx.pmi :
         new Decimal(0);
-    const principalPaidThisMonth =
-        monthlyLoanPayment.sub(interestPayment).clamp(0, principalRemaining);
+    const principalPaidThisMonth = ctx.monthlyLoanPayment.sub(interestPayment)
+                                       .clamp(0, principalRemaining);
     equityOwned = equityOwned.add(principalPaidThisMonth);
     schedule.push({
       month: month + 1,
