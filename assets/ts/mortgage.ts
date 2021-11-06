@@ -1,9 +1,8 @@
 import * as d3 from 'd3';
 
 import {Context} from './context';
-import {ExpandableElement} from './expandable_element';
 import {Formatter} from './formatter';
-import {Elements, HidableContainer, hidableContainerMap, HidableOutputType, HintType, InputEntry, Inputs, loanPaymentTypes, OutputType, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType} from './types';
+import {Elements, HidableContainer, hidableContainerMap, HidableOutputType, HintType, InputEntry, Inputs, OutputType, TemplateType} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -209,43 +208,7 @@ function setContents(ctx: Context, elts: Elements): void {
   for (const [t, v] of Object.entries(utils.computeTemplates(ctx, fmt))) {
     utils.fillTemplateElts(t as TemplateType, v);
   }
-  setChartsAndButtonsContent(ctx, schedules);
-}
-
-function setChartsAndButtonsContent(
-    ctx: Context, schedules: Schedules|undefined): void {
-  viz.clearTables();
-
-  if (!schedules) {
-    viz.clearCharts();
-    return;
-  }
-
-  const {pointwise, cumulative} = schedules;
-
-  viz.buildPaymentScheduleChart(ctx, pointwise, fmt, paymentTypes);
-  if (ctx.m.eq(0)) {
-    viz.clearCumulativeChart();
-    return;
-  }
-
-  viz.buildCumulativeChart(ctx, cumulative, fmt, loanPaymentTypes);
-
-  const makeTabler =
-      (data: readonly PaymentRecordWithMonth[], ts: readonly PaymentType[]):
-          () => HTMLTableElement => () => utils.makeTable(
-              ['Month', ...ts.map(utils.toCapitalized)],
-              data.map(
-                  d =>
-                      [utils.formatMonthNum(d.month, ctx.closingDate),
-                       ...ts.map(k => fmt.formatCurrency(d.data[k].toNumber())),
-  ]));
-  new ExpandableElement(
-      utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
-      makeTabler(pointwise, paymentTypes));
-  new ExpandableElement(
-      utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
-      makeTabler(cumulative, loanPaymentTypes));
+  viz.setChartsAndButtonsContent(ctx, fmt, schedules);
 }
 
 // Reads fields from the URL and from cookies, and populates the UI

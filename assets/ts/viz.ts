@@ -2,8 +2,9 @@ import * as d3 from 'd3';
 import Decimal from 'decimal.js';
 
 import {Context} from './context';
+import { ExpandableElement } from './expandable_element';
 import {Formatter} from './formatter';
-import {Margin, PaymentRecord, PaymentRecordWithMonth, PaymentType} from './types';
+import {loanPaymentTypes, Margin, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules} from './types';
 import * as utils from './utils';
 
 const textColor = '#f0e7d5';
@@ -38,22 +39,22 @@ function bisectMonth(
   return b && month - a.month > b.month - month ? b : a;
 }
 
-export function clearCharts() {
+function clearCharts() {
   document.querySelector('#schedule_viz > svg:first-of-type')?.remove();
   clearCumulativeChart();
 }
 
-export function clearCumulativeChart() {
+function clearCumulativeChart() {
   document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
 }
 
-export function clearTables() {
+function clearTables() {
   utils.removeChildren(utils.getHtmlElt('schedule_tab'));
   utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
 }
 
 // Builds the chart of monthly payments over time.
-export function buildPaymentScheduleChart(
+function buildPaymentScheduleChart(
     ctx: Context,
     schedule: readonly PaymentRecordWithMonth[],
     fmt: Formatter,
@@ -108,7 +109,7 @@ export function buildPaymentScheduleChart(
 }
 
 // Builds the chart of cumulative payments over time.
-export function buildCumulativeChart(
+function buildCumulativeChart(
     ctx: Context, data: readonly PaymentRecordWithMonth[], fmt: Formatter,
     keys: readonly PaymentType[]): void {
   const margin = {top: 50, right: 100, bottom: 120, left: 100};
@@ -330,4 +331,40 @@ function makeLegend(
       .attr('text-anchor', 'start')
       .attr('dominant-baseline', 'hanging')
       .attr('fill', textColor);
+}
+
+export function setChartsAndButtonsContent(
+    ctx: Context, fmt: Formatter, schedules: Schedules|undefined): void {
+  clearTables();
+
+  if (!schedules) {
+    clearCharts();
+    return;
+  }
+
+  const {pointwise, cumulative} = schedules;
+
+  buildPaymentScheduleChart(ctx, pointwise, fmt, paymentTypes);
+  if (ctx.m.eq(0)) {
+    clearCumulativeChart();
+    return;
+  }
+
+  buildCumulativeChart(ctx, cumulative, fmt, loanPaymentTypes);
+
+  const makeTabler =
+      (data: readonly PaymentRecordWithMonth[], ts: readonly PaymentType[]):
+          () => HTMLTableElement => () => utils.makeTable(
+              ['Month', ...ts.map(utils.toCapitalized)],
+              data.map(
+                  d =>
+                      [utils.formatMonthNum(d.month, ctx.closingDate),
+                       ...ts.map(k => fmt.formatCurrency(d.data[k].toNumber())),
+  ]));
+  new ExpandableElement(
+      utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
+      makeTabler(pointwise, paymentTypes));
+  new ExpandableElement(
+      utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
+      makeTabler(cumulative, loanPaymentTypes));
 }
