@@ -352,7 +352,7 @@ function setChartsAndButtonsContent(
       makeTabler(cumulative, loanPaymentTypes));
 }
 
-function computeHidables(ctx: Context, schedules?: Schedules):
+function computeHidables(ctx: Context, schedules: Schedules|undefined):
     Record<HidableContainer, HidableOutput> {
   if (!schedules)
     return utils.mkRecord(hidableContainers, () => new HidableOutput());
