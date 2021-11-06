@@ -222,16 +222,16 @@ function computeSchedules(ctx: Context): Schedules|undefined {
 // Compute hint strings and set output strings.
 function computeContents(
     ctx: Context, schedules: Schedules|undefined): Record<OutputType, string> {
-  const unconditionals = utils.mkRecord(outputTypes, () => '');
+  const outputs = utils.mkRecord(outputTypes, () => '');
 
   viz.clearTables()
   const showPrepaymentComparison = ctx.prepayment.gt(0);
   utils.setClassVisibility('prepay', showPrepaymentComparison);
 
-  unconditionals['loanAmount'] =
+  outputs['loanAmount'] =
       `${fmt.format(ctx.price.sub(ctx.downPayment).toNumber())}`;
 
-  unconditionals['purchasePayment'] = `${
+  outputs['purchasePayment'] = `${
       fmt.format(Decimal
                      .sum(
                          ctx.downPayment,
@@ -244,25 +244,25 @@ function computeContents(
 
   if (!schedules) {
     viz.clearCharts();
-    return unconditionals;
+    return outputs;
   }
 
   const {pointwise, cumulative} = schedules;
 
-  unconditionals['principalAndInterest'] =
+  outputs['principalAndInterest'] =
       `${fmt.format(ctx.monthlyLoanPayment.toNumber())}`;
 
-  unconditionals['monthlyPaymentAmount'] = `${
+  outputs['monthlyPaymentAmount'] = `${
       fmt.format(
           ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment).toNumber())}`;
   viz.buildPaymentScheduleChart(ctx, pointwise, fmt, paymentTypes);
   if (!ctx.m.eq(0)) {
     viz.buildCumulativeChart(ctx, cumulative, fmt, loanPaymentTypes);
-    unconditionals['lifetimeOfLoan'] = `${
+    outputs['lifetimeOfLoan'] = `${
         utils.formatMonthNum(
             utils.countSatisfying(pointwise, m => m.data.principal.gt(0)),
             ctx.closingDate)}`
-    unconditionals['lifetimePayment'] = `${
+    outputs['lifetimePayment'] = `${
         fmt.format(
             utils
                 .sumOfKeys(
@@ -286,12 +286,12 @@ function computeContents(
         makeTabler(cumulative, loanPaymentTypes));
   } else {
     viz.clearCumulativeChart();
-    unconditionals['lifetimePayment'] = `${fmt.format(0)}`;
+    outputs['lifetimePayment'] = `${fmt.format(0)}`;
   }
 
   // Show the comparison between prepayment and investment, if relevant.
   if (showPrepaymentComparison) {
-    unconditionals['prepayComparison'] = `${
+    outputs['prepayComparison'] = `${
         fmt.format(utils
                        .computeStockAssets(
                            pointwise
@@ -302,7 +302,7 @@ function computeContents(
                            ctx.stocksReturnRate)
                        .toNumber())}`;
 
-    unconditionals['stocksComparison'] = `${
+    outputs['stocksComparison'] = `${
         fmt.format(
             utils
                 .computeStockAssets(
@@ -310,7 +310,7 @@ function computeContents(
                 .toNumber())}`;
   }
 
-  return unconditionals;
+  return outputs;
 }
 
 function computeHidables(ctx: Context, schedules?: Schedules):
