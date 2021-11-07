@@ -452,12 +452,6 @@ export function computeContents(
 
   const {pointwise, cumulative} = schedules;
 
-  const principalAndInterest =
-      `${fmt.formatCurrency(ctx.monthlyLoanPayment.toNumber())}`;
-
-  const monthlyPaymentAmount = `${
-      fmt.formatCurrency(
-          ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment).toNumber())}`;
   let lifetimeOfLoan;
   let lifetimePayment;
   if (!ctx.m.eq(0)) {
@@ -503,12 +497,15 @@ export function computeContents(
   return {
     loanAmount,
     purchasePayment,
-    principalAndInterest,
-    monthlyPaymentAmount,
     lifetimeOfLoan,
     lifetimePayment,
     prepayComparison,
     stocksComparison,
+    principalAndInterest:
+        `${fmt.formatCurrency(ctx.monthlyLoanPayment.toNumber())}`,
+    monthlyPaymentAmount: `${
+        fmt.formatCurrency(
+            ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment).toNumber())}`,
   };
 }
 

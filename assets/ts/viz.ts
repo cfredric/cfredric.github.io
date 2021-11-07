@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 import Decimal from 'decimal.js';
 
 import {Context} from './context';
-import { ExpandableElement } from './expandable_element';
+import {ExpandableElement} from './expandable_element';
 import {Formatter} from './formatter';
 import {loanPaymentTypes, Margin, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules} from './types';
 import * as utils from './utils';
