@@ -298,7 +298,7 @@ const COOKIE_SUFFIX = COOKIE_ATTRIBUTES
                           .join(';');
 
 const COOKIE_SUFFIX_DELETE = COOKIE_ATTRIBUTES.concat([
-  `max-age=0`,
+  'max-age=0',
 ])
 
 // Sets the value of the cookie with the given name.
@@ -424,18 +424,16 @@ export function computeContents(
   setClassVisibility('prepay', showPrepaymentComparison);
 
   const loanAmount =
-      `${fmt.formatCurrency(ctx.price.sub(ctx.downPayment).toNumber())}`;
+      fmt.formatCurrency(ctx.price.sub(ctx.downPayment).toNumber());
 
-  const purchasePayment = `${
-      fmt.formatCurrency(Decimal
-                             .sum(
-                                 ctx.downPayment,
-                                 ctx.closingCost,
-                                 ctx.price.sub(ctx.downPayment)
-                                     .mul(ctx.pointsPurchased)
-                                     .div(100),
-                                 )
-                             .toNumber())}`;
+  const purchasePayment = fmt.formatCurrency(
+      Decimal
+          .sum(
+              ctx.downPayment,
+              ctx.closingCost,
+              ctx.price.sub(ctx.downPayment).mul(ctx.pointsPurchased).div(100),
+              )
+          .toNumber());
 
   if (!schedules) {
     return {
@@ -452,28 +450,20 @@ export function computeContents(
 
   const {pointwise, cumulative} = schedules;
 
-  let lifetimeOfLoan;
-  let lifetimePayment;
-  if (!ctx.m.eq(0)) {
-    lifetimeOfLoan = `${
+  return {
+    loanAmount,
+    purchasePayment,
+    lifetimeOfLoan: ctx.m.eq(0) ?
+        '' :
         formatMonthNum(
             countSatisfying(pointwise, m => m.data.principal.gt(0)),
-            ctx.closingDate)}`
-    lifetimePayment = `${
+            ctx.closingDate),
+    lifetimePayment: ctx.m.eq(0) ?
+        fmt.formatCurrency(0) :
         fmt.formatCurrency(
-
             sumOfKeys(cumulative[cumulative.length - 1]!.data, loanPaymentTypes)
-                .toNumber())}`;
-  } else {
-    lifetimePayment = `${fmt.formatCurrency(0)}`;
-    lifetimeOfLoan = '';
-  }
-
-  // Show the comparison between prepayment and investment, if relevant.
-  let prepayComparison;
-  let stocksComparison;
-  if (showPrepaymentComparison) {
-    prepayComparison = `${
+                .toNumber()),
+    prepayComparison: showPrepaymentComparison ?
         fmt.formatCurrency(
             computeStockAssets(
                 pointwise
@@ -482,30 +472,17 @@ export function computeContents(
                             Decimal.sum(m.data.interest, m.data.principal)))
                     .filter(x => !x.eq(0)),
                 ctx.stocksReturnRate)
-                .toNumber())}`;
-
-    stocksComparison = `${
+                .toNumber()) :
+        '',
+    stocksComparison: showPrepaymentComparison ?
         fmt.formatCurrency(
             computeStockAssets(
                 new Array(ctx.n).fill(ctx.prepayment), ctx.stocksReturnRate)
-                .toNumber())}`;
-  } else {
-    prepayComparison = '';
-    stocksComparison = '';
-  }
-
-  return {
-    loanAmount,
-    purchasePayment,
-    lifetimeOfLoan,
-    lifetimePayment,
-    prepayComparison,
-    stocksComparison,
-    principalAndInterest:
-        `${fmt.formatCurrency(ctx.monthlyLoanPayment.toNumber())}`,
-    monthlyPaymentAmount: `${
-        fmt.formatCurrency(
-            ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment).toNumber())}`,
+                .toNumber()) :
+        '',
+    principalAndInterest: fmt.formatCurrency(ctx.monthlyLoanPayment.toNumber()),
+    monthlyPaymentAmount: fmt.formatCurrency(
+        ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment).toNumber()),
   };
 }
 
@@ -518,12 +495,10 @@ export function computeHidables(
   let monthsOfPmi;
   if (ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct)) {
     monthlyPaymentPmi = new HidableOutput(
-        `${
-            fmt.formatCurrency(Decimal
-                                   .sum(
-                                       ctx.monthlyLoanPayment,
-                                       ctx.monthlyNonLoanPayment, ctx.pmi)
-                                   .toNumber())}`,
+        fmt.formatCurrency(
+            Decimal
+                .sum(ctx.monthlyLoanPayment, ctx.monthlyNonLoanPayment, ctx.pmi)
+                .toNumber()),
     );
     const pmiMonths =
         countSatisfying(pointwise, payment => !payment.data.pmi.eq(0));
@@ -536,16 +511,14 @@ export function computeHidables(
 
   let firedTomorrowCountdown;
   if (!ctx.totalAssets.eq(0)) {
-    firedTomorrowCountdown = new HidableOutput(`${
-        formatMonthNum(
-            countBurndownMonths(
-                ctx.totalAssets.sub(
-                    (ctx.alreadyClosed ? new Decimal(0) :
-                                         ctx.downPayment.add(ctx.closingCost))),
-                pointwise.slice(ctx.paymentsAlreadyMade).map(d => d.data),
-                ctx.monthlyDebt),
-            maxNonEmptyDate(
-                ctx.closingDate, d3.timeMonth.floor(new Date())))}`);
+    firedTomorrowCountdown = new HidableOutput(formatMonthNum(
+        countBurndownMonths(
+            ctx.totalAssets.sub(
+                (ctx.alreadyClosed ? new Decimal(0) :
+                                     ctx.downPayment.add(ctx.closingCost))),
+            pointwise.slice(ctx.paymentsAlreadyMade).map(d => d.data),
+            ctx.monthlyDebt),
+        maxNonEmptyDate(ctx.closingDate, d3.timeMonth.floor(new Date()))));
   } else {
     firedTomorrowCountdown = new HidableOutput();
   }
@@ -559,13 +532,12 @@ export function computeHidables(
         (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
             .add(cumulative[ctx.paymentsAlreadyMade]!.data.principal);
 
-    totalPaidSoFar = new HidableOutput(`${
-        fmt.formatCurrency(
-            (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
-                                 new Decimal(0))
-                .add(sumOfKeys(
-                    cumulative[ctx.paymentsAlreadyMade]!.data, paymentTypes))
-                .toNumber())}`);
+    totalPaidSoFar = new HidableOutput(fmt.formatCurrency(
+        (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
+                             new Decimal(0))
+            .add(sumOfKeys(
+                cumulative[ctx.paymentsAlreadyMade]!.data, paymentTypes))
+            .toNumber()));
     equityOwnedSoFar = new HidableOutput(`${
         fmt.formatPercent(
             absoluteEquityOwned.div(ctx.homeValue).toNumber())} (${
@@ -574,12 +546,11 @@ export function computeHidables(
         sumOfKeys(cumulative[ctx.paymentsAlreadyMade]!.data, loanPaymentTypes);
     const totalPrincipalAndInterestToPay =
         sumOfKeys(cumulative[cumulative.length - 1]!.data, loanPaymentTypes);
-    totalLoanOwed = new HidableOutput(`${
-        fmt.formatCurrency(
-            totalPrincipalAndInterestToPay.sub(totalPrincipalAndInterestPaid)
-                .toNumber())}`);
+    totalLoanOwed = new HidableOutput(fmt.formatCurrency(
+        totalPrincipalAndInterestToPay.sub(totalPrincipalAndInterestPaid)
+            .toNumber()));
     remainingEquityToPayFor = new HidableOutput(
-        `${fmt.formatCurrency(ctx.price.sub(absoluteEquityOwned).toNumber())}`);
+        fmt.formatCurrency(ctx.price.sub(absoluteEquityOwned).toNumber()));
   } else {
     totalPaidSoFar = new HidableOutput();
     equityOwnedSoFar = new HidableOutput();
@@ -590,14 +561,13 @@ export function computeHidables(
   let debtToIncomeRatio;
   if (ctx.annualIncome.gt(0)) {
     debtToIncomeRatio = new HidableOutput(
-        `${
-            fmt.formatPercent(Decimal
-                                  .sum(
-                                      ctx.monthlyDebt, ctx.monthlyLoanPayment,
-                                      ctx.monthlyNonLoanPayment, ctx.pmi)
-                                  .div(ctx.annualIncome)
-                                  .mul(12)
-                                  .toNumber())}`,
+        fmt.formatPercent(Decimal
+                              .sum(
+                                  ctx.monthlyDebt, ctx.monthlyLoanPayment,
+                                  ctx.monthlyNonLoanPayment, ctx.pmi)
+                              .div(ctx.annualIncome)
+                              .mul(12)
+                              .toNumber()),
     );
   } else {
     debtToIncomeRatio = new HidableOutput();
