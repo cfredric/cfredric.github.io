@@ -29,60 +29,60 @@ export interface InputEntry {
 }
 
 export interface ContextInput {
-  price: Decimal,                                  //
-      homeValue: Decimal,                          //
-      hoa: Decimal,                                //
-      downPaymentPercent: Decimal,                 //
-      downPaymentAbsolute: Decimal,                //
-      interestRate: Decimal,                       //
-      pointValue: Decimal,                         //
-      pointsPurchased: number,                     //
-      pmi: Decimal,                                //
-      pmiEquityPercent: Decimal,                   //
-      propertyTaxAbsolute: Decimal,                //
-      propertyTaxPercent: Decimal,                 //
-      residentialExemptionAnnualSavings: Decimal,  //
-      residentialExemptionDeduction: Decimal,      //
-      homeownersInsurance: Decimal,                //
-      closingCost: Decimal,                        //
-      mortgageTerm: number,                        //
-      annualIncome: Decimal,                       //
-      monthlyDebt: Decimal,                        //
-      totalAssets: Decimal,                        //
-      alreadyClosed: boolean,                      //
-      paymentsAlreadyMade: number,                 //
-      closingDate?: Date,                          //
-      prepayment: Decimal,                         //
-      stocksReturnRate?: Decimal,                  //
-      now: Date,                                   //
+  price: Decimal;
+  homeValue: Decimal;
+  hoa: Decimal;
+  downPaymentPercent: Decimal;
+  downPaymentAbsolute: Decimal;
+  interestRate: Decimal;
+  pointValue: Decimal;
+  pointsPurchased: number;
+  pmi: Decimal;
+  pmiEquityPercent: Decimal;
+  propertyTaxAbsolute: Decimal;
+  propertyTaxPercent: Decimal;
+  residentialExemptionAnnualSavings: Decimal;
+  residentialExemptionDeduction: Decimal;
+  homeownersInsurance: Decimal;
+  closingCost: Decimal;
+  mortgageTerm: number;
+  annualIncome: Decimal;
+  monthlyDebt: Decimal;
+  totalAssets: Decimal;
+  alreadyClosed: boolean;
+  paymentsAlreadyMade: number;
+  closingDate?: Date;
+  prepayment: Decimal;
+  stocksReturnRate?: Decimal;
+  now: Date;
 }
 
 export interface Inputs {
-  price: HTMLInputElement,                              //
-      homeValue: HTMLInputElement,                      //
-      hoa: HTMLInputElement,                            //
-      downPaymentPercentage: HTMLInputElement,          //
-      downPaymentAbsolute: HTMLInputElement,            //
-      interestRate: HTMLInputElement,                   //
-      pointsPurchased: HTMLInputElement,                //
-      pointValue: HTMLInputElement,                     //
-      mortgageInsurance: HTMLInputElement,              //
-      pmiEquityPercentage: HTMLInputElement,            //
-      propertyTaxAbsolute: HTMLInputElement,            //
-      propertyTaxPercentage: HTMLInputElement,          //
-      residentialExemptionSavings: HTMLInputElement,    //
-      residentialExemptionDeduction: HTMLInputElement,  //
-      homeownersInsurance: HTMLInputElement,            //
-      closingCost: HTMLInputElement,                    //
-      mortgageTerm: HTMLInputElement,                   //
-      annualIncome: HTMLInputElement,                   //
-      monthlyDebt: HTMLInputElement,                    //
-      totalAssets: HTMLInputElement,                    //
-      alreadyClosed: HTMLInputElement,                  //
-      paymentsAlreadyMade: HTMLInputElement,            //
-      closingDate: HTMLInputElement,                    //
-      prepayment: HTMLInputElement,                     //
-      stocksReturnRate: HTMLInputElement,               //
+  price: HTMLInputElement;
+  homeValue: HTMLInputElement;
+  hoa: HTMLInputElement;
+  downPaymentPercentage: HTMLInputElement;
+  downPaymentAbsolute: HTMLInputElement;
+  interestRate: HTMLInputElement;
+  pointsPurchased: HTMLInputElement;
+  pointValue: HTMLInputElement;
+  mortgageInsurance: HTMLInputElement;
+  pmiEquityPercentage: HTMLInputElement;
+  propertyTaxAbsolute: HTMLInputElement;
+  propertyTaxPercentage: HTMLInputElement;
+  residentialExemptionSavings: HTMLInputElement;
+  residentialExemptionDeduction: HTMLInputElement;
+  homeownersInsurance: HTMLInputElement;
+  closingCost: HTMLInputElement;
+  mortgageTerm: HTMLInputElement;
+  annualIncome: HTMLInputElement;
+  monthlyDebt: HTMLInputElement;
+  totalAssets: HTMLInputElement;
+  alreadyClosed: HTMLInputElement;
+  paymentsAlreadyMade: HTMLInputElement;
+  closingDate: HTMLInputElement;
+  prepayment: HTMLInputElement;
+  stocksReturnRate: HTMLInputElement;
 }
 
 export const hintTypes = [
@@ -159,16 +159,16 @@ export const templateTypes = [
 export type TemplateType = typeof templateTypes[number];
 
 export interface Elements {
-  inputs: Inputs,                                        //
-      outputs: Record<OutputType, HTMLElement>,          //
-      hidables: Record<HidableOutputType, HTMLElement>,  //
-      hints: Record<HintType, HTMLElement>,              //
-      clearInputsButton: HTMLElement,                    //
+  inputs: Inputs;
+  outputs: Record<OutputType, HTMLElement>;
+  hidables: Record<HidableOutputType, HTMLElement>;
+  hints: Record<HintType, HTMLElement>;
+  clearInputsButton: HTMLElement;
 }
 
 export interface Schedules {
-  pointwise: readonly PaymentRecordWithMonth[],
-      cumulative: readonly PaymentRecordWithMonth[],
+  pointwise: readonly PaymentRecordWithMonth[];
+  cumulative: readonly PaymentRecordWithMonth[];
 }
 
 export interface Margin {
