@@ -56,44 +56,43 @@ function getInputs(): Inputs {
 
 function getHints(): Record<HintType, HTMLElement> {
   return {
-    'homeValue': utils.getHtmlElt('home-value-hint'),
-    'interestRate': utils.getHtmlElt('interest-rate-hint'),
-    'pointValue': utils.getHtmlElt('point-value-hint'),
-    'pmiEquityPercentage':
+    homeValue: utils.getHtmlElt('home-value-hint'),
+    interestRate: utils.getHtmlElt('interest-rate-hint'),
+    pointValue: utils.getHtmlElt('point-value-hint'),
+    pmiEquityPercentage:
         utils.getHtmlElt('mortgage-insurance-equity-percent-hint'),
-    'propertyTax': utils.getHtmlElt('property-tax-percentage-hint'),
-    'residentialExemption': utils.getHtmlElt('residential-exemption-hint'),
-    'mortgageTerm': utils.getHtmlElt('mortgage-term-hint'),
-    'downPayment': utils.getHtmlElt('down-payment-hint'),
-    'paymentsAlreadyMade': utils.getHtmlElt('payments-already-made-hint'),
-    'stocksReturnRate': utils.getHtmlElt('stocks-return-rate-hint'),
+    propertyTax: utils.getHtmlElt('property-tax-percentage-hint'),
+    residentialExemption: utils.getHtmlElt('residential-exemption-hint'),
+    mortgageTerm: utils.getHtmlElt('mortgage-term-hint'),
+    downPayment: utils.getHtmlElt('down-payment-hint'),
+    paymentsAlreadyMade: utils.getHtmlElt('payments-already-made-hint'),
+    stocksReturnRate: utils.getHtmlElt('stocks-return-rate-hint'),
   };
 }
 
 function getOutputs(): Record<OutputType, HTMLElement> {
   return {
-    'loanAmount': utils.getHtmlElt('loan-amount-output'),
-    'principalAndInterest': utils.getHtmlElt('principal-and-interest-output'),
-    'monthlyPaymentAmount': utils.getHtmlElt('monthly-payment-output'),
-    'lifetimeOfLoan': utils.getHtmlElt('lifetime-of-loan-output'),
-    'lifetimePayment': utils.getHtmlElt('lifetime-payment-output'),
-    'purchasePayment': utils.getHtmlElt('purchase-payment-output'),
-    'prepayComparison': utils.getHtmlElt('prepay-comparison-output'),
-    'stocksComparison': utils.getHtmlElt('stocks-comparison-output'),
+    loanAmount: utils.getHtmlElt('loan-amount-output'),
+    principalAndInterest: utils.getHtmlElt('principal-and-interest-output'),
+    monthlyPaymentAmount: utils.getHtmlElt('monthly-payment-output'),
+    lifetimeOfLoan: utils.getHtmlElt('lifetime-of-loan-output'),
+    lifetimePayment: utils.getHtmlElt('lifetime-payment-output'),
+    purchasePayment: utils.getHtmlElt('purchase-payment-output'),
+    prepayComparison: utils.getHtmlElt('prepay-comparison-output'),
+    stocksComparison: utils.getHtmlElt('stocks-comparison-output'),
   };
 }
 
 function getHidableOutputs(): Record<HidableOutputType, HTMLElement> {
   return {
-    'monthlyPaymentPmi': utils.getHtmlElt('monthly-payment-pmi-output'),
-    'pmiPaymentTimeline': utils.getHtmlElt('pmi-payment-timeline-output'),
-    'totalPaidSoFar': utils.getHtmlElt('total-paid-so-far-output'),
-    'equityOwnedSoFar': utils.getHtmlElt('equity-owned-so-far-output'),
-    'totalLoanOwed': utils.getHtmlElt('total-loan-owed-output'),
-    'remainingEquity': utils.getHtmlElt('remaining-equity-to-pay-for-output'),
-    'debtToIncome': utils.getHtmlElt('debt-to-income-ratio-output'),
-    'firedTomorrowCountdown':
-        utils.getHtmlElt('fired-tomorrow-countdown-output'),
+    monthlyPaymentPmi: utils.getHtmlElt('monthly-payment-pmi-output'),
+    pmiPaymentTimeline: utils.getHtmlElt('pmi-payment-timeline-output'),
+    totalPaidSoFar: utils.getHtmlElt('total-paid-so-far-output'),
+    equityOwnedSoFar: utils.getHtmlElt('equity-owned-so-far-output'),
+    totalLoanOwed: utils.getHtmlElt('total-loan-owed-output'),
+    remainingEquity: utils.getHtmlElt('remaining-equity-to-pay-for-output'),
+    debtToIncome: utils.getHtmlElt('debt-to-income-ratio-output'),
+    firedTomorrowCountdown: utils.getHtmlElt('fired-tomorrow-countdown-output'),
   };
 }
 
