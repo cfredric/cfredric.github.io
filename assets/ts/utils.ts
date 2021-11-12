@@ -323,13 +323,13 @@ export function saveFields(
   if (changed) {
     if (urlParams.has(changed)) {
       urlChanged =
-          urlChanged || updateURLParam(url, changed, urlParams.get(changed)!);
+          updateURLParam(url, changed, urlParams.get(changed)!) || urlChanged;
     }
     if (cookieValues.has(changed))
       updateCookie(changed, cookieValues.get(changed)!);
   } else {
     for (const [elt, entry] of urlParams.entries()) {
-      urlChanged = urlChanged || updateURLParam(url, elt, entry);
+      urlChanged = updateURLParam(url, elt, entry) || urlChanged;
     }
     for (const [elt, entry] of cookieValues.entries()) {
       updateCookie(elt, entry);
@@ -605,8 +605,7 @@ export function computeAmountHints(
     interestRate:
         `(${fmt.formatHundredthsPercent(ctx.interestRate.toNumber())})`,
     pointValue: `(${fmt.formatHundredthsPercent(ctx.pointValue.toNumber())})`,
-    pmiEquityPercentage:
-        `(${fmt.formatPercent(ctx.pmiEquityPct.toNumber())})`,
+    pmiEquityPercentage: `(${fmt.formatPercent(ctx.pmiEquityPct.toNumber())})`,
     propertyTax: `(Effective ${
         fmt.formatCurrency(ctx.propertyTax.mul(12)
                                .div(ctx.homeValue)
