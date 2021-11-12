@@ -600,24 +600,24 @@ export function computeTemplates(
 export function computeAmountHints(
     ctx: Context, fmt: Formatter): Record<HintType, string> {
   return {
-    'homeValue': `(${fmt.formatCurrency(ctx.homeValue.toNumber())})`,
-    'downPayment': `(${fmt.formatCurrency(ctx.downPayment.toNumber())})`,
-    'interestRate':
+    homeValue: `(${fmt.formatCurrency(ctx.homeValue.toNumber())})`,
+    downPayment: `(${fmt.formatCurrency(ctx.downPayment.toNumber())})`,
+    interestRate:
         `(${fmt.formatHundredthsPercent(ctx.interestRate.toNumber())})`,
-    'pointValue': `(${fmt.formatHundredthsPercent(ctx.pointValue.toNumber())})`,
-    'pmiEquityPercentage':
+    pointValue: `(${fmt.formatHundredthsPercent(ctx.pointValue.toNumber())})`,
+    pmiEquityPercentage:
         `(${fmt.formatPercent(ctx.pmiEquityPct.toNumber())})`,
-    'propertyTax': `(Effective ${
+    propertyTax: `(Effective ${
         fmt.formatCurrency(ctx.propertyTax.mul(12)
                                .div(ctx.homeValue)
                                .mul(1000)
                                .toNumber())} / $1000; ${
         fmt.formatCurrency(ctx.propertyTax.toNumber())}/mo)`,
-    'residentialExemption': `(${
+    residentialExemption: `(${
         fmt.formatCurrency(ctx.residentialExemptionPerMonth.toNumber())}/mo)`,
-    'mortgageTerm': `(${ctx.mortgageTerm} yrs)`,
-    'paymentsAlreadyMade': `(${ctx.paymentsAlreadyMade} payments)`,
-    'stocksReturnRate':
+    mortgageTerm: `(${ctx.mortgageTerm} yrs)`,
+    paymentsAlreadyMade: `(${ctx.paymentsAlreadyMade} payments)`,
+    stocksReturnRate:
         `(${fmt.formatHundredthsPercent(ctx.stocksReturnRate.toNumber())})`,
   };
 }
