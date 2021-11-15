@@ -242,8 +242,7 @@ function makeTooltip(
   const tooltip = svg.append('g');
 
   svg.on('touchmove mousemove', function(event) {
-    // eslint-disable-next-line no-invalid-this
-    const pointer = d3.pointer(event, this);
+    const pointer = d3.pointer(event);
     const datum = bisectMonth(data, x, pointer[0]);
     const paymentTypeIdx = identifyPaymentType(pointer[1], datum.data);
 
