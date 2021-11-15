@@ -241,7 +241,7 @@ function makeTooltip(
     identifyPaymentType: (yCoord: number, d: PaymentRecord) => number): void {
   const tooltip = svg.append('g');
 
-  svg.on('touchmove mousemove', function(event) {
+  svg.on('touchmove mousemove', (event) => {
     const pointer = d3.pointer(event);
     const datum = bisectMonth(data, x, pointer[0]);
     const paymentTypeIdx = identifyPaymentType(pointer[1], datum.data);
