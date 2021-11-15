@@ -254,52 +254,52 @@ function makeTooltip(
                     '\n')
             .join('') +
         `Month: ${utils.formatMonthNum(datum.month, ctx.closingDate)}`;
+
     tooltip.attr('transform', `translate(${x(datum.month)},${pointer[1]})`)
         .call(callout, value, paymentTypeIdx);
   });
 
   svg.on('touchend mouseleave', () => tooltip.call(callout, null, null));
+}
 
-  const callout =
-      (g: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
-       value: string, paymentTypeIdx: number): void => {
-        if (!value) {
-          g.style('display', 'none');
-          return;
-        }
+function callout(
+    g: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>, value: string,
+    paymentTypeIdx: number) {
+  if (!value) {
+    g.style('display', 'none');
+    return;
+  }
 
-        g.style('display', null)
-            .style('pointer-events', 'none')
-            .style('font', '12px sans-serif');
+  g.style('display', null)
+      .style('pointer-events', 'none')
+      .style('font', '12px sans-serif');
 
-        const path = g.selectAll('path')
-                         .data([null])
-                         .join('path')
-                         .attr('fill', 'white')
-                         .attr('stroke', 'black');
+  const path = g.selectAll('path')
+                   .data([null])
+                   .join('path')
+                   .attr('fill', 'white')
+                   .attr('stroke', 'black');
 
-        const text = g.selectAll('text').data([null]).join('text').call(
-            text => text.selectAll('tspan')
-                        .data((value + '').split(/\n/))
-                        .join('tspan')
-                        .attr('x', 0)
-                        .attr('y', (_, i) => `${i * 1.1}em`)
-                        .style(
-                            'font-weight',
-                            (_, i) => i === paymentTypeIdx ? 'bold' : null,
-                            )
-                        .text(d => d),
-        );
+  const text = g.selectAll('text').data([null]).join('text').call(
+      text => text.selectAll('tspan')
+                  .data((value + '').split(/\n/))
+                  .join('tspan')
+                  .attr('x', 0)
+                  .attr('y', (_, i) => `${i * 1.1}em`)
+                  .style(
+                      'font-weight',
+                      (_, i) => i === paymentTypeIdx ? 'bold' : null,
+                      )
+                  .text(d => d),
+  );
 
-        const {y, width: w, height: h} = (text.node() as SVGGElement).getBBox();
+  const {y, width: w, height: h} = (text.node() as SVGGElement).getBBox();
 
-        text.attr('transform', `translate(${- w / 2},${15 - y})`);
-        path.attr(
-            'd',
-            `M${- w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${
-                w + 20}z`,
-        );
-      };
+  text.attr('transform', `translate(${- w / 2},${15 - y})`);
+  path.attr(
+      'd',
+      `M${- w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`,
+  );
 }
 
 // Creates a legend for the given figure, with the given payment types and
