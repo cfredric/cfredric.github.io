@@ -198,9 +198,8 @@ function makeAxes(
     0,
     width,
   ]);
-  svg.append('g')
-      .attr('transform', `translate(0, ${height})`)
-      .call(d3.axisBottom(x).tickValues(d3.range(0, data.length, 12)));
+  d3.axisBottom(x).tickValues(d3.range(0, data.length, 12))(
+      svg.append('g').attr('transform', `translate(0, ${height})`));
 
   // text label for the x axis
   svg.append('text')
@@ -218,7 +217,7 @@ function makeAxes(
                 d => yDomainFn(keys.map(k => d.data[k].toNumber())) * 1.25)!,
           ])
           .range([height, 0]);
-  svg.append('g').call(d3.axisLeft(y));
+  d3.axisLeft(y)(svg.append('g'));
 
   // text label for the y axis
   svg.append('text')
@@ -254,21 +253,17 @@ function makeTooltip(
             .join('') +
         `Month: ${utils.formatMonthNum(datum.month, ctx.closingDate)}`;
 
-    tooltip.attr('transform', `translate(${x(datum.month)},${pointer[1]})`)
-        .call(callout, value, paymentTypeIdx);
+    callout(
+        tooltip.attr('transform', `translate(${x(datum.month)},${pointer[1]})`),
+        value, paymentTypeIdx);
   });
 
-  svg.on('touchend mouseleave', () => tooltip.call(callout, null, null));
+  svg.on('touchend mouseleave', () => void tooltip.style('display', 'none'));
 }
 
 function callout(
     g: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>, value: string,
     paymentTypeIdx: number) {
-  if (!value) {
-    g.style('display', 'none');
-    return;
-  }
-
   g.style('display', null)
       .style('pointer-events', 'none')
       .style('font', '12px sans-serif');
@@ -279,18 +274,17 @@ function callout(
                    .attr('fill', 'white')
                    .attr('stroke', 'black');
 
-  const text = g.selectAll('text').data([null]).join('text').call(
-      text => text.selectAll('tspan')
-                  .data((value + '').split(/\n/))
-                  .join('tspan')
-                  .attr('x', 0)
-                  .attr('y', (_, i) => `${i * 1.1}em`)
-                  .style(
-                      'font-weight',
-                      (_, i) => i === paymentTypeIdx ? 'bold' : null,
-                      )
-                  .text(d => d),
-  );
+  const text = g.selectAll('text').data([null]).join('text');
+  text.selectAll('tspan')
+      .data((value + '').split(/\n/))
+      .join('tspan')
+      .attr('x', 0)
+      .attr('y', (_, i) => `${i * 1.1}em`)
+      .style(
+          'font-weight',
+          (_, i) => i === paymentTypeIdx ? 'bold' : null,
+          )
+      .text(d => d);
 
   const {y, width: w, height: h} = (text.node() as SVGGElement).getBBox();
 
