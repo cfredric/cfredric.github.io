@@ -105,7 +105,7 @@ function buildPaymentScheduleChart(
     return keys.length - 1;
   });
 
-  makeLegend(svg, width, d => fieldColor(d), keys);
+  makeLegend(svg, width, fieldColor, keys);
 }
 
 // Builds the chart of cumulative payments over time.
