@@ -607,11 +607,9 @@ export function computeAmountHints(
     pointValue: `(${fmt.formatHundredthsPercent(ctx.pointValue.toNumber())})`,
     pmiEquityPercentage: `(${fmt.formatPercent(ctx.pmiEquityPct.toNumber())})`,
     propertyTax: `(Effective ${
-        fmt.formatCurrency(ctx.propertyTax.mul(12)
-                               .div(ctx.homeValue)
-                               .mul(1000)
-                               .toNumber())} / $1000; ${
-        fmt.formatCurrency(ctx.propertyTax.toNumber())}/mo)`,
+        fmt.formatCurrency(
+            ctx.propertyTax.mul(12).div(ctx.homeValue).mul(1000).toNumber() ||
+            0)} / $1000; ${fmt.formatCurrency(ctx.propertyTax.toNumber())}/mo)`,
     residentialExemption: `(${
         fmt.formatCurrency(ctx.residentialExemptionPerMonth.toNumber())}/mo)`,
     mortgageTerm: `(${ctx.mortgageTerm} yrs)`,
