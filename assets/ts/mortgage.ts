@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 
 import {Context} from './context';
 import {Formatter} from './formatter';
-import {Elements, HidableContainer, hidableContainerMap, HidableOutputType, HintType, InputEntry, Inputs, OutputType, TemplateType} from './types';
+import {Elements, hidableContainerMap, HidableOutputType, HintType, InputEntry, Inputs, OutputType, TemplateType} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -198,11 +198,8 @@ function setContents(ctx: Context, elts: Elements): void {
            utils.computeContents(ctx, fmt, schedules))) {
     elts.outputs[o as OutputType].innerText = v;
   }
-  for (const [k, v] of Object.entries(
-           utils.computeHidables(ctx, fmt, schedules))) {
-    const hc = k as HidableContainer;
-    v.display(hc);
-    elts.hidables[hidableContainerMap[hc]].innerText = v.output();
+  for (const v of Object.values(utils.computeHidables(ctx, fmt, schedules))) {
+    v.display(c => elts.hidables[hidableContainerMap[c]]);
   }
   for (const [t, v] of Object.entries(utils.computeTemplates(ctx, fmt))) {
     utils.fillTemplateElts(t as TemplateType, v);
