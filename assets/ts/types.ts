@@ -103,7 +103,7 @@ export type HintType = typeof hintTypes[number];
 export const outputTypes = [
   'loanAmount',
   'principalAndInterest',
-  'monthlyPaymentAmount',
+  'monthlyExpensesAmount',
   'lifetimeOfLoan',
   'lifetimePayment',
   'purchasePayment',
@@ -114,7 +114,7 @@ export const outputTypes = [
 export type OutputType = typeof outputTypes[number];
 
 export const hidableOutputTypes = [
-  'monthlyPaymentPmi',
+  'monthlyExpensesPmi',
   'pmiPaymentTimeline',
   'totalPaidSoFar',
   'equityOwnedSoFar',
@@ -127,7 +127,7 @@ export const hidableOutputTypes = [
 export type HidableOutputType = typeof hidableOutputTypes[number];
 
 export const hidableContainers = [
-  'monthly-payment-pmi-div',
+  'monthly-expenses-pmi-div',
   'months-of-pmi-div',
   'fired-tomorrow-countdown-div',
   'total-paid-so-far-div',
@@ -141,7 +141,7 @@ export type HidableContainer = typeof hidableContainers[number];
 
 export const hidableContainerMap:
     Record<HidableContainer, HidableOutputType> = {
-      'monthly-payment-pmi-div': 'monthlyPaymentPmi',
+      'monthly-expenses-pmi-div': 'monthlyExpensesPmi',
       'months-of-pmi-div': 'pmiPaymentTimeline',
       'fired-tomorrow-countdown-div': 'firedTomorrowCountdown',
       'total-paid-so-far-div': 'totalPaidSoFar',

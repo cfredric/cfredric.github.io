@@ -74,7 +74,7 @@ function getOutputs(): Record<OutputType, HTMLElement> {
   return {
     loanAmount: utils.getHtmlElt('loan-amount-output'),
     principalAndInterest: utils.getHtmlElt('principal-and-interest-output'),
-    monthlyPaymentAmount: utils.getHtmlElt('monthly-payment-output'),
+    monthlyExpensesAmount: utils.getHtmlElt('monthly-expenses-output'),
     lifetimeOfLoan: utils.getHtmlElt('lifetime-of-loan-output'),
     lifetimePayment: utils.getHtmlElt('lifetime-payment-output'),
     purchasePayment: utils.getHtmlElt('purchase-payment-output'),
@@ -85,7 +85,7 @@ function getOutputs(): Record<OutputType, HTMLElement> {
 
 function getHidableOutputs(): Record<HidableOutputType, HTMLElement> {
   return {
-    monthlyPaymentPmi: utils.getHtmlElt('monthly-payment-pmi-output'),
+    monthlyExpensesPmi: utils.getHtmlElt('monthly-expenses-pmi-output'),
     pmiPaymentTimeline: utils.getHtmlElt('pmi-payment-timeline-output'),
     totalPaidSoFar: utils.getHtmlElt('total-paid-so-far-output'),
     equityOwnedSoFar: utils.getHtmlElt('equity-owned-so-far-output'),

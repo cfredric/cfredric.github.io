@@ -441,7 +441,7 @@ export function computeContents(
       purchasePayment,
       lifetimeOfLoan: '',
       lifetimePayment: '',
-      monthlyPaymentAmount: '',
+      monthlyExpensesAmount: '',
       prepayComparison: '',
       principalAndInterest: '',
       stocksComparison: '',
@@ -481,7 +481,7 @@ export function computeContents(
                 .toNumber()) :
         '',
     principalAndInterest: fmt.formatCurrency(ctx.monthlyLoanPayment.toNumber()),
-    monthlyPaymentAmount: fmt.formatCurrency(
+    monthlyExpensesAmount: fmt.formatCurrency(
         ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment).toNumber()),
   };
 }
@@ -492,11 +492,11 @@ export function computeHidables(
   if (!schedules)
     return mkRecord(hidableContainers, (k) => new HidableOutput(k));
   const {pointwise, cumulative} = schedules;
-  let monthlyPaymentPmi;
+  let monthlyExpensesPmi;
   let monthsOfPmi;
   if (ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct)) {
-    monthlyPaymentPmi = new HidableOutput(
-        'monthly-payment-pmi-div',
+    monthlyExpensesPmi = new HidableOutput(
+        'monthly-expenses-pmi-div',
         fmt.formatCurrency(
             Decimal
                 .sum(ctx.monthlyLoanPayment, ctx.monthlyNonLoanPayment, ctx.pmi)
@@ -509,7 +509,7 @@ export function computeHidables(
         `${formatMonthNum(pmiMonths)} (${
             fmt.formatCurrency(ctx.pmi.mul(pmiMonths).toNumber())} total)`);
   } else {
-    monthlyPaymentPmi = new HidableOutput('monthly-payment-pmi-div');
+    monthlyExpensesPmi = new HidableOutput('monthly-expenses-pmi-div');
     monthsOfPmi = new HidableOutput('months-of-pmi-div');
   }
 
@@ -589,7 +589,7 @@ export function computeHidables(
   }
 
   return {
-    ['monthly-payment-pmi-div']: monthlyPaymentPmi,
+    ['monthly-expenses-pmi-div']: monthlyExpensesPmi,
     ['months-of-pmi-div']: monthsOfPmi,
     ['fired-tomorrow-countdown-div']: firedTomorrowCountdown,
     ['total-paid-so-far-div']: totalPaidSoFar,
