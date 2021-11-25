@@ -17,7 +17,8 @@ const fmt = new Formatter(
     new Intl.NumberFormat('en-US', {
       style: 'percent',
       maximumFractionDigits: 2,
-    }));
+    }),
+    new Intl.DateTimeFormat());
 
 type InputParamMap = Readonly<Map<HTMLInputElement, InputEntry>>;
 

@@ -6,8 +6,6 @@ import {Formatter} from './formatter';
 import {HidableOutput} from './hidable_output';
 import {HidableContainer, hidableContainers, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType, templateTypes} from './types';
 
-const timeFormat = new Intl.DateTimeFormat();
-
 // Returns the numeric value of the input element, or 0 if the input was empty.
 export function orZeroN(elt: HTMLInputElement): number {
   const num = Number.parseFloat(elt.value);
@@ -109,31 +107,6 @@ export function countBurndownMonths(
       schedule.length ? sumOfKeys(schedule[0]!, nonLoanPaymentTypes) : 0);
   return schedule.length +
       Decimal.floor(assets.div(totalMonthlyExpenses)).toNumber();
-}
-
-// Formats a number of months into an integral number of years and integral
-// number of months.
-export function formatMonthNum(m: number, baseDate?: Date) {
-  if (!Number.isFinite(m)) {
-    if (Number.isNaN(m)) return 'NaN';
-    if (m > 0) return 'forever';
-  }
-  let str;
-  if (m <= 0) {
-    str = '0mo';
-  } else {
-    const years = Math.floor(m / 12);
-    const months = m % 12;
-
-    str = years !== 0 ? `${years}y ` : '';
-    if (months !== 0) str += `${months}mo`;
-
-    str = str.trim();
-  }
-  if (baseDate) {
-    str += ` (${timeFormat.format(d3.timeMonth.offset(baseDate, m))})`;
-  }
-  return str;
 }
 
 export function maxNonEmptyDate(...ds: (Date|undefined)[]): Date|undefined {
@@ -455,7 +428,7 @@ export function computeContents(
     purchasePayment,
     lifetimeOfLoan: ctx.m.eq(0) ?
         '' :
-        formatMonthNum(
+        fmt.formatMonthNum(
             countSatisfying(pointwise, m => m.data.principal.gt(0)),
             ctx.closingDate),
     lifetimePayment: ctx.m.eq(0) ?
@@ -506,7 +479,7 @@ export function computeHidables(
         countSatisfying(pointwise, payment => !payment.data.pmi.eq(0));
     monthsOfPmi = new HidableOutput(
         'months-of-pmi-div',
-        `${formatMonthNum(pmiMonths)} (${
+        `${fmt.formatMonthNum(pmiMonths)} (${
             fmt.formatCurrency(ctx.pmi.mul(pmiMonths).toNumber())} total)`);
   } else {
     monthlyExpensesPmi = new HidableOutput('monthly-expenses-pmi-div');
@@ -517,7 +490,7 @@ export function computeHidables(
   if (!ctx.totalAssets.eq(0)) {
     firedTomorrowCountdown = new HidableOutput(
         'fired-tomorrow-countdown-div',
-        formatMonthNum(
+        fmt.formatMonthNum(
             countBurndownMonths(
                 ctx.totalAssets.sub(
                     (ctx.alreadyClosed ? new Decimal(0) :
@@ -604,7 +577,7 @@ export function computeTemplates(
     ctx: Context, fmt: Formatter): Record<TemplateType, string> {
   if (ctx.prepayment.gt(0)) {
     return {
-      'mortgage-term': formatMonthNum(ctx.n),
+      'mortgage-term': fmt.formatMonthNum(ctx.n),
       'prepay-amount': fmt.formatCurrency(ctx.prepayment.toNumber()),
     };
   }

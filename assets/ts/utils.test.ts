@@ -231,24 +231,6 @@ test('countBurndownMonths', () => {
       .toBe(2);
 });
 
-test('formatMonthNum', () => {
-  expect(utils.formatMonthNum(0)).toBe('0mo');
-  expect(utils.formatMonthNum(1)).toBe('1mo');
-  expect(utils.formatMonthNum(11)).toBe('11mo');
-  expect(utils.formatMonthNum(12)).toBe('1y');
-  expect(utils.formatMonthNum(14)).toBe('1y 2mo');
-  expect(utils.formatMonthNum(23)).toBe('1y 11mo');
-  expect(utils.formatMonthNum(24)).toBe('2y');
-  expect(utils.formatMonthNum(25)).toBe('2y 1mo');
-
-  // Weird cases:
-  expect(utils.formatMonthNum(-2)).toBe('0mo');
-  expect(utils.formatMonthNum(Infinity)).toBe('forever');
-  expect(utils.formatMonthNum(-Infinity)).toBe('0mo');
-  expect(utils.formatMonthNum(NaN)).toBe('NaN');
-  expect(utils.formatMonthNum(-NaN)).toBe('NaN');
-});
-
 test('maxNonEmptyDate', () => {
   const early = new Date(2010);
   const mid = new Date(2015);

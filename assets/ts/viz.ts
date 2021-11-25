@@ -251,7 +251,7 @@ function makeTooltip(
                          fmt.formatCurrency(datum.data[k].toNumber())}` +
                     '\n')
             .join('') +
-        `Month: ${utils.formatMonthNum(datum.month, ctx.closingDate)}`;
+        `Month: ${fmt.formatMonthNum(datum.month, ctx.closingDate)}`;
 
     callout(
         tooltip.attr('transform', `translate(${x(datum.month)},${pointer[1]})`),
@@ -351,7 +351,7 @@ export function setChartsAndButtonsContent(
               ['Month', ...ts.map(utils.toCapitalized)],
               data.map(
                   d =>
-                      [utils.formatMonthNum(d.month, ctx.closingDate),
+                      [fmt.formatMonthNum(d.month, ctx.closingDate),
                        ...ts.map(k => fmt.formatCurrency(d.data[k].toNumber())),
   ]));
   new ExpandableElement(
