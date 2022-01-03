@@ -140,7 +140,11 @@ export class NamedConstant extends Num {
 export class DerivedNum extends Num {
   private readonly op: Op;
   private readonly v: Decimal;
-  private readonly s: string;
+
+  // Lazily compute the symoblic representation. We build some complicated
+  // numbers, so if we don't have to care about the symoblic representation, we
+  // shouldn't.
+  private s: string|(() => string);
 
   constructor(op: Op, ...ns: readonly Num[]) {
     super();
@@ -149,28 +153,33 @@ export class DerivedNum extends Num {
     switch (this.op) {
       case Op.Plus:
         this.v = Decimal.sum(...ns.map(n => n.value()));
+        this.s = () => '(' + ns.map(n => n.toString()).join(' + ') + ')';
         break;
       case Op.Minus:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.sub(n.value()), valueOf(ns[0]!));
+        this.s = () => '(' + ns.map(n => n.toString()).join(' - ') + ')';
         break;
       case Op.Mult:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.mul(n.value()), valueOf(ns[0]!));
+        this.s = () => '(' + ns.map(n => n.toString()).join(' * ') + ')';
         break;
       case Op.Div:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.div(n.value()), valueOf(ns[0]!));
+        this.s = () => '(' + ns.map(n => n.toString()).join(' / ') + ')';
         break;
       case Op.Floor:
         this.v = valueOf(ns[0]!).floor();
+        this.s = () => 'floor(' + ns[0]!.toString() + ')';
         break;
       case Op.Pow:
         this.v = valueOf(ns[0]!).pow(valueOf(ns[1]!));
+        this.s = () =>
+            '(' + ns[0]!.toString() + ' ^ ' + ns[1]!.toString() + ')';
         break;
     }
-
-    this.s = 'todo';
   }
 
   value(): Decimal {
@@ -178,6 +187,10 @@ export class DerivedNum extends Num {
   }
 
   toString(): string {
+    if (typeof this.s === 'function') {
+      this.s = this.s();
+    }
+
     return this.s;
   }
 }
