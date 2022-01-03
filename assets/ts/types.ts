@@ -1,5 +1,7 @@
 import {Decimal} from 'decimal.js';
 
+import {Num} from './num';
+
 export const paymentTypes = [
   'principal',
   'interest',
@@ -16,7 +18,7 @@ export const loanPaymentTypes = ['principal', 'interest'] as const;
 
 export type PaymentType = typeof paymentTypes[number];
 
-export type PaymentRecord = Record<PaymentType, Decimal>;
+export type PaymentRecord = Record<PaymentType, Num>;
 
 export interface PaymentRecordWithMonth {
   month: number;
@@ -55,6 +57,7 @@ export interface ContextInput {
   prepayment: Decimal;
   stocksReturnRate?: Decimal;
   now: Date;
+  showDerivations: boolean;
 }
 
 export interface Inputs {
@@ -83,6 +86,7 @@ export interface Inputs {
   closingDate: HTMLInputElement;
   prepayment: HTMLInputElement;
   stocksReturnRate: HTMLInputElement;
+  showDerivations: HTMLInputElement;
 }
 
 export const hintTypes = [

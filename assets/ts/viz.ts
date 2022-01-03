@@ -1,9 +1,9 @@
 import * as d3 from 'd3';
-import Decimal from 'decimal.js';
 
 import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
 import {Formatter} from './formatter';
+import {Literal, Num} from './num';
 import {loanPaymentTypes, Margin, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules} from './types';
 import * as utils from './utils';
 
@@ -95,7 +95,7 @@ function buildPaymentScheduleChart(
 
   makeTooltip(ctx, svg, schedule, keys, x, fmt, (mouseY, datum) => {
     const yTarget = y.invert(mouseY);
-    let cumulative = new Decimal(0);
+    let cumulative: Num = new Literal(0);
     for (const [idx, key] of keys.entries()) {
       if (cumulative.add(datum[key]).gte(yTarget)) {
         return idx;
@@ -129,7 +129,7 @@ function buildCumulativeChart(
       d3.max,
   );
 
-  const area = d3.area<{month: number, value: Decimal}>()
+  const area = d3.area<{month: number, value: Num}>()
                    .curve(d3.curveMonotoneX)
                    .x(d => x(d.month))
                    .y0(y(0))
@@ -245,12 +245,11 @@ function makeTooltip(
     const datum = bisectMonth(data, x, pointer[0]);
     const paymentTypeIdx = identifyPaymentType(pointer[1], datum.data);
 
-    const value =
-        keys.map(
-                k => `${utils.toCapitalized(k)}: ${
-                         fmt.formatCurrency(datum.data[k].toNumber())}` +
-                    '\n')
-            .join('') +
+    const value = keys.map(
+                          k => `${utils.toCapitalized(k)}: ${
+                                   fmt.formatCurrency(datum.data[k])}` +
+                              '\n')
+                      .join('') +
         `Month: ${fmt.formatMonthNum(datum.month, ctx.closingDate)}`;
 
     callout(
@@ -352,7 +351,7 @@ export function setChartsAndButtonsContent(
               data.map(
                   d =>
                       [fmt.formatMonthNum(d.month, ctx.closingDate),
-                       ...ts.map(k => fmt.formatCurrency(d.data[k].toNumber())),
+                       ...ts.map(k => fmt.formatCurrency(d.data[k])),
   ]));
   new ExpandableElement(
       utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
