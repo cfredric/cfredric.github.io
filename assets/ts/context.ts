@@ -1,7 +1,7 @@
 import * as d3 from 'd3';
 import Decimal from 'decimal.js';
 
-import {NamedConstant, Num} from './num';
+import {Literal, NamedConstant, Num} from './num';
 import {ContextInput} from './types';
 import * as utils from './utils';
 
@@ -53,23 +53,24 @@ export class Context {
     this.homeValue = new NamedConstant(
         utils.chooseNonzero(Num.max(0, input.homeValue), this.price),
         'homeValue');
-    this.hoa = new NamedConstant(Num.max(0, new Num(input.hoa)), 'HOA');
-    this.downPayment = new NamedConstant(
-        utils.chooseNonzero(
-            new Num(input.downPaymentPercent.clamp(0, 100))
-                .div(100)
-                .mul(this.price),
-            new Num(input.downPaymentAbsolute.clamp(0, this.price.value()))),
-        'downPayment');
-    this.downPaymentPct = new NamedConstant(
-        this.downPayment.div(this.price), 'downPaymentPercentage');
+    this.hoa = new NamedConstant(Num.max(0, input.hoa), 'HOA');
+    const rawDownPaymentPercent = new NamedConstant(
+        input.downPaymentPercent.clamp(0, 100), 'downPaymentPercent');
+    this.downPayment = utils.chooseNonzero(
+        rawDownPaymentPercent.div(100).mul(this.price),
+        new NamedConstant(
+            input.downPaymentAbsolute.clamp(0, this.price.value()),
+            'downPaymentAbsolute'));
+    this.downPaymentPct = utils.chooseNonzero(
+        rawDownPaymentPercent.div(100), this.downPayment.div(this.price));
     this.interestRate =
         new NamedConstant(input.interestRate.clamp(0, 100), 'interestRate')
             .div(100);
     this.pointValue = new NamedConstant(
-        utils.chooseNonzero(
-            Num.max(0, new Num(input.pointValue).div(100)), new Num(0.0025)),
-        'pointsValue');
+                          utils.chooseNonzero(
+                              Num.max(0, input.pointValue), new Literal(0.25)),
+                          'pointsValue')
+                          .div(100);
     this.pointsPurchased = new NamedConstant(
         Math.max(0, input.pointsPurchased), 'pointsPurchased');
     if (!this.interestRate.eq(0) && !this.pointsPurchased.eq(0)) {
@@ -77,19 +78,21 @@ export class Context {
           0, this.interestRate.sub(this.pointsPurchased.mul(this.pointValue)));
     }
     this.pmi = new NamedConstant(
-        this.downPaymentPct.gte(0.2) ? new Num(0) :
-                                       new Num(Decimal.max(0, input.pmi)),
-        'PMI');
-    this.pmiEquityPct = new NamedConstant(
-        utils.chooseNonzero(
-            new Num(input.pmiEquityPercent.clamp(0, 100)).div(100),
-            new Num(0.22)),
-        'PMIEquityCutoff');
+        this.downPaymentPct.gte(0.2) ? 0 : Decimal.max(0, input.pmi), 'PMI');
+    this.pmiEquityPct =
+        new NamedConstant(
+            utils.chooseNonzero(
+                new Literal(input.pmiEquityPercent.clamp(0, 100)),
+                new Literal(22)),
+            'pmiEquityCutoff')
+            .div(100);
     {
-      const rawMonthlyAbsolute =
-          new Num(Decimal.max(0, input.propertyTaxAbsolute));
+      const rawMonthlyAbsolute = new NamedConstant(
+          Decimal.max(0, input.propertyTaxAbsolute), 'propertyTaxAbsolute');
       const rawAnnualRate =
-          new Num(input.propertyTaxPercent.clamp(0, 100)).div(100);
+          new NamedConstant(
+              input.propertyTaxPercent.clamp(0, 100), 'propertyTaxPercent')
+              .div(100);
 
       const rawExemptionAnnualSavings = new NamedConstant(
           Decimal.max(0, input.residentialExemptionAnnualSavings),
@@ -143,16 +146,17 @@ export class Context {
         input.closingDate ? d3.timeMonth.floor(input.closingDate) : undefined;
     this.prepayment = new NamedConstant(
         input.prepayment.clamp(0, this.price.value()), 'prepayment');
-    this.stocksReturnRate = new NamedConstant(
-        input.stocksReturnRate ? input.stocksReturnRate.div(100) :
-                                 new Decimal(0.07),
-        'stocksReturnRate');
+    this.stocksReturnRate =
+        new NamedConstant(
+            input.stocksReturnRate ? input.stocksReturnRate : new Decimal(7),
+            'stocksReturnRate')
+            .div(100);
 
     this.showMonthlySchedule =
         !this.interestRate.eq(0) || this.downPayment.eq(this.price);
     if (this.showMonthlySchedule) {
       this.m = this.downPayment.eq(this.price) ?
-          new Num(0) :
+          new Literal(0) :
           utils.computeAmortizedPaymentAmount(
               this.price.sub(this.downPayment),
               this.interestRate.div(12),
@@ -160,8 +164,8 @@ export class Context {
           );
       this.monthlyLoanPayment = this.m.add(this.prepayment);
     } else {
-      this.m = new Num(0);
-      this.monthlyLoanPayment = new Num(0);
+      this.m = new Literal(0);
+      this.monthlyLoanPayment = new Literal(0);
     }
     this.monthlyNonLoanPayment =
         Num.sum(this.hoa, this.propertyTax, this.homeownersInsurance);

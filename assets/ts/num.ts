@@ -3,16 +3,10 @@ import Decimal from 'decimal.js';
 
 type AnyNumber = number|Num|Decimal;
 
-export class Num {
-  private readonly v: Decimal;
+export abstract class Num {
+  constructor() {}
 
-  constructor(value: number|Decimal) {
-    this.v = value instanceof Decimal ? value : new Decimal(value);
-  }
-
-  value(): Decimal {
-    return this.v;
-  }
+  abstract value(): Decimal;
 
   toNumber(): number {
     return this.value().toNumber();
@@ -27,7 +21,7 @@ export class Num {
 
   static floor(x: AnyNumber): Num {
     x = Num.toNum(x);
-    return new Num(x.v.floor());
+    return new DerivedNum(Op.Floor, x);
   }
 
   clamp(min: AnyNumber, max: AnyNumber): Num {
@@ -40,58 +34,57 @@ export class Num {
 
   gte(b: AnyNumber): boolean {
     b = Num.toNum(b);
-    return this.v.gte(b.v);
+    return this.value().gte(b.value());
   }
   gt(b: AnyNumber): boolean {
     b = Num.toNum(b);
-    return this.v.gt(b.v);
+    return this.value().gt(b.value());
   }
   lte(b: AnyNumber): boolean {
     b = Num.toNum(b);
-    return this.v.lte(b.v);
+    return this.value().lte(b.value());
   }
   lt(b: AnyNumber): boolean {
     b = Num.toNum(b);
-    return this.v.lt(b.v);
+    return this.value().lt(b.value());
   }
   eq(b: AnyNumber): boolean {
     b = Num.toNum(b);
-    return this.v.eq(b.v);
+    return this.value().eq(b.value());
   }
   cmp(b: AnyNumber): number {
     b = Num.toNum(b);
-    return this.v.cmp(b.v);
+    return this.value().cmp(b.value());
   }
 
   add(b: AnyNumber): Num {
     b = Num.toNum(b);
-    return new Num(this.v.add(b.v));
+    return new DerivedNum(Op.Plus, this, b)
   }
   sub(b: AnyNumber): Num {
     b = Num.toNum(b);
-    return new Num(this.v.sub(b.v));
+    return new DerivedNum(Op.Minus, this, b);
   }
   mul(b: AnyNumber): Num {
     b = Num.toNum(b);
-    return new Num(this.v.mul(b.v));
+    return new DerivedNum(Op.Mult, this, b);
   }
   static div(a: AnyNumber, b: AnyNumber): Num {
     a = Num.toNum(a);
     b = Num.toNum(b);
-    return new Num(a.v.div(b.v));
+    return new DerivedNum(Op.Div, a, b);
   }
   div(b: AnyNumber): Num {
     b = Num.toNum(b);
-    return new Num(this.v.div(b.v));
+    return new DerivedNum(Op.Div, this, b);
   }
   pow(b: AnyNumber): Num {
     b = Num.toNum(b);
-    return new Num(this.v.pow(b.v));
+    return new DerivedNum(Op.Pow, this, b);
   }
 
   static sum(...xs: readonly AnyNumber[]): Num {
-    return new Num(
-        Decimal.sum(...xs.map((x: AnyNumber) => Num.toNum(x).value())));
+    return new DerivedNum(Op.Plus, ...xs.map(x => Num.toNum(x)));
   }
 
   static toNum(x: AnyNumber): Num {
@@ -101,11 +94,17 @@ export class Num {
 }
 
 export class Literal extends Num {
+  private readonly v: Decimal;
   private readonly s: string;
 
   constructor(value: number|Decimal) {
-    super(value);
+    super();
+    this.v = valueOf(value);
     this.s = value.toString();
+  }
+
+  value(): Decimal {
+    return this.v;
   }
 
   toString(): string {
@@ -113,12 +112,24 @@ export class Literal extends Num {
   }
 }
 
+function valueOf(x: AnyNumber): Decimal {
+  if (x instanceof Decimal) return x;
+  if (x instanceof Num) return x.value();
+  return new Decimal(x);
+}
+
 export class NamedConstant extends Num {
+  private readonly v: Decimal;
   private readonly name: string;
 
   constructor(value: AnyNumber, name: string) {
-    super(Num.toNum(value).value());
+    super();
+    this.v = valueOf(value);
     this.name = name;
+  }
+
+  value(): Decimal {
+    return this.v;
   }
 
   toString(): string {
@@ -127,14 +138,55 @@ export class NamedConstant extends Num {
 }
 
 export class DerivedNum extends Num {
-  private readonly derivation: string;
+  private readonly op: Op;
+  private readonly v: Decimal;
+  private readonly s: string;
 
-  constructor(value: Decimal, derivation: string) {
-    super(value);
-    this.derivation = derivation;
+  constructor(op: Op, ...ns: readonly Num[]) {
+    super();
+    this.op = op;
+
+    switch (this.op) {
+      case Op.Plus:
+        this.v = Decimal.sum(...ns.map(n => n.value()));
+        break;
+      case Op.Minus:
+        this.v = ns.slice(1).reduce(
+            (acc: Decimal, n: Num) => acc.sub(n.value()), valueOf(ns[0]!));
+        break;
+      case Op.Mult:
+        this.v = ns.slice(1).reduce(
+            (acc: Decimal, n: Num) => acc.mul(n.value()), valueOf(ns[0]!));
+        break;
+      case Op.Div:
+        this.v = ns.slice(1).reduce(
+            (acc: Decimal, n: Num) => acc.div(n.value()), valueOf(ns[0]!));
+        break;
+      case Op.Floor:
+        this.v = valueOf(ns[0]!).floor();
+        break;
+      case Op.Pow:
+        this.v = valueOf(ns[0]!).pow(valueOf(ns[1]!));
+        break;
+    }
+
+    this.s = 'todo';
+  }
+
+  value(): Decimal {
+    return this.v;
   }
 
   toString(): string {
-    return this.derivation;
+    return this.s;
   }
+}
+
+enum Op {
+  Plus,
+  Minus,
+  Mult,
+  Div,
+  Floor,
+  Pow,
 }

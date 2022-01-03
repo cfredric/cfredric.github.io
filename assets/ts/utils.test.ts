@@ -5,8 +5,21 @@
 import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
-import {Num} from './num';
+import {Literal} from './num';
+import {PaymentType} from './types';
 import * as utils from './utils';
+
+// const numMatcher = (a, b, c) => {
+//   if (!(a instanceof Num) || !(b instanceof Num)) return {
+//     pass:
+//   expect(a.value()).toEqual(b.value());
+//   return true;
+// };
+//
+// expect.extend({
+//   numMatch: numMatcher,
+// });
+
 
 test('countSatisfying no matches', () => {
   expect(utils.countSatisfying(new Array(10).fill(false), x => x)).toBe(0);
@@ -59,66 +72,72 @@ test('monthDiff', () => {
 });
 
 test('cumulativeSumByFields', () => {
-  expect(utils.cumulativeSumByFields(
-             [
-               {
-                 month: 1,
-                 data: {
-                   'principal': new Num(1),
-                   'interest': new Num(0),
-                   'hoa': new Num(0),
-                   'property_tax': new Num(0),
-                   'pmi': new Num(0),
-                   'homeowners_insurance': new Num(0),
-                 },
-               },
-               {
-                 month: 2,
-                 data: {
-                   'principal': new Num(2),
-                   'interest': new Num(0),
-                   'hoa': new Num(0),
-                   'property_tax': new Num(0),
-                   'pmi': new Num(0),
-                   'homeowners_insurance': new Num(0),
-                 },
-               },
-               {
-                 month: 3,
-                 data: {
-                   'principal': new Num(4),
-                   'interest': new Num(0),
-                   'hoa': new Num(0),
-                   'property_tax': new Num(0),
-                   'pmi': new Num(0),
-                   'homeowners_insurance': new Num(0),
-                 },
-               },
-             ],
-             ['principal']))
-      .toStrictEqual([
+  const keys: readonly PaymentType[] = ['principal'];
+  expect(utils
+             .cumulativeSumByFields(
+                 [
+                   {
+                     month: 1,
+                     data: {
+                       'principal': new Literal(1),
+                       'interest': new Literal(0),
+                       'hoa': new Literal(0),
+                       'property_tax': new Literal(0),
+                       'pmi': new Literal(0),
+                       'homeowners_insurance': new Literal(0),
+                     },
+                   },
+                   {
+                     month: 2,
+                     data: {
+                       'principal': new Literal(2),
+                       'interest': new Literal(0),
+                       'hoa': new Literal(0),
+                       'property_tax': new Literal(0),
+                       'pmi': new Literal(0),
+                       'homeowners_insurance': new Literal(0),
+                     },
+                   },
+                   {
+                     month: 3,
+                     data: {
+                       'principal': new Literal(4),
+                       'interest': new Literal(0),
+                       'hoa': new Literal(0),
+                       'property_tax': new Literal(0),
+                       'pmi': new Literal(0),
+                       'homeowners_insurance': new Literal(0),
+                     },
+                   },
+                 ],
+                 keys)
+             .map(v => ({
+                    month: v.month,
+                    data: utils.mkRecord(keys, (k) => v.data[k].value()),
+                  })))
+      .toMatchObject([
         {
           month: 0,
           data: {
-            'principal': new Num(0),
+            'principal': new Decimal(0),
           },
         },
         {
           month: 1,
           data: {
-            'principal': new Num(1),
+            'principal': new Decimal(1),
           },
         },
         {
           month: 2,
           data: {
-            'principal': new Num(3),
+            'principal': new Decimal(3),
           },
         },
         {
           month: 3,
           data: {
-            'principal': new Num(7),
+            'principal': new Decimal(7),
           },
         },
       ]);
@@ -126,107 +145,109 @@ test('cumulativeSumByFields', () => {
 
 test('countBurndownMonths', () => {
   // Can handle an empty schedule slice.
-  expect(utils.countBurndownMonths(new Num(50), [], new Num(10))).toBe(5);
+  expect(utils.countBurndownMonths(new Literal(50), [], new Literal(10)))
+      .toBe(5);
 
   // Can handle an empty schedule slice and no monthly debts.
-  expect(utils.countBurndownMonths(new Num(50), [], new Num(0))).toBe(Infinity);
+  expect(utils.countBurndownMonths(new Literal(50), [], new Literal(0)))
+      .toBe(Infinity);
 
   // Can pay off full loan, no recurring debts, no non-loan payments.
   expect(utils.countBurndownMonths(
-             new Num(100),
+             new Literal(100),
              [
                {
-                 'principal': new Num(99),
-                 'interest': new Num(0),
-                 'hoa': new Num(0),
-                 'property_tax': new Num(0),
-                 'pmi': new Num(0),
-                 'homeowners_insurance': new Num(0),
+                 'principal': new Literal(99),
+                 'interest': new Literal(0),
+                 'hoa': new Literal(0),
+                 'property_tax': new Literal(0),
+                 'pmi': new Literal(0),
+                 'homeowners_insurance': new Literal(0),
                },
              ],
-             new Num(0)))
+             new Literal(0)))
       .toBe(Infinity);
 
   // Can pay off full loan, no recurring debts, but some non-loan payments.
   expect(utils.countBurndownMonths(
-             new Num(100),
+             new Literal(100),
              [
                {
-                 'principal': new Num(95),
-                 'interest': new Num(0),
-                 'hoa': new Num(1),
-                 'property_tax': new Num(0),
-                 'pmi': new Num(0),
-                 'homeowners_insurance': new Num(0),
+                 'principal': new Literal(95),
+                 'interest': new Literal(0),
+                 'hoa': new Literal(1),
+                 'property_tax': new Literal(0),
+                 'pmi': new Literal(0),
+                 'homeowners_insurance': new Literal(0),
                },
              ],
-             new Num(0)))
+             new Literal(0)))
       .toBe(5);
 
   // Can't pay off full loan; no recurring debts; some non-loan payments.
   expect(utils.countBurndownMonths(
-             new Num(100),
+             new Literal(100),
              [
                {
-                 'principal': new Num(95),
-                 'interest': new Num(0),
-                 'hoa': new Num(1),
-                 'property_tax': new Num(0),
-                 'pmi': new Num(0),
-                 'homeowners_insurance': new Num(0),
+                 'principal': new Literal(95),
+                 'interest': new Literal(0),
+                 'hoa': new Literal(1),
+                 'property_tax': new Literal(0),
+                 'pmi': new Literal(0),
+                 'homeowners_insurance': new Literal(0),
                },
                {
-                 'principal': new Num(95),
-                 'interest': new Num(0),
-                 'hoa': new Num(1),
-                 'property_tax': new Num(0),
-                 'pmi': new Num(0),
-                 'homeowners_insurance': new Num(0),
+                 'principal': new Literal(95),
+                 'interest': new Literal(0),
+                 'hoa': new Literal(1),
+                 'property_tax': new Literal(0),
+                 'pmi': new Literal(0),
+                 'homeowners_insurance': new Literal(0),
                },
              ],
-             new Num(0)))
+             new Literal(0)))
       .toBe(1);
 
   // Can't pay off full loan; some recurring debts; some non-loan payments.
   expect(utils.countBurndownMonths(
-             new Num(100),
+             new Literal(100),
              [
                {
-                 'principal': new Num(95),
-                 'interest': new Num(0),
-                 'hoa': new Num(1),
-                 'property_tax': new Num(0),
-                 'pmi': new Num(0),
-                 'homeowners_insurance': new Num(0),
+                 'principal': new Literal(95),
+                 'interest': new Literal(0),
+                 'hoa': new Literal(1),
+                 'property_tax': new Literal(0),
+                 'pmi': new Literal(0),
+                 'homeowners_insurance': new Literal(0),
                },
                {
-                 'principal': new Num(95),
-                 'interest': new Num(0),
-                 'hoa': new Num(1),
-                 'property_tax': new Num(0),
-                 'pmi': new Num(0),
-                 'homeowners_insurance': new Num(0),
+                 'principal': new Literal(95),
+                 'interest': new Literal(0),
+                 'hoa': new Literal(1),
+                 'property_tax': new Literal(0),
+                 'pmi': new Literal(0),
+                 'homeowners_insurance': new Literal(0),
                },
              ],
-             new Num(2)))
+             new Literal(2)))
       .toBe(1);
 
   // Can pay off full loan; some recurring debts; some non-loan payments.  At
   // the end of the mortgage, assets will be 9; then return schedule.length +
   // (9 / (2 + 4)) = 1 + 1 = 2
   expect(utils.countBurndownMonths(
-             new Num(16),
+             new Literal(16),
              [
                {
-                 'principal': new Num(1),
-                 'interest': new Num(0),
-                 'hoa': new Num(2),
-                 'property_tax': new Num(0),
-                 'pmi': new Num(0),
-                 'homeowners_insurance': new Num(0),
+                 'principal': new Literal(1),
+                 'interest': new Literal(0),
+                 'hoa': new Literal(2),
+                 'property_tax': new Literal(0),
+                 'pmi': new Literal(0),
+                 'homeowners_insurance': new Literal(0),
                },
              ],
-             new Num(4)))
+             new Literal(4)))
       .toBe(2);
 });
 
@@ -339,45 +360,49 @@ test('updateURLParam', () => {
 test('computeStockAssets', () => {
   // Investing something during one month doesn't cause any growth, since
   // there's no time to compound.
-  expect(utils.computeStockAssets([new Num(1)], new Num(1)).toNumber())
+  expect(utils.computeStockAssets([new Literal(1)], new Literal(1)).toNumber())
       .toBeCloseTo(1, 6);
 
   // Investing something for a year, with no expected annual return, should
   // have no effect.
-  expect(
-      utils
-          .computeStockAssets(
-              [new Num(1)].concat(new Array(12).fill(new Num(0))), new Num(0))
-          .toNumber())
+  expect(utils
+             .computeStockAssets(
+                 [new Literal(1)].concat(new Array(12).fill(new Literal(0))),
+                 new Literal(0))
+             .toNumber())
       .toBeCloseTo(1, 6);
 
   // Investing something for a year, with an expected annual return of 0.5,
   // should cause it to grow 1.5x (modulo rounding accuracy).
   expect(utils
              .computeStockAssets(
-                 [new Num(10)].concat(new Array(12).fill(new Num(0))),
-                 new Num(0.5))
+                 [new Literal(10)].concat(new Array(12).fill(new Literal(0))),
+                 new Literal(0.5))
              .toNumber())
       .toBeCloseTo(15, 6);
 
   // Investing something for a year, with an expected annual return of 1, should
   // cause it to double (modulo rounding accuracy).
-  expect(
-      utils
-          .computeStockAssets(
-              [new Num(7)].concat(new Array(12).fill(new Num(0))), new Num(1))
-          .toNumber())
+  expect(utils
+             .computeStockAssets(
+                 [new Literal(7)].concat(new Array(12).fill(new Literal(0))),
+                 new Literal(1))
+             .toNumber())
       .toBeCloseTo(14, 6);
 
   // Monthly investments over a year, with an expected annual return of 0,
   // should come out to their simple sum.
-  expect(utils.computeStockAssets(new Array(12).fill(new Num(1)), new Num(0))
+  expect(utils
+             .computeStockAssets(
+                 new Array(12).fill(new Literal(1)), new Literal(0))
              .toNumber())
       .toBeCloseTo(12, 6);
 
   // Monthly investments over a year, with an expected annual return of 0.1,
   // should compound.
-  expect(utils.computeStockAssets(new Array(12).fill(new Num(1)), new Num(0.1))
+  expect(utils
+             .computeStockAssets(
+                 new Array(12).fill(new Literal(1)), new Literal(0.1))
              .toNumber())
       .toBeGreaterThan(12.54);
 });
