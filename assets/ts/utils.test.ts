@@ -5,6 +5,7 @@
 import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
+import {Num} from './num';
 import * as utils from './utils';
 
 test('countSatisfying no matches', () => {
@@ -63,34 +64,34 @@ test('cumulativeSumByFields', () => {
                {
                  month: 1,
                  data: {
-                   'principal': new Decimal(1),
-                   'interest': new Decimal(0),
-                   'hoa': new Decimal(0),
-                   'property_tax': new Decimal(0),
-                   'pmi': new Decimal(0),
-                   'homeowners_insurance': new Decimal(0),
+                   'principal': new Num(1),
+                   'interest': new Num(0),
+                   'hoa': new Num(0),
+                   'property_tax': new Num(0),
+                   'pmi': new Num(0),
+                   'homeowners_insurance': new Num(0),
                  },
                },
                {
                  month: 2,
                  data: {
-                   'principal': new Decimal(2),
-                   'interest': new Decimal(0),
-                   'hoa': new Decimal(0),
-                   'property_tax': new Decimal(0),
-                   'pmi': new Decimal(0),
-                   'homeowners_insurance': new Decimal(0),
+                   'principal': new Num(2),
+                   'interest': new Num(0),
+                   'hoa': new Num(0),
+                   'property_tax': new Num(0),
+                   'pmi': new Num(0),
+                   'homeowners_insurance': new Num(0),
                  },
                },
                {
                  month: 3,
                  data: {
-                   'principal': new Decimal(4),
-                   'interest': new Decimal(0),
-                   'hoa': new Decimal(0),
-                   'property_tax': new Decimal(0),
-                   'pmi': new Decimal(0),
-                   'homeowners_insurance': new Decimal(0),
+                   'principal': new Num(4),
+                   'interest': new Num(0),
+                   'hoa': new Num(0),
+                   'property_tax': new Num(0),
+                   'pmi': new Num(0),
+                   'homeowners_insurance': new Num(0),
                  },
                },
              ],
@@ -99,25 +100,25 @@ test('cumulativeSumByFields', () => {
         {
           month: 0,
           data: {
-            'principal': new Decimal(0),
+            'principal': new Num(0),
           },
         },
         {
           month: 1,
           data: {
-            'principal': new Decimal(1),
+            'principal': new Num(1),
           },
         },
         {
           month: 2,
           data: {
-            'principal': new Decimal(3),
+            'principal': new Num(3),
           },
         },
         {
           month: 3,
           data: {
-            'principal': new Decimal(7),
+            'principal': new Num(7),
           },
         },
       ]);
@@ -125,109 +126,109 @@ test('cumulativeSumByFields', () => {
 
 test('countBurndownMonths', () => {
   // Can handle an empty schedule slice.
-  expect(utils.countBurndownMonths(new Decimal(50), [], new Decimal(10)))
+  expect(utils.countBurndownMonths(new Num(50), [], new Num(10)))
       .toBe(5);
 
   // Can handle an empty schedule slice and no monthly debts.
-  expect(utils.countBurndownMonths(new Decimal(50), [], new Decimal(0)))
+  expect(utils.countBurndownMonths(new Num(50), [], new Num(0)))
       .toBe(Infinity);
 
   // Can pay off full loan, no recurring debts, no non-loan payments.
   expect(utils.countBurndownMonths(
-             new Decimal(100),
+             new Num(100),
              [
                {
-                 'principal': new Decimal(99),
-                 'interest': new Decimal(0),
-                 'hoa': new Decimal(0),
-                 'property_tax': new Decimal(0),
-                 'pmi': new Decimal(0),
-                 'homeowners_insurance': new Decimal(0),
+                 'principal': new Num(99),
+                 'interest': new Num(0),
+                 'hoa': new Num(0),
+                 'property_tax': new Num(0),
+                 'pmi': new Num(0),
+                 'homeowners_insurance': new Num(0),
                },
              ],
-             new Decimal(0)))
+             new Num(0)))
       .toBe(Infinity);
 
   // Can pay off full loan, no recurring debts, but some non-loan payments.
   expect(utils.countBurndownMonths(
-             new Decimal(100),
+             new Num(100),
              [
                {
-                 'principal': new Decimal(95),
-                 'interest': new Decimal(0),
-                 'hoa': new Decimal(1),
-                 'property_tax': new Decimal(0),
-                 'pmi': new Decimal(0),
-                 'homeowners_insurance': new Decimal(0),
+                 'principal': new Num(95),
+                 'interest': new Num(0),
+                 'hoa': new Num(1),
+                 'property_tax': new Num(0),
+                 'pmi': new Num(0),
+                 'homeowners_insurance': new Num(0),
                },
              ],
-             new Decimal(0)))
+             new Num(0)))
       .toBe(5);
 
   // Can't pay off full loan; no recurring debts; some non-loan payments.
   expect(utils.countBurndownMonths(
-             new Decimal(100),
+             new Num(100),
              [
                {
-                 'principal': new Decimal(95),
-                 'interest': new Decimal(0),
-                 'hoa': new Decimal(1),
-                 'property_tax': new Decimal(0),
-                 'pmi': new Decimal(0),
-                 'homeowners_insurance': new Decimal(0),
+                 'principal': new Num(95),
+                 'interest': new Num(0),
+                 'hoa': new Num(1),
+                 'property_tax': new Num(0),
+                 'pmi': new Num(0),
+                 'homeowners_insurance': new Num(0),
                },
                {
-                 'principal': new Decimal(95),
-                 'interest': new Decimal(0),
-                 'hoa': new Decimal(1),
-                 'property_tax': new Decimal(0),
-                 'pmi': new Decimal(0),
-                 'homeowners_insurance': new Decimal(0),
+                 'principal': new Num(95),
+                 'interest': new Num(0),
+                 'hoa': new Num(1),
+                 'property_tax': new Num(0),
+                 'pmi': new Num(0),
+                 'homeowners_insurance': new Num(0),
                },
              ],
-             new Decimal(0)))
+             new Num(0)))
       .toBe(1);
 
   // Can't pay off full loan; some recurring debts; some non-loan payments.
   expect(utils.countBurndownMonths(
-             new Decimal(100),
+             new Num(100),
              [
                {
-                 'principal': new Decimal(95),
-                 'interest': new Decimal(0),
-                 'hoa': new Decimal(1),
-                 'property_tax': new Decimal(0),
-                 'pmi': new Decimal(0),
-                 'homeowners_insurance': new Decimal(0),
+                 'principal': new Num(95),
+                 'interest': new Num(0),
+                 'hoa': new Num(1),
+                 'property_tax': new Num(0),
+                 'pmi': new Num(0),
+                 'homeowners_insurance': new Num(0),
                },
                {
-                 'principal': new Decimal(95),
-                 'interest': new Decimal(0),
-                 'hoa': new Decimal(1),
-                 'property_tax': new Decimal(0),
-                 'pmi': new Decimal(0),
-                 'homeowners_insurance': new Decimal(0),
+                 'principal': new Num(95),
+                 'interest': new Num(0),
+                 'hoa': new Num(1),
+                 'property_tax': new Num(0),
+                 'pmi': new Num(0),
+                 'homeowners_insurance': new Num(0),
                },
              ],
-             new Decimal(2)))
+             new Num(2)))
       .toBe(1);
 
   // Can pay off full loan; some recurring debts; some non-loan payments.  At
   // the end of the mortgage, assets will be 9; then return schedule.length +
   // (9 / (2 + 4)) = 1 + 1 = 2
   expect(utils.countBurndownMonths(
-             new Decimal(16),
+             new Num(16),
              [
                {
-                 'principal': new Decimal(1),
-                 'interest': new Decimal(0),
-                 'hoa': new Decimal(2),
-                 'property_tax': new Decimal(0),
-                 'pmi': new Decimal(0),
-                 'homeowners_insurance': new Decimal(0),
+                 'principal': new Num(1),
+                 'interest': new Num(0),
+                 'hoa': new Num(2),
+                 'property_tax': new Num(0),
+                 'pmi': new Num(0),
+                 'homeowners_insurance': new Num(0),
                },
              ],
-             new Decimal(4)))
+             new Num(4)))
       .toBe(2);
 });
 
@@ -340,15 +341,15 @@ test('updateURLParam', () => {
 test('computeStockAssets', () => {
   // Investing something during one month doesn't cause any growth, since
   // there's no time to compound.
-  expect(utils.computeStockAssets([new Decimal(1)], new Decimal(1)).toNumber())
+  expect(utils.computeStockAssets([new Num(1)], new Num(1)).toNumber())
       .toBeCloseTo(1, 6);
 
   // Investing something for a year, with no expected annual return, should
   // have no effect.
   expect(utils
              .computeStockAssets(
-                 [new Decimal(1)].concat(new Array(12).fill(new Decimal(0))),
-                 new Decimal(0))
+                 [new Num(1)].concat(new Array(12).fill(new Num(0))),
+                 new Num(0))
              .toNumber())
       .toBeCloseTo(1, 6);
 
@@ -356,8 +357,8 @@ test('computeStockAssets', () => {
   // should cause it to grow 1.5x (modulo rounding accuracy).
   expect(utils
              .computeStockAssets(
-                 [new Decimal(10)].concat(new Array(12).fill(new Decimal(0))),
-                 new Decimal(0.5))
+                 [new Num(10)].concat(new Array(12).fill(new Num(0))),
+                 new Num(0.5))
              .toNumber())
       .toBeCloseTo(15, 6);
 
@@ -365,8 +366,8 @@ test('computeStockAssets', () => {
   // cause it to double (modulo rounding accuracy).
   expect(utils
              .computeStockAssets(
-                 [new Decimal(7)].concat(new Array(12).fill(new Decimal(0))),
-                 new Decimal(1))
+                 [new Num(7)].concat(new Array(12).fill(new Num(0))),
+                 new Num(1))
              .toNumber())
       .toBeCloseTo(14, 6);
 
@@ -374,7 +375,7 @@ test('computeStockAssets', () => {
   // should come out to their simple sum.
   expect(utils
              .computeStockAssets(
-                 new Array(12).fill(new Decimal(1)), new Decimal(0))
+                 new Array(12).fill(new Num(1)), new Num(0))
              .toNumber())
       .toBeCloseTo(12, 6);
 
@@ -382,7 +383,7 @@ test('computeStockAssets', () => {
   // should compound.
   expect(utils
              .computeStockAssets(
-                 new Array(12).fill(new Decimal(1)), new Decimal(0.1))
+                 new Array(12).fill(new Num(1)), new Num(0.1))
              .toNumber())
       .toBeGreaterThan(12.54);
 });

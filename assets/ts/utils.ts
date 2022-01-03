@@ -4,6 +4,7 @@ import {Decimal} from 'decimal.js';
 import {Context} from './context';
 import {Formatter} from './formatter';
 import {HidableOutput} from './hidable_output';
+import {Num} from './num';
 import {HidableContainer, hidableContainers, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType, templateTypes} from './types';
 
 // Returns the numeric value of the input element, or 0 if the input was empty.
@@ -68,8 +69,8 @@ export function computeMonthDiff(from: Date, to: Date) {
 
 // Sums the given keys in a record.
 export function sumOfKeys<T extends string>(
-    data: Record<T, Decimal>, keys: readonly T[]) {
-  return Decimal.sum(...keys.map(key => data[key]));
+    data: Record<T, Num>, keys: readonly T[]) {
+  return Num.sum(...keys.map(key => data[key]));
 }
 
 // Returns an array where the ith element is an object with the amount paid of
@@ -80,7 +81,7 @@ export function cumulativeSumByFields(
   const results = new Array<PaymentRecordWithMonth>(data.length + 1);
   results[0] = {
     month: 0,
-    data: mkRecord(fields, () => new Decimal(0)),
+    data: mkRecord(fields, () => new Num(0)),
   };
   for (const [idx, datum] of data.entries()) {
     results[idx + 1] = {
@@ -94,8 +95,8 @@ export function cumulativeSumByFields(
 // Returns the number of payments that can be made with the given total assets,
 // taking previously-made payments into account.
 export function countBurndownMonths(
-    startingAssets: Decimal, schedule: readonly PaymentRecord[],
-    monthlyDebt: Decimal): number {
+    startingAssets: Num, schedule: readonly PaymentRecord[],
+    monthlyDebt: Num): number {
   let assets = startingAssets;
   for (const [i, data] of schedule.entries()) {
     const due = sumOfKeys(data, paymentTypes).add(monthlyDebt);
@@ -106,7 +107,7 @@ export function countBurndownMonths(
   const totalMonthlyExpenses = monthlyDebt.add(
       schedule.length ? sumOfKeys(schedule[0]!, nonLoanPaymentTypes) : 0);
   return schedule.length +
-      Decimal.floor(assets.div(totalMonthlyExpenses)).toNumber();
+      Num.floor(assets.div(totalMonthlyExpenses)).toNumber();
 }
 
 export function maxNonEmptyDate(...ds: (Date|undefined)[]): Date|undefined {
@@ -151,17 +152,17 @@ export function updateURLParam(
 
 // Returns the first non-zero argument, or zero if all arguments are zero (or
 // none are provided).
-export function chooseNonzero(...xs: readonly Decimal[]): Decimal {
+export function chooseNonzero(...xs: readonly Num[]): Num {
   for (const x of xs) {
-    if (!x.eq(0)) return x;
+    if (!x.eq(new Num(0))) return x;
   }
-  return new Decimal(0);
+  return new Num(0);
 }
 
 // Computes the total stock assets at the end of `schedule`, assuming a given
 // annual rate of return and monthly compounding.
 export function computeStockAssets(
-    schedule: readonly Decimal[], annualReturnRate: Decimal): Decimal {
+    schedule: readonly Num[], annualReturnRate: Num): Num {
   // Let Y = annual rate of return, M = monthly rate of return. Then:
   //
   // Y = (1 + M) ^ 12 - 1
@@ -174,9 +175,9 @@ export function computeStockAssets(
   // subtract 1:
   //
   // monthlyScaleFactor = M + 1 = (Y + 1)^(1/12)
-  const monthlyScaleFactor = annualReturnRate.add(1).pow(Decimal.div(1, 12));
+  const monthlyScaleFactor = annualReturnRate.add(1).pow(Num.div(1, 12));
 
-  let assets = new Decimal(0);
+  let assets = new Num(0);
   for (const investment of schedule) {
     assets = assets.mul(monthlyScaleFactor).add(investment);
   }
@@ -192,7 +193,7 @@ export function fillTemplateElts(className: TemplateType, value: string) {
 
 // Computes the sum of principal + interest to be paid each month of the loan.
 export function computeAmortizedPaymentAmount(
-    P: Decimal, r: Decimal, n: number): Decimal {
+    P: Num, r: Num, n: Num): Num {
   // Let P = the loan amount (principal),
   //     r = the annual interest rate / 12,
   //     n = the number of pay installments
@@ -209,12 +210,12 @@ export function calculatePaymentSchedule(ctx: Context):
     PaymentRecordWithMonth[] {
   let equityOwned = ctx.downPayment;
   const schedule: PaymentRecordWithMonth[] = [];
-  for (const month of d3.range(ctx.n)) {
+  for (const month of d3.range(ctx.n.value().toNumber())) {
     const principalRemaining = ctx.price.sub(equityOwned);
     const interestPayment = ctx.interestRate.div(12).mul(principalRemaining);
     const pmiPayment = equityOwned.lt(ctx.pmiEquityPct.mul(ctx.price)) ?
         ctx.pmi :
-        new Decimal(0);
+        new Num(0);
     const principalPaidThisMonth = ctx.monthlyLoanPayment.sub(interestPayment)
                                        .clamp(0, principalRemaining);
     equityOwned = equityOwned.add(principalPaidThisMonth);
@@ -400,7 +401,7 @@ export function computeContents(
       fmt.formatCurrency(ctx.price.sub(ctx.downPayment).toNumber());
 
   const purchasePayment = fmt.formatCurrency(
-      Decimal
+      Num
           .sum(
               ctx.downPayment,
               ctx.closingCost,
@@ -442,7 +443,7 @@ export function computeContents(
                 pointwise
                     .map(
                         m => ctx.monthlyLoanPayment.sub(
-                            Decimal.sum(m.data.interest, m.data.principal)))
+                            Num.sum(m.data.interest, m.data.principal)))
                     .filter(x => !x.eq(0)),
                 ctx.stocksReturnRate)
                 .toNumber()) :
@@ -471,7 +472,7 @@ export function computeHidables(
     monthlyExpensesPmi = new HidableOutput(
         'monthly-expenses-pmi-div',
         fmt.formatCurrency(
-            Decimal
+            Num
                 .sum(ctx.monthlyLoanPayment, ctx.monthlyNonLoanPayment, ctx.pmi)
                 .toNumber()),
     );
@@ -493,7 +494,7 @@ export function computeHidables(
         fmt.formatMonthNum(
             countBurndownMonths(
                 ctx.totalAssets.sub(
-                    (ctx.alreadyClosed ? new Decimal(0) :
+                    (ctx.alreadyClosed ? new Num(0) :
                                          ctx.downPayment.add(ctx.closingCost))),
                 pointwise.slice(ctx.paymentsAlreadyMade).map(d => d.data),
                 ctx.monthlyDebt),
@@ -508,14 +509,14 @@ export function computeHidables(
   let remainingEquityToPayFor;
   if (!!ctx.paymentsAlreadyMade || ctx.alreadyClosed) {
     const absoluteEquityOwned =
-        (ctx.alreadyClosed ? ctx.downPayment : new Decimal(0))
+        (ctx.alreadyClosed ? ctx.downPayment : new Num(0))
             .add(cumulative[ctx.paymentsAlreadyMade]!.data.principal);
 
     totalPaidSoFar = new HidableOutput(
         'total-paid-so-far-div',
         fmt.formatCurrency(
             (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
-                                 new Decimal(0))
+                                 new Num(0))
                 .add(sumOfKeys(
                     cumulative[ctx.paymentsAlreadyMade]!.data, paymentTypes))
                 .toNumber()));
@@ -549,7 +550,7 @@ export function computeHidables(
   if (ctx.annualIncome.gt(0)) {
     debtToIncomeRatio = new HidableOutput(
         'debt-to-income-ratio-div',
-        fmt.formatPercent(Decimal
+        fmt.formatPercent(Num
                               .sum(
                                   ctx.monthlyDebt, ctx.monthlyLoanPayment,
                                   ctx.monthlyNonLoanPayment, ctx.pmi)
@@ -577,7 +578,7 @@ export function computeTemplates(
     ctx: Context, fmt: Formatter): Record<TemplateType, string> {
   if (ctx.prepayment.gt(0)) {
     return {
-      'mortgage-term': fmt.formatMonthNum(ctx.n),
+      'mortgage-term': fmt.formatMonthNum(ctx.n.toNumber()),
       'prepay-amount': fmt.formatCurrency(ctx.prepayment.toNumber()),
     };
   }
