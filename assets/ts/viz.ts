@@ -245,12 +245,11 @@ function makeTooltip(
     const datum = bisectMonth(data, x, pointer[0]);
     const paymentTypeIdx = identifyPaymentType(pointer[1], datum.data);
 
-    const value =
-        keys.map(
-                k => `${utils.toCapitalized(k)}: ${
-                         fmt.formatCurrency(datum.data[k].toNumber())}` +
-                    '\n')
-            .join('') +
+    const value = keys.map(
+                          k => `${utils.toCapitalized(k)}: ${
+                                   fmt.formatCurrency(datum.data[k])}` +
+                              '\n')
+                      .join('') +
         `Month: ${fmt.formatMonthNum(datum.month, ctx.closingDate)}`;
 
     callout(
@@ -352,7 +351,7 @@ export function setChartsAndButtonsContent(
               data.map(
                   d =>
                       [fmt.formatMonthNum(d.month, ctx.closingDate),
-                       ...ts.map(k => fmt.formatCurrency(d.data[k].toNumber())),
+                       ...ts.map(k => fmt.formatCurrency(d.data[k])),
   ]));
   new ExpandableElement(
       utils.getHtmlElt('schedule_tab'), 'Monthly payment table',

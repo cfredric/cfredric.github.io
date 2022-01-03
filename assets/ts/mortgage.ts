@@ -52,6 +52,7 @@ function getInputs(): Inputs {
     closingDate: utils.getInputElt('closing-date-input'),
     prepayment: utils.getInputElt('prepayment-input'),
     stocksReturnRate: utils.getInputElt('stocks-return-rate-input'),
+    showDerivations: utils.getInputElt('show-derivations-input'),
   };
 }
 
@@ -165,6 +166,7 @@ function contextFromInputs(inputs: Inputs): Context {
     prepayment: utils.orZero(inputs.prepayment),
     stocksReturnRate: utils.orUndef(inputs.stocksReturnRate),
     now: d3.timeDay(),
+    showDerivations: inputs.showDerivations.checked,
   });
 }
 
@@ -174,9 +176,10 @@ function attachListeners(
     cookieValueMap: InputParamMap): void {
   elts.clearInputsButton.addEventListener(
       'click', () => void clearInputs(elts, urlParamMap, cookieValueMap));
+  const set = () => setContents(contextFromInputs(elts.inputs), elts);
   const reactToInput = (elt: HTMLInputElement) => () => {
     utils.saveFields(urlParamMap, cookieValueMap, elt);
-    setContents(contextFromInputs(elts.inputs), elts);
+    set();
   };
   for (const elt of urlParamMap.keys()) {
     elt.addEventListener('input', reactToInput(elt));
@@ -184,12 +187,15 @@ function attachListeners(
   for (const elt of cookieValueMap.keys()) {
     elt.addEventListener('input', reactToInput(elt));
   }
+  utils.getInputElt('show-derivations-input').addEventListener('input', set);
   window.onpopstate = () =>
       void populateFields(elts, urlParamMap, cookieValueMap);
 }
 
 // Set the contents of all the outputs based on the `ctx`.
 function setContents(ctx: Context, elts: Elements): void {
+  fmt.setShowDerivations(ctx.showDerivations);
+
   const schedules = utils.computeSchedules(ctx);
 
   for (const [h, v] of Object.entries(utils.computeAmountHints(ctx, fmt))) {

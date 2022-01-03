@@ -48,11 +48,13 @@ export class Context {
   readonly monthlyLoanPayment: Num;
   readonly monthlyNonLoanPayment: Num;
 
+  readonly showDerivations: boolean;
+
   constructor(input: ContextInput) {
     this.price = new NamedConstant(Decimal.max(0, input.price), 'price');
-    this.homeValue = new NamedConstant(
-        utils.chooseNonzero(Num.max(0, input.homeValue), this.price),
-        'homeValue');
+    this.homeValue = utils.chooseNonzero(
+        new NamedConstant(Num.max(0, input.homeValue), 'homeValue'),
+        this.price);
     this.hoa = new NamedConstant(Num.max(0, input.hoa), 'HOA');
     const rawDownPaymentPercent = new NamedConstant(
         input.downPaymentPercent.clamp(0, 100), 'downPaymentPercent');
@@ -169,5 +171,7 @@ export class Context {
     }
     this.monthlyNonLoanPayment =
         Num.sum(this.hoa, this.propertyTax, this.homeownersInsurance);
+
+    this.showDerivations = input.showDerivations;
   }
 }

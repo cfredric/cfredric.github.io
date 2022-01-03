@@ -396,16 +396,15 @@ export function computeContents(
   const showPrepaymentComparison = ctx.prepayment.gt(0);
   setClassVisibility('prepay', showPrepaymentComparison);
 
-  const loanAmount =
-      fmt.formatCurrency(ctx.price.sub(ctx.downPayment).toNumber());
+  const loanAmount = fmt.formatCurrency(ctx.price.sub(ctx.downPayment), true);
 
   const purchasePayment = fmt.formatCurrency(
       Num.sum(
-             ctx.downPayment,
-             ctx.closingCost,
-             ctx.price.sub(ctx.downPayment).mul(ctx.pointsPurchased).div(100),
-             )
-          .toNumber());
+          ctx.downPayment,
+          ctx.closingCost,
+          ctx.price.sub(ctx.downPayment).mul(ctx.pointsPurchased).div(100),
+          ),
+      true);
 
   if (!schedules) {
     return {
@@ -431,29 +430,26 @@ export function computeContents(
             countSatisfying(pointwise, m => m.data.principal.gt(0)),
             ctx.closingDate),
     lifetimePayment: ctx.m.eq(0) ?
-        fmt.formatCurrency(0) :
-        fmt.formatCurrency(
-            sumOfKeys(cumulative[cumulative.length - 1]!.data, loanPaymentTypes)
-                .toNumber()),
+        fmt.formatCurrency(new Literal(0)) :
+        fmt.formatCurrency(sumOfKeys(
+            cumulative[cumulative.length - 1]!.data, loanPaymentTypes)),
     prepayComparison: showPrepaymentComparison ?
         fmt.formatCurrency(computeStockAssets(
-                               pointwise
-                                   .map(
-                                       m => ctx.monthlyLoanPayment.sub(Num.sum(
-                                           m.data.interest, m.data.principal)))
-                                   .filter(x => !x.eq(0)),
-                               ctx.stocksReturnRate)
-                               .toNumber()) :
+            pointwise
+                .map(
+                    m => ctx.monthlyLoanPayment.sub(
+                        Num.sum(m.data.interest, m.data.principal)))
+                .filter(x => !x.eq(0)),
+            ctx.stocksReturnRate)) :
         '',
     stocksComparison: showPrepaymentComparison ?
-        fmt.formatCurrency(
-            computeStockAssets(
-                new Array(ctx.n).fill(ctx.prepayment), ctx.stocksReturnRate)
-                .toNumber()) :
+        fmt.formatCurrency(computeStockAssets(
+            new Array(ctx.n.toNumber()).fill(ctx.prepayment),
+            ctx.stocksReturnRate)) :
         '',
-    principalAndInterest: fmt.formatCurrency(ctx.monthlyLoanPayment.toNumber()),
+    principalAndInterest: fmt.formatCurrency(ctx.monthlyLoanPayment, true),
     monthlyExpensesAmount: fmt.formatCurrency(
-        ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment).toNumber()),
+        ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment), true),
   };
 }
 
@@ -469,15 +465,15 @@ export function computeHidables(
     monthlyExpensesPmi = new HidableOutput(
         'monthly-expenses-pmi-div',
         fmt.formatCurrency(
-            Num.sum(ctx.monthlyLoanPayment, ctx.monthlyNonLoanPayment, ctx.pmi)
-                .toNumber()),
+            Num.sum(ctx.monthlyLoanPayment, ctx.monthlyNonLoanPayment, ctx.pmi),
+            true),
     );
     const pmiMonths =
         countSatisfying(pointwise, payment => !payment.data.pmi.eq(0));
     monthsOfPmi = new HidableOutput(
         'months-of-pmi-div',
         `${fmt.formatMonthNum(pmiMonths)} (${
-            fmt.formatCurrency(ctx.pmi.mul(pmiMonths).toNumber())} total)`);
+            fmt.formatCurrency(ctx.pmi.mul(pmiMonths))} total)`);
   } else {
     monthlyExpensesPmi = new HidableOutput('monthly-expenses-pmi-div');
     monthsOfPmi = new HidableOutput('months-of-pmi-div');
@@ -514,14 +510,11 @@ export function computeHidables(
             (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
                                  new Literal(0))
                 .add(sumOfKeys(
-                    cumulative[ctx.paymentsAlreadyMade]!.data, paymentTypes))
-                .toNumber()));
+                    cumulative[ctx.paymentsAlreadyMade]!.data, paymentTypes))));
     equityOwnedSoFar = new HidableOutput(
         'equity-owned-so-far-div',
-        `${
-            fmt.formatPercent(
-                absoluteEquityOwned.div(ctx.homeValue).toNumber())} (${
-            fmt.formatCurrency(absoluteEquityOwned.toNumber())})`);
+        `${fmt.formatPercent(absoluteEquityOwned.div(ctx.homeValue))} (${
+            fmt.formatCurrency(absoluteEquityOwned)})`);
     const totalPrincipalAndInterestPaid =
         sumOfKeys(cumulative[ctx.paymentsAlreadyMade]!.data, loanPaymentTypes);
     const totalPrincipalAndInterestToPay =
@@ -529,11 +522,10 @@ export function computeHidables(
     totalLoanOwed = new HidableOutput(
         'total-loan-owed-div',
         fmt.formatCurrency(
-            totalPrincipalAndInterestToPay.sub(totalPrincipalAndInterestPaid)
-                .toNumber()));
+            totalPrincipalAndInterestToPay.sub(totalPrincipalAndInterestPaid)));
     remainingEquityToPayFor = new HidableOutput(
         'remaining-equity-to-pay-for-div',
-        fmt.formatCurrency(ctx.price.sub(absoluteEquityOwned).toNumber()));
+        fmt.formatCurrency(ctx.price.sub(absoluteEquityOwned)));
   } else {
     totalPaidSoFar = new HidableOutput('total-paid-so-far-div');
     equityOwnedSoFar = new HidableOutput('equity-owned-so-far-div');
@@ -546,12 +538,13 @@ export function computeHidables(
   if (ctx.annualIncome.gt(0)) {
     debtToIncomeRatio = new HidableOutput(
         'debt-to-income-ratio-div',
-        fmt.formatPercent(Num.sum(
-                                 ctx.monthlyDebt, ctx.monthlyLoanPayment,
-                                 ctx.monthlyNonLoanPayment, ctx.pmi)
-                              .div(ctx.annualIncome)
-                              .mul(12)
-                              .toNumber()),
+        fmt.formatPercent(
+            Num.sum(
+                   ctx.monthlyDebt, ctx.monthlyLoanPayment,
+                   ctx.monthlyNonLoanPayment, ctx.pmi)
+                .div(ctx.annualIncome)
+                .mul(12),
+            true),
     );
   } else {
     debtToIncomeRatio = new HidableOutput('debt-to-income-ratio-div');
@@ -574,7 +567,7 @@ export function computeTemplates(
   if (ctx.prepayment.gt(0)) {
     return {
       'mortgage-term': fmt.formatMonthNum(ctx.n.toNumber()),
-      'prepay-amount': fmt.formatCurrency(ctx.prepayment.toNumber()),
+      'prepay-amount': fmt.formatCurrency(ctx.prepayment),
     };
   }
   return mkRecord(templateTypes, () => '');
@@ -584,21 +577,20 @@ export function computeTemplates(
 export function computeAmountHints(
     ctx: Context, fmt: Formatter): Record<HintType, string> {
   return {
-    homeValue: `(${fmt.formatCurrency(ctx.homeValue.toNumber())})`,
-    downPayment: `(${fmt.formatCurrency(ctx.downPayment.toNumber())})`,
-    interestRate:
-        `(${fmt.formatHundredthsPercent(ctx.interestRate.toNumber())})`,
-    pointValue: `(${fmt.formatHundredthsPercent(ctx.pointValue.toNumber())})`,
-    pmiEquityPercentage: `(${fmt.formatPercent(ctx.pmiEquityPct.toNumber())})`,
+    homeValue: `(${fmt.formatCurrency(ctx.homeValue, true)})`,
+    downPayment: `(${fmt.formatCurrency(ctx.downPayment, true)})`,
+    interestRate: `(${fmt.formatHundredthsPercent(ctx.interestRate)})`,
+    pointValue: `(${fmt.formatHundredthsPercent(ctx.pointValue)})`,
+    pmiEquityPercentage: `(${fmt.formatPercent(ctx.pmiEquityPct, true)})`,
     propertyTax: `(Effective ${
         fmt.formatCurrency(
-            ctx.propertyTax.mul(12).div(ctx.homeValue).mul(1000).toNumber() ||
-            0)} / $1000; ${fmt.formatCurrency(ctx.propertyTax.toNumber())}/mo)`,
-    residentialExemption: `(${
-        fmt.formatCurrency(ctx.residentialExemptionPerMonth.toNumber())}/mo)`,
-    mortgageTerm: `(${ctx.mortgageTerm} yrs)`,
+            ctx.propertyTax.mul(12).div(ctx.homeValue).mul(1000) ||
+                new Literal(0),
+            true)} / $1000; ${fmt.formatCurrency(ctx.propertyTax, true)}/mo)`,
+    residentialExemption:
+        `(${fmt.formatCurrency(ctx.residentialExemptionPerMonth, true)}/mo)`,
+    mortgageTerm: `(${ctx.mortgageTerm.toNumber()} yrs)`,
     paymentsAlreadyMade: `(${ctx.paymentsAlreadyMade} payments)`,
-    stocksReturnRate:
-        `(${fmt.formatHundredthsPercent(ctx.stocksReturnRate.toNumber())})`,
+    stocksReturnRate: `(${fmt.formatHundredthsPercent(ctx.stocksReturnRate)})`,
   };
 }

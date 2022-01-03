@@ -1,6 +1,9 @@
 import * as d3 from 'd3';
 
+import {Num} from './num';
+
 export class Formatter {
+  private showDerivations: boolean;
   readonly fmt: Intl.NumberFormat;
   readonly pctFmt: Intl.NumberFormat;
   readonly hundredthsPctFmt: Intl.NumberFormat;
@@ -9,22 +12,39 @@ export class Formatter {
   constructor(
       fmt: Intl.NumberFormat, pctFmt: Intl.NumberFormat,
       hundredthsPctFmt: Intl.NumberFormat, timeFormat: Intl.DateTimeFormat) {
+    this.showDerivations = false;
     this.fmt = fmt;
     this.pctFmt = pctFmt;
     this.hundredthsPctFmt = hundredthsPctFmt;
     this.timeFormat = timeFormat;
   }
 
-  formatCurrency(n: number): string {
-    return this.fmt.format(n);
+  setShowDerivations(show: boolean) {
+    this.showDerivations = show;
   }
 
-  formatPercent(p: number): string {
-    return this.pctFmt.format(p);
+  formatCurrency(n: Num, withDerivation = false): string {
+    const s = this.fmt.format(n.toNumber());
+    if (withDerivation && this.showDerivations) {
+      return `${s} {${n.toString()}}`;
+    }
+    return s;
   }
 
-  formatHundredthsPercent(p: number): string {
-    return this.hundredthsPctFmt.format(p);
+  formatPercent(p: Num, withDerivation = false): string {
+    const s = this.pctFmt.format(p.toNumber());
+    if (withDerivation && this.showDerivations) {
+      return `${s} {${p.toString()}}`;
+    }
+    return s;
+  }
+
+  formatHundredthsPercent(p: Num, withDerivation = false): string {
+    const s = this.hundredthsPctFmt.format(p.toNumber());
+    if (withDerivation && this.showDerivations) {
+      return `${s} {${p.toString()}}`;
+    }
+    return s;
   }
 
   // Formats a number of months into an integral number of years and integral
