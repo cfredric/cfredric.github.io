@@ -60,9 +60,9 @@ export class Context {
     this.pointValue = utils.chooseNonzero(
         Decimal.max(0, input.pointValue.div(100)), new Decimal(0.0025));
     this.pointsPurchased = Math.max(0, input.pointsPurchased);
-    if (this.interestRate && this.pointsPurchased) {
+    if (!this.interestRate.eq(0) && this.pointsPurchased > 0) {
       this.interestRate = Decimal.max(
-          0, this.interestRate.sub(this.pointsPurchased).mul(this.pointValue));
+          0, this.interestRate.sub(this.pointValue.mul(this.pointsPurchased)));
     }
     this.pmi = this.downPaymentPct.gte(0.2) ? new Decimal(0) :
                                               Decimal.max(0, input.pmi);
@@ -77,7 +77,7 @@ export class Context {
       const rawAnnualDeduction =
           input.residentialExemptionDeduction.clamp(0, this.price);
 
-      if (rawExemptionAnnualSavings) {
+      if (!rawExemptionAnnualSavings.eq(0)) {
         const monthlyAbsolute = utils.chooseNonzero(
             rawMonthlyAbsolute, rawAnnualRate.mul(this.homeValue).div(12));
         this.propertyTax =
