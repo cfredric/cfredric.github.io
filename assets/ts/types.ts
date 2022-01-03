@@ -1,4 +1,5 @@
 import {Decimal} from 'decimal.js';
+
 import {Num} from './num';
 
 export const paymentTypes = [

@@ -126,12 +126,10 @@ test('cumulativeSumByFields', () => {
 
 test('countBurndownMonths', () => {
   // Can handle an empty schedule slice.
-  expect(utils.countBurndownMonths(new Num(50), [], new Num(10)))
-      .toBe(5);
+  expect(utils.countBurndownMonths(new Num(50), [], new Num(10))).toBe(5);
 
   // Can handle an empty schedule slice and no monthly debts.
-  expect(utils.countBurndownMonths(new Num(50), [], new Num(0)))
-      .toBe(Infinity);
+  expect(utils.countBurndownMonths(new Num(50), [], new Num(0))).toBe(Infinity);
 
   // Can pay off full loan, no recurring debts, no non-loan payments.
   expect(utils.countBurndownMonths(
@@ -346,11 +344,11 @@ test('computeStockAssets', () => {
 
   // Investing something for a year, with no expected annual return, should
   // have no effect.
-  expect(utils
-             .computeStockAssets(
-                 [new Num(1)].concat(new Array(12).fill(new Num(0))),
-                 new Num(0))
-             .toNumber())
+  expect(
+      utils
+          .computeStockAssets(
+              [new Num(1)].concat(new Array(12).fill(new Num(0))), new Num(0))
+          .toNumber())
       .toBeCloseTo(1, 6);
 
   // Investing something for a year, with an expected annual return of 0.5,
@@ -364,26 +362,22 @@ test('computeStockAssets', () => {
 
   // Investing something for a year, with an expected annual return of 1, should
   // cause it to double (modulo rounding accuracy).
-  expect(utils
-             .computeStockAssets(
-                 [new Num(7)].concat(new Array(12).fill(new Num(0))),
-                 new Num(1))
-             .toNumber())
+  expect(
+      utils
+          .computeStockAssets(
+              [new Num(7)].concat(new Array(12).fill(new Num(0))), new Num(1))
+          .toNumber())
       .toBeCloseTo(14, 6);
 
   // Monthly investments over a year, with an expected annual return of 0,
   // should come out to their simple sum.
-  expect(utils
-             .computeStockAssets(
-                 new Array(12).fill(new Num(1)), new Num(0))
+  expect(utils.computeStockAssets(new Array(12).fill(new Num(1)), new Num(0))
              .toNumber())
       .toBeCloseTo(12, 6);
 
   // Monthly investments over a year, with an expected annual return of 0.1,
   // should compound.
-  expect(utils
-             .computeStockAssets(
-                 new Array(12).fill(new Num(1)), new Num(0.1))
+  expect(utils.computeStockAssets(new Array(12).fill(new Num(1)), new Num(0.1))
              .toNumber())
       .toBeGreaterThan(12.54);
 });

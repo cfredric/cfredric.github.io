@@ -192,8 +192,7 @@ export function fillTemplateElts(className: TemplateType, value: string) {
 }
 
 // Computes the sum of principal + interest to be paid each month of the loan.
-export function computeAmortizedPaymentAmount(
-    P: Num, r: Num, n: Num): Num {
+export function computeAmortizedPaymentAmount(P: Num, r: Num, n: Num): Num {
   // Let P = the loan amount (principal),
   //     r = the annual interest rate / 12,
   //     n = the number of pay installments
@@ -213,9 +212,8 @@ export function calculatePaymentSchedule(ctx: Context):
   for (const month of d3.range(ctx.n.value().toNumber())) {
     const principalRemaining = ctx.price.sub(equityOwned);
     const interestPayment = ctx.interestRate.div(12).mul(principalRemaining);
-    const pmiPayment = equityOwned.lt(ctx.pmiEquityPct.mul(ctx.price)) ?
-        ctx.pmi :
-        new Num(0);
+    const pmiPayment =
+        equityOwned.lt(ctx.pmiEquityPct.mul(ctx.price)) ? ctx.pmi : new Num(0);
     const principalPaidThisMonth = ctx.monthlyLoanPayment.sub(interestPayment)
                                        .clamp(0, principalRemaining);
     equityOwned = equityOwned.add(principalPaidThisMonth);
@@ -401,12 +399,11 @@ export function computeContents(
       fmt.formatCurrency(ctx.price.sub(ctx.downPayment).toNumber());
 
   const purchasePayment = fmt.formatCurrency(
-      Num
-          .sum(
-              ctx.downPayment,
-              ctx.closingCost,
-              ctx.price.sub(ctx.downPayment).mul(ctx.pointsPurchased).div(100),
-              )
+      Num.sum(
+             ctx.downPayment,
+             ctx.closingCost,
+             ctx.price.sub(ctx.downPayment).mul(ctx.pointsPurchased).div(100),
+             )
           .toNumber());
 
   if (!schedules) {
@@ -438,15 +435,14 @@ export function computeContents(
             sumOfKeys(cumulative[cumulative.length - 1]!.data, loanPaymentTypes)
                 .toNumber()),
     prepayComparison: showPrepaymentComparison ?
-        fmt.formatCurrency(
-            computeStockAssets(
-                pointwise
-                    .map(
-                        m => ctx.monthlyLoanPayment.sub(
-                            Num.sum(m.data.interest, m.data.principal)))
-                    .filter(x => !x.eq(0)),
-                ctx.stocksReturnRate)
-                .toNumber()) :
+        fmt.formatCurrency(computeStockAssets(
+                               pointwise
+                                   .map(
+                                       m => ctx.monthlyLoanPayment.sub(Num.sum(
+                                           m.data.interest, m.data.principal)))
+                                   .filter(x => !x.eq(0)),
+                               ctx.stocksReturnRate)
+                               .toNumber()) :
         '',
     stocksComparison: showPrepaymentComparison ?
         fmt.formatCurrency(
@@ -472,8 +468,7 @@ export function computeHidables(
     monthlyExpensesPmi = new HidableOutput(
         'monthly-expenses-pmi-div',
         fmt.formatCurrency(
-            Num
-                .sum(ctx.monthlyLoanPayment, ctx.monthlyNonLoanPayment, ctx.pmi)
+            Num.sum(ctx.monthlyLoanPayment, ctx.monthlyNonLoanPayment, ctx.pmi)
                 .toNumber()),
     );
     const pmiMonths =
@@ -550,10 +545,9 @@ export function computeHidables(
   if (ctx.annualIncome.gt(0)) {
     debtToIncomeRatio = new HidableOutput(
         'debt-to-income-ratio-div',
-        fmt.formatPercent(Num
-                              .sum(
-                                  ctx.monthlyDebt, ctx.monthlyLoanPayment,
-                                  ctx.monthlyNonLoanPayment, ctx.pmi)
+        fmt.formatPercent(Num.sum(
+                                 ctx.monthlyDebt, ctx.monthlyLoanPayment,
+                                 ctx.monthlyNonLoanPayment, ctx.pmi)
                               .div(ctx.annualIncome)
                               .mul(12)
                               .toNumber()),
