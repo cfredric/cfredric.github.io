@@ -9,18 +9,6 @@ import {Literal} from './num';
 import {PaymentType} from './types';
 import * as utils from './utils';
 
-// const numMatcher = (a, b, c) => {
-//   if (!(a instanceof Num) || !(b instanceof Num)) return {
-//     pass:
-//   expect(a.value()).toEqual(b.value());
-//   return true;
-// };
-//
-// expect.extend({
-//   numMatch: numMatcher,
-// });
-
-
 test('countSatisfying no matches', () => {
   expect(utils.countSatisfying(new Array(10).fill(false), x => x)).toBe(0);
 });

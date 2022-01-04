@@ -1,7 +1,4 @@
 
-/**
- * @jest-environment jsdom
- */
 import {Formatter} from './formatter';
 
 test('formatMonthNum', () => {

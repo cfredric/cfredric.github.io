@@ -1,7 +1,3 @@
-/**
- * @jest-environment jsdom
- */
-
 import {Literal, NamedOutput, Num} from './num';
 
 test('toString()', () => {
