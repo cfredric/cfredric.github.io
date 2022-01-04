@@ -125,6 +125,7 @@ function getUrlParamMap(inputs: Inputs): InputParamMap {
     [inputs.closingDate, {name: 'closing-date'}],
     [inputs.prepayment, {name: 'prepay'}],
     [inputs.stocksReturnRate, {name: 'stock_rate'}],
+    [inputs.showDerivations, {name: 'show_derivations'}],
   ]);
 }
 
@@ -187,7 +188,6 @@ function attachListeners(
   for (const elt of cookieValueMap.keys()) {
     elt.addEventListener('input', reactToInput(elt));
   }
-  utils.getInputElt('show-derivations-input').addEventListener('input', set);
   window.onpopstate = () =>
       void populateFields(elts, urlParamMap, cookieValueMap);
 }
