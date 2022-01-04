@@ -83,6 +83,9 @@ export abstract class Num {
     return new DerivedNum(Op.Pow, this, b);
   }
 
+  abstract merge(op: Op): string;
+  abstract parenthesized(): string;
+
   static sum(...xs: readonly AnyNumber[]): Num {
     return new DerivedNum(Op.Plus, ...xs.map(x => Num.toNum(x)));
   }
@@ -105,6 +108,13 @@ export class Literal extends Num {
 
   value(): Decimal {
     return this.v;
+  }
+
+  merge(_: Op): string {
+    return this.toString();
+  }
+  parenthesized(): string {
+    return this.toString();
   }
 
   toString(): string {
@@ -132,6 +142,13 @@ export class NamedConstant extends Num {
     return this.v;
   }
 
+  merge(_: Op): string {
+    return this.toString();
+  }
+  parenthesized(): string {
+    return this.toString();
+  }
+
   toString(): string {
     return this.name;
   }
@@ -153,22 +170,22 @@ export class DerivedNum extends Num {
     switch (this.op) {
       case Op.Plus:
         this.v = Decimal.sum(...ns.map(n => n.value()));
-        this.s = () => '(' + ns.map(n => n.toString()).join(' + ') + ')';
+        this.s = () => ns.map(n => n.merge(this.op)).join(' + ');
         break;
       case Op.Minus:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.sub(n.value()), valueOf(ns[0]!));
-        this.s = () => '(' + ns.map(n => n.toString()).join(' - ') + ')';
+        this.s = () => ns.map(n => n.merge(this.op)).join(' - ');
         break;
       case Op.Mult:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.mul(n.value()), valueOf(ns[0]!));
-        this.s = () => '(' + ns.map(n => n.toString()).join(' * ') + ')';
+        this.s = () => ns.map(n => n.merge(this.op)).join(' * ');
         break;
       case Op.Div:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.div(n.value()), valueOf(ns[0]!));
-        this.s = () => '(' + ns.map(n => n.toString()).join(' / ') + ')';
+        this.s = () => ns.map(n => n.merge(this.op)).join(' / ');
         break;
       case Op.Floor:
         this.v = valueOf(ns[0]!).floor();
@@ -176,8 +193,7 @@ export class DerivedNum extends Num {
         break;
       case Op.Pow:
         this.v = valueOf(ns[0]!).pow(valueOf(ns[1]!));
-        this.s = () =>
-            '(' + ns[0]!.toString() + ' ^ ' + ns[1]!.toString() + ')';
+        this.s = () => ns[0]!.parenthesized() + ' ^ ' + ns[1]!.parenthesized();
         break;
     }
   }
@@ -186,12 +202,36 @@ export class DerivedNum extends Num {
     return this.v;
   }
 
-  toString(): string {
+  merge(op: Op): string {
+    if (precedence(op) < precedence(this.op)) {
+      // The parent's precedence is lower than ours, so ours binds more
+      // tightly and we don't need parens.
+      return this.unparen();
+    }
+    if (op == this.op && commutative(this.op)) {
+      // The parent op is the same as ours, *and* the op is commutative, so
+      // order doesn't matter - so we don't need parens.
+      return this.unparen();
+    }
+    // The parent op binds more tightly than ours, *or* it's the same op but
+    // it isn't commutative, so we need parens.
+    return this.parenthesized();
+  }
+
+  parenthesized(): string {
+    return `(${this.unparen()})`;
+  }
+
+  unparen(): string {
     if (typeof this.s === 'function') {
       this.s = this.s();
     }
 
     return this.s;
+  }
+
+  toString(): string {
+    return this.unparen();
   }
 }
 
@@ -202,4 +242,32 @@ enum Op {
   Div,
   Floor,
   Pow,
+}
+
+enum Precedence {
+  Term,
+  Factor,
+  Expo,
+  Call,
+}
+
+function precedence(op: Op): Precedence {
+  switch (op) {
+    case Op.Plus:
+      return Precedence.Term;
+    case Op.Minus:
+      return Precedence.Term;
+    case Op.Mult:
+      return Precedence.Factor;
+    case Op.Div:
+      return Precedence.Factor;
+    case Op.Pow:
+      return Precedence.Expo;
+    case Op.Floor:
+      return Precedence.Call;
+  }
+}
+
+function commutative(op: Op): boolean {
+  return op == Op.Plus || op == Op.Mult;
 }
