@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import {Literal, Num} from './num';
+import {Literal, NamedOutput, Num} from './num';
 
 test('toString()', () => {
   expect(new Literal(1).add(2).mul(3).toString()).toBe('(1 + 2) * 3');
@@ -28,4 +28,8 @@ test('toString()', () => {
 
   expect(new Literal(1).div(2).div(3).toString()).toBe('(1 / 2) / 3');
   expect(new Literal(1).mul(2).div(3).toString()).toBe('(1 * 2) / 3');
+
+  const out = new NamedOutput('outName', new Literal(1).add(2).add(3));
+  expect(out.prettyPrint()).toEqual('1 + 2 + 3');
+  expect(out.toString()).toEqual('outName');
 });

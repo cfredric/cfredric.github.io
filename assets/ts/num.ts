@@ -83,8 +83,16 @@ export abstract class Num {
     return new DerivedNum(Op.Pow, this, b);
   }
 
+  // Implementation detail used in simplifying the expression tree when
+  // stringifying.
   abstract merge(op: Op): string;
+
+  // `parenthesized` returns a string representation of this number, with
+  // parentheses around it (unless it's a single atom).
   abstract parenthesized(): string;
+
+  // `prettyPrint` is the top-level call to get the derivation.
+  abstract prettyPrint(): string;
 
   static sum(...xs: readonly AnyNumber[]): Num {
     return new DerivedNum(Op.Plus, ...xs.map(x => Num.toNum(x)));
@@ -117,6 +125,10 @@ export class Literal extends Num {
     return this.toString();
   }
 
+  prettyPrint(): string {
+    return this.toString();
+  }
+
   toString(): string {
     return this.s;
   }
@@ -146,6 +158,10 @@ export class NamedConstant extends Num {
     return this.toString();
   }
   parenthesized(): string {
+    return this.toString();
+  }
+
+  prettyPrint(): string {
     return this.toString();
   }
 
@@ -221,8 +237,11 @@ export class DerivedNum extends Num {
   parenthesized(): string {
     return `(${this.unparen()})`;
   }
-
   unparen(): string {
+    return this.toString();
+  }
+
+  toString(): string {
     if (typeof this.s === 'function') {
       this.s = this.s();
     }
@@ -230,8 +249,41 @@ export class DerivedNum extends Num {
     return this.s;
   }
 
+  prettyPrint(): string {
+    return this.toString();
+  }
+}
+
+export class NamedOutput extends Num {
+  private readonly name: string;
+  private readonly num: Num;
+
+  constructor(name: string, num: Num) {
+    super();
+    this.name = name;
+    this.num = num;
+  }
+
+  value(): Decimal {
+    return this.num.value();
+  }
+
+  merge(_op: Op): string {
+    return this.name;
+  }
+
+  parenthesized(): string {
+    return this.name;
+  }
+
+  prettyPrint(): string {
+    // If this gets called at top level, we'll print the whole derivation.
+    // Otherwise, we only use the name associated with this output.
+    return this.num.prettyPrint();
+  }
+
   toString(): string {
-    return this.unparen();
+    return this.name;
   }
 }
 

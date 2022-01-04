@@ -396,13 +396,13 @@ export function computeContents(
   const showPrepaymentComparison = ctx.prepayment.gt(0);
   setClassVisibility('prepay', showPrepaymentComparison);
 
-  const loanAmount = fmt.formatCurrency(ctx.price.sub(ctx.downPayment), true);
+  const loanAmount = fmt.formatCurrency(ctx.loanAmount, true);
 
   const purchasePayment = fmt.formatCurrency(
       Num.sum(
           ctx.downPayment,
           ctx.closingCost,
-          ctx.price.sub(ctx.downPayment).mul(ctx.pointsPurchased).div(100),
+          ctx.loanAmount.div(100).mul(ctx.pointsPurchased),
           ),
       true);
 
@@ -447,7 +447,7 @@ export function computeContents(
             new Array(ctx.n.toNumber()).fill(ctx.prepayment),
             ctx.stocksReturnRate)) :
         '',
-    principalAndInterest: fmt.formatCurrency(ctx.monthlyLoanPayment, true),
+    principalAndInterest: fmt.formatCurrency(ctx.m, true),
     monthlyExpensesAmount: fmt.formatCurrency(
         ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment), true),
   };

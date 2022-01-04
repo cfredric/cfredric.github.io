@@ -26,7 +26,7 @@ export class Formatter {
   formatCurrency(n: Num, withDerivation = false): string {
     const s = this.fmt.format(n.toNumber());
     if (withDerivation && this.showDerivations) {
-      return `${s} {${n.toString()}}`;
+      return `${s} {${n.prettyPrint()}}`;
     }
     return s;
   }
@@ -34,7 +34,7 @@ export class Formatter {
   formatPercent(p: Num, withDerivation = false): string {
     const s = this.pctFmt.format(p.toNumber());
     if (withDerivation && this.showDerivations) {
-      return `${s} {${p.toString()}}`;
+      return `${s} {${p.prettyPrint()}}`;
     }
     return s;
   }
@@ -42,7 +42,7 @@ export class Formatter {
   formatHundredthsPercent(p: Num, withDerivation = false): string {
     const s = this.hundredthsPctFmt.format(p.toNumber());
     if (withDerivation && this.showDerivations) {
-      return `${s} {${p.toString()}}`;
+      return `${s} {${p.prettyPrint()}}`;
     }
     return s;
   }
