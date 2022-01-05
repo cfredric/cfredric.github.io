@@ -48,6 +48,11 @@ export function setClassVisibility(className: string, visible: boolean) {
   }
 }
 
+export function setEltVisibility(elt: HTMLElement, visible: boolean) {
+  const value = visible ? '' : 'none';
+  elt.style.display = value;
+}
+
 // Counts the number of elements of `data` which satisfy `predicate`.
 export function countSatisfying<T>(
     data: readonly T[], predicate: (t: T) => boolean): number {

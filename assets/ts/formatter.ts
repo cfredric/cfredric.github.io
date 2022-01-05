@@ -4,6 +4,7 @@ import {Num} from './num';
 
 export class Formatter {
   private showDerivations: boolean;
+  private simplifyDerivations: boolean;
   readonly fmt: Intl.NumberFormat;
   readonly pctFmt: Intl.NumberFormat;
   readonly hundredthsPctFmt: Intl.NumberFormat;
@@ -13,20 +14,22 @@ export class Formatter {
       fmt: Intl.NumberFormat, pctFmt: Intl.NumberFormat,
       hundredthsPctFmt: Intl.NumberFormat, timeFormat: Intl.DateTimeFormat) {
     this.showDerivations = false;
+    this.simplifyDerivations = false;
     this.fmt = fmt;
     this.pctFmt = pctFmt;
     this.hundredthsPctFmt = hundredthsPctFmt;
     this.timeFormat = timeFormat;
   }
 
-  setShowDerivations(show: boolean) {
+  setDerivationParams(show: boolean, simplify: boolean) {
     this.showDerivations = show;
+    this.simplifyDerivations = simplify;
   }
 
   formatCurrency(n: Num, withDerivation = false): string {
     const s = this.fmt.format(n.toNumber());
     if (withDerivation && this.showDerivations) {
-      return `${s} {${n.prettyPrint()}}`;
+      return `${s} {${n.prettyPrint(this.simplifyDerivations)}}`;
     }
     return s;
   }
@@ -34,7 +37,7 @@ export class Formatter {
   formatPercent(p: Num, withDerivation = false): string {
     const s = this.pctFmt.format(p.toNumber());
     if (withDerivation && this.showDerivations) {
-      return `${s} {${p.prettyPrint()}}`;
+      return `${s} {${p.prettyPrint(this.simplifyDerivations)}}`;
     }
     return s;
   }
@@ -42,7 +45,7 @@ export class Formatter {
   formatHundredthsPercent(p: Num, withDerivation = false): string {
     const s = this.hundredthsPctFmt.format(p.toNumber());
     if (withDerivation && this.showDerivations) {
-      return `${s} {${p.prettyPrint()}}`;
+      return `${s} {${p.prettyPrint(this.simplifyDerivations)}}`;
     }
     return s;
   }

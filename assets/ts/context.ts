@@ -50,6 +50,7 @@ export class Context {
   readonly monthlyNonLoanPayment: Num;
 
   readonly showDerivations: boolean;
+  readonly simplifyDerivations: boolean;
 
   constructor(input: ContextInput) {
     this.price = new NamedConstant(Decimal.max(0, input.price), 'price');
@@ -180,5 +181,7 @@ export class Context {
         Num.sum(this.hoa, this.propertyTax, this.homeownersInsurance);
 
     this.showDerivations = input.showDerivations;
+    this.simplifyDerivations =
+        this.showDerivations && input.simplifyDerivations;
   }
 }

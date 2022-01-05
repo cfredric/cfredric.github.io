@@ -58,6 +58,7 @@ export interface ContextInput {
   stocksReturnRate?: Decimal;
   now: Date;
   showDerivations: boolean;
+  simplifyDerivations: boolean;
 }
 
 export interface Inputs {
@@ -87,6 +88,7 @@ export interface Inputs {
   prepayment: HTMLInputElement;
   stocksReturnRate: HTMLInputElement;
   showDerivations: HTMLInputElement;
+  simplifyDerivations: HTMLInputElement;
 }
 
 export const hintTypes = [

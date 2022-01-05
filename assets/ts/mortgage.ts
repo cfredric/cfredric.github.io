@@ -53,6 +53,7 @@ function getInputs(): Inputs {
     prepayment: utils.getInputElt('prepayment-input'),
     stocksReturnRate: utils.getInputElt('stocks-return-rate-input'),
     showDerivations: utils.getInputElt('show-derivations-input'),
+    simplifyDerivations: utils.getInputElt('simplify-derivations-input'),
   };
 }
 
@@ -126,6 +127,7 @@ function getUrlParamMap(inputs: Inputs): InputParamMap {
     [inputs.prepayment, {name: 'prepay'}],
     [inputs.stocksReturnRate, {name: 'stock_rate'}],
     [inputs.showDerivations, {name: 'show_derivations'}],
+    [inputs.simplifyDerivations, {name: 'simplify_derivations'}],
   ]);
 }
 
@@ -168,6 +170,7 @@ function contextFromInputs(inputs: Inputs): Context {
     stocksReturnRate: utils.orUndef(inputs.stocksReturnRate),
     now: d3.timeDay(),
     showDerivations: inputs.showDerivations.checked,
+    simplifyDerivations: inputs.simplifyDerivations.checked,
   });
 }
 
@@ -194,7 +197,10 @@ function attachListeners(
 
 // Set the contents of all the outputs based on the `ctx`.
 function setContents(ctx: Context, elts: Elements): void {
-  fmt.setShowDerivations(ctx.showDerivations);
+  console.log('setting contents');
+  utils.setEltVisibility(
+      utils.getHtmlElt('simplify-derivations-span'), ctx.showDerivations);
+  fmt.setDerivationParams(ctx.showDerivations, ctx.simplifyDerivations);
 
   const schedules = utils.computeSchedules(ctx);
 
