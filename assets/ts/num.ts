@@ -229,50 +229,26 @@ class DerivedNum extends Num {
     switch (this.op) {
       case Op.Plus:
         this.v = Decimal.sum(...ns.map(n => n.value()));
-        this.s = (simplify: boolean) => {
-          if (simplify) {
-            const simp = this.simplify();
-            if (simp) return simp.printInternal(simplify);
-          }
-          return this.ns.map(n => n.parenOrUnparen(this.op, simplify))
-              .join(' + ');
-        };
+        this.s = (simplify: boolean) =>
+            this.ns.map(n => n.parenOrUnparen(this.op, simplify)).join(' + ');
         break;
       case Op.Minus:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.sub(n.value()), valueOf(ns[0]!));
-        this.s = (simplify: boolean) => {
-          if (simplify) {
-            const simp = this.simplify();
-            if (simp) return simp.printInternal(simplify);
-          }
-          return this.ns.map(n => n.parenOrUnparen(this.op, simplify))
-              .join(' - ');
-        };
+        this.s = (simplify: boolean) =>
+            this.ns.map(n => n.parenOrUnparen(this.op, simplify)).join(' - ');
         break;
       case Op.Mult:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.mul(n.value()), valueOf(ns[0]!));
-        this.s = (simplify: boolean) => {
-          if (simplify) {
-            const simp = this.simplify();
-            if (simp) return simp.printInternal(simplify);
-          }
-          return this.ns.map(n => n.parenOrUnparen(this.op, simplify))
-              .join(' * ');
-        };
+        this.s = (simplify: boolean) =>
+            this.ns.map(n => n.parenOrUnparen(this.op, simplify)).join(' * ');
         break;
       case Op.Div:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.div(n.value()), valueOf(ns[0]!));
-        this.s = (simplify: boolean) => {
-          if (simplify) {
-            const simp = this.simplify();
-            if (simp) return simp.printInternal(simplify);
-          }
-          return this.ns.map(n => n.parenOrUnparen(this.op, simplify))
-              .join(' / ');
-        };
+        this.s = (simplify: boolean) =>
+            this.ns.map(n => n.parenOrUnparen(this.op, simplify)).join(' / ');
         break;
       case Op.Floor:
         this.v = valueOf(ns[0]!).floor();
@@ -281,14 +257,8 @@ class DerivedNum extends Num {
         break;
       case Op.Pow:
         this.v = valueOf(ns[0]!).pow(valueOf(ns[1]!));
-        this.s = (simplify: boolean) => {
-          if (simplify) {
-            const simp = this.simplify();
-            if (simp) return simp.printInternal(simplify);
-          }
-          return this.ns[0]!.parenthesized(simplify) + ' ^ ' +
-              this.ns[1]!.parenthesized(simplify);
-        };
+        this.s = (simplify: boolean) => this.ns[0]!.parenthesized(simplify) +
+            ' ^ ' + this.ns[1]!.parenthesized(simplify);
         break;
     }
   }
@@ -413,6 +383,10 @@ class DerivedNum extends Num {
   }
 
   printInternal(simplify: boolean): string {
+    if (simplify) {
+      const simp = this.simplify();
+      if (simp) return simp.printInternal(simplify);
+    }
     return this.s(simplify);
   }
 }
