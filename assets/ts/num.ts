@@ -94,18 +94,24 @@ export abstract class Num {
 
   // Implementation detail used in simplifying the expression tree when
   // stringifying.
-  abstract merge(op: Op, simplify: boolean): string;
+  abstract parenOrUnparen(op: Op, simplify: boolean): string;
 
   // `parenthesized` returns a string representation of this number, with
   // parentheses around it (unless it's a single atom).
   abstract parenthesized(simplify: boolean): string;
 
+  abstract mergeWith(op: Op): readonly Num[];
+
+  abstract isElidable(ident: number): boolean;
+
+  // Returns a flattened version of the tree rooted at this Num, where adjacent
+  // subtrees with the same commutative operator have been merged.
+  abstract flatten(): void;
+
   // `prettyPrint` is the top-level call to get the derivation.
   abstract prettyPrint(simplify: boolean): string;
 
   abstract printInternal(simplify: boolean): string;
-
-  abstract includesNamedConstant(): boolean;
 
   static sum(...xs: readonly AnyNumber[]): Num {
     const ns = xs.map(x => toNum(x));
@@ -113,21 +119,8 @@ export abstract class Num {
   }
 }
 
-function isElidableIdentity(n: Num, op: Op): boolean {
-  if (op != Op.Plus && op != Op.Mult) return false;
-  const ident = identity(op);
-  if (n instanceof NamedConstant && n.eq(ident)) {
-    return true;
-  }
-  if (n.eq(ident) && !n.includesNamedConstant()) {
-    return true;
-  }
-
-  return false;
-}
-
-function identity(op: Op): Num {
-  return new Literal(op == Op.Plus ? 0 : 1);
+function identity(op: Op): number {
+  return op == Op.Plus ? 0 : 1;
 }
 
 export class Literal extends Num {
@@ -144,11 +137,20 @@ export class Literal extends Num {
     return this.v;
   }
 
-  merge(_op: Op, _simplify: boolean): string {
+  parenOrUnparen(_op: Op, _simplify: boolean): string {
     return this.toString();
   }
   parenthesized(_simplify: boolean): string {
     return this.toString();
+  }
+
+  flatten() {}
+  mergeWith(_op: Op): readonly Num[] {
+    return [this];
+  }
+
+  isElidable(ident: number): boolean {
+    return this.value().eq(ident);
   }
 
   prettyPrint(simplify: boolean): string {
@@ -157,10 +159,6 @@ export class Literal extends Num {
 
   printInternal(_simplify: boolean): string {
     return this.s;
-  }
-
-  includesNamedConstant(): boolean {
-    return false;
   }
 
   toString(): string {
@@ -182,11 +180,20 @@ export class NamedConstant extends Num {
     return this.v;
   }
 
-  merge(_op: Op, _simplify: boolean): string {
+  parenOrUnparen(_op: Op, _simplify: boolean): string {
     return this.name;
   }
   parenthesized(_simplify: boolean): string {
     return this.name;
+  }
+
+  flatten() {}
+  mergeWith(_op: Op): readonly Num[] {
+    return [this];
+  }
+  isElidable(ident: number): boolean {
+    // Elide named constants if their values are equal to the relevant identity.
+    return this.value().eq(ident);
   }
 
   prettyPrint(_simplify: boolean): string {
@@ -197,10 +204,6 @@ export class NamedConstant extends Num {
     return this.name;
   }
 
-  includesNamedConstant(): boolean {
-    return true;
-  }
-
   toString(): string {
     return this.name;
   }
@@ -209,8 +212,7 @@ export class NamedConstant extends Num {
 export class DerivedNum extends Num {
   private readonly op: Op;
   private readonly v: Decimal;
-  private readonly ns: readonly Num[];
-  private readonly includesNamed: boolean;
+  private ns: readonly Num[];
 
   // Lazily compute the symoblic representation. We build some complicated
   // numbers, so if we don't have to care about the symoblic representation, we
@@ -220,42 +222,55 @@ export class DerivedNum extends Num {
   constructor(op: Op, ...ns: readonly Num[]) {
     super();
     this.op = op;
+    this.ns = ns;
 
     switch (this.op) {
       case Op.Plus:
         this.v = Decimal.sum(...ns.map(n => n.value()));
         this.s = (simplify: boolean) => {
           if (simplify) {
-            ns = ns.filter(n => !isElidableIdentity(n, this.op));
+            const simp = this.simplify();
+            if (simp) return simp.printInternal(simplify);
           }
-          if (ns.length == 0) return new Literal(0).printInternal(simplify);
-          if (ns.length == 1) return ns[0]!.printInternal(simplify);
-          return ns.map(n => n.merge(this.op, simplify)).join(' + ');
+          return this.ns.map(n => n.parenOrUnparen(this.op, simplify))
+              .join(' + ');
         };
         break;
       case Op.Minus:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.sub(n.value()), valueOf(ns[0]!));
-        this.s = (simplify: boolean) =>
-            ns.map(n => n.merge(this.op, simplify)).join(' - ');
+        this.s = (simplify: boolean) => {
+          if (simplify) {
+            const simp = this.simplify();
+            if (simp) return simp.printInternal(simplify);
+          }
+          return this.ns.map(n => n.parenOrUnparen(this.op, simplify))
+              .join(' - ');
+        };
         break;
       case Op.Mult:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.mul(n.value()), valueOf(ns[0]!));
         this.s = (simplify: boolean) => {
           if (simplify) {
-            ns = ns.filter(n => !isElidableIdentity(n, this.op));
+            const simp = this.simplify();
+            if (simp) return simp.printInternal(simplify);
           }
-          if (ns.length == 0) return new Literal(1).printInternal(simplify);
-          if (ns.length == 1) return ns[0]!.printInternal(simplify);
-          return ns.map(n => n.merge(this.op, simplify)).join(' * ');
+          return this.ns.map(n => n.parenOrUnparen(this.op, simplify))
+              .join(' * ');
         };
         break;
       case Op.Div:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.div(n.value()), valueOf(ns[0]!));
-        this.s = (simplify: boolean) =>
-            ns.map(n => n.merge(this.op, simplify)).join(' / ');
+        this.s = (simplify: boolean) => {
+          if (simplify) {
+            const simp = this.simplify();
+            if (simp) return simp.printInternal(simplify);
+          }
+          return this.ns.map(n => n.parenOrUnparen(this.op, simplify))
+              .join(' / ');
+        };
         break;
       case Op.Floor:
         this.v = valueOf(ns[0]!).floor();
@@ -264,28 +279,79 @@ export class DerivedNum extends Num {
         break;
       case Op.Pow:
         this.v = valueOf(ns[0]!).pow(valueOf(ns[1]!));
-        this.s = (simplify: boolean) => ns[0]!.parenthesized(simplify) + ' ^ ' +
-            ns[1]!.parenthesized(simplify);
+        this.s = (simplify: boolean) => {
+          if (simplify) {
+            const simp = this.simplify();
+            if (simp) return simp.printInternal(simplify);
+          }
+          return this.ns[0]!.parenthesized(simplify) + ' ^ ' +
+              this.ns[1]!.parenthesized(simplify);
+        };
         break;
     }
-    this.ns = ns;
-
-    this.includesNamed = ns.some(n => n.includesNamedConstant());
   }
 
   value(): Decimal {
     return this.v;
   }
 
-  foo(): readonly Num[] {
-    return this.ns;
+  simplify(): Num|null {
+    switch (this.op) {
+      case Op.Mult:
+      case Op.Plus: {
+        if (this.op === Op.Mult && this.ns.some(n => n.isElidable(0))) {
+          // 0 times anything is 0.
+          return new Literal(0);
+        }
+        const ident = identity(this.op);
+        this.ns = this.ns.filter(n => !n.isElidable(ident));
+        if (this.ns.length === 0) return new Literal(ident);
+        if (this.ns.length === 1) return this.ns[0]!;
+        break;
+      }
+      case Op.Minus:
+        if (this.ns[1]!.isElidable(0)) {
+          // X - 0 is X.
+          return this.ns[0]!;
+        }
+        break;
+      case Op.Div:
+        if (this.ns[1]!.isElidable(1)) {
+          // X / 1 is X.
+          return this.ns[0]!;
+        }
+        if (this.ns[0]!.isElidable(0)) {
+          // 0 / X is 0.
+          return new Literal(0);
+        }
+        break;
+      case Op.Pow:
+        if (this.ns[0]!.isElidable(0)) {
+          // 0 ^ X is 0.
+          return new Literal(0);
+        }
+        if (this.ns[0]!.isElidable(1)) {
+          // 1 ^ X is 1.
+          return new Literal(1);
+        }
+        if (this.ns[1]!.isElidable(0)) {
+          // X ^ 0 is 1.
+          return new Literal(1);
+        }
+        if (this.ns[1]!.isElidable(1)) {
+          // X ^ 1 is X.
+          return this.ns[0]!;
+        }
+        break;
+      default:
+    }
+    return null;
   }
 
-  merge(op: Op, simplify: boolean): string {
+  parenOrUnparen(op: Op, simplify: boolean): string {
     if (simplify) {
-      const ns = this.ns.filter(n => !isElidableIdentity(n, this.op));
-      if (ns.length === 0) return identity(op).printInternal(simplify);
-      if (ns.length === 1) return ns[0]!.printInternal(simplify);
+      const simp = this.simplify();
+      if (simp) return simp.printInternal(simplify);
     }
     if (precedence(op) < precedence(this.op)) {
       // The parent's precedence is lower than ours, so ours binds more
@@ -302,6 +368,32 @@ export class DerivedNum extends Num {
     return this.parenthesized(simplify);
   }
 
+  mergeWith(op: Op): readonly Num[] {
+    switch (this.op) {
+      case Op.Floor:
+      case Op.Pow:
+      case Op.Minus:
+      case Op.Div:
+        return [this];
+      case Op.Plus:
+      case Op.Mult:
+        if (this.op == op) return this.ns;
+        return [this];
+    }
+  }
+
+  flatten() {
+    for (const n of this.ns) {
+      n.flatten();
+    }
+
+    this.ns = this.ns.flatMap((n) => n.mergeWith(this.op));
+  }
+
+  isElidable(ident: number): boolean {
+    return this.value().eq(ident);
+  }
+
   parenthesized(simplify: boolean): string {
     return `(${this.unparen(simplify)})`;
   }
@@ -313,11 +405,8 @@ export class DerivedNum extends Num {
     return this.printInternal(false);
   }
 
-  includesNamedConstant(): boolean {
-    return this.includesNamed;
-  }
-
   prettyPrint(simplify: boolean): string {
+    if (simplify) this.flatten();
     return this.printInternal(simplify);
   }
 
@@ -340,26 +429,31 @@ export class NamedOutput extends Num {
     return this.num.value();
   }
 
-  merge(_op: Op): string {
+  parenOrUnparen(_op: Op): string {
     return this.name;
   }
 
+  flatten() {}
   parenthesized(): string {
     return this.name;
+  }
+  mergeWith(_op: Op): readonly Num[] {
+    return [this];
+  }
+  isElidable(_ident: number): boolean {
+    // Never elide named outputs.
+    return false;
   }
 
   prettyPrint(simplify: boolean): string {
     // If this gets called at top level, we'll print the whole derivation.
     // Otherwise, we only use the name associated with this output.
+    if (simplify) this.num.flatten();
     return this.num.prettyPrint(simplify);
   }
 
   printInternal(_simplify: boolean): string {
     return this.name;
-  }
-
-  includesNamedConstant(): boolean {
-    return this.num.includesNamedConstant();
   }
 
   toString(): string {

@@ -53,4 +53,26 @@ test('toString()', () => {
   expect(new Literal(0).add(0).prettyPrint(true)).toEqual('0');
   expect(new Literal(1).mul(1).prettyPrint(false)).toEqual('1 * 1');
   expect(new Literal(1).mul(1).prettyPrint(true)).toEqual('1');
+
+  // Elide useless subtrees.
+  expect(new Literal(1).add(zero).prettyPrint(false)).toEqual('1 + zero');
+  expect(new Literal(1).add(zero).prettyPrint(true)).toEqual('1');
+  expect(
+      new Literal(1).add(new Literal(1).mul(new Literal(1))).prettyPrint(false))
+      .toEqual('1 + 1 * 1');
+  expect(
+      new Literal(1).add(new Literal(1).mul(new Literal(1))).prettyPrint(true))
+      .toEqual('1 + 1');
+  expect(
+      new Literal(1).add(new Literal(1).div(new Literal(1))).prettyPrint(false))
+      .toEqual('1 + 1 / 1');
+  expect(
+      new Literal(1).add(new Literal(1).div(new Literal(1))).prettyPrint(true))
+      .toEqual('1 + 1');
+  expect(Num.sum(zero, new Literal(0), new Literal(1)).prettyPrint(true))
+      .toEqual('1');
+  expect(new Literal(3)
+             .mul(Num.sum(zero, new Literal(0), new Literal(1)))
+             .prettyPrint(true))
+      .toEqual('3');
 });
