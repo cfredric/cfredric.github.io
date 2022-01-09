@@ -41,11 +41,11 @@ test('toString()', () => {
   expect(Num.literal(1).add(Num.literal(2).mul(1)).prettyPrint(true))
       .toEqual('1 + 2');
 
-  const zero = new NamedConstant(0, 'zero');
+  const zero = new NamedConstant('zero', 0);
   expect(zero.add(1).prettyPrint(false)).toEqual('zero + 1');
   expect(zero.add(1).prettyPrint(true)).toEqual('1');
 
-  const one = new NamedConstant(1, 'one');
+  const one = new NamedConstant('one', 1);
   expect(one.mul(2).prettyPrint(false)).toEqual('one * 2');
   expect(one.mul(2).prettyPrint(true)).toEqual('2');
 

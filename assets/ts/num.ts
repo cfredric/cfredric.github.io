@@ -174,10 +174,10 @@ export class NamedConstant extends Num {
   private readonly v: Decimal;
   private readonly name: string;
 
-  constructor(value: AnyNumber, name: string) {
+  constructor(name: string, value: AnyNumber) {
     super();
-    this.v = valueOf(value);
     this.name = name;
+    this.v = valueOf(value);
   }
 
   value(): Decimal {
