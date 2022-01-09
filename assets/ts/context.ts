@@ -174,7 +174,7 @@ export class Context {
                                                 ));
       this.monthlyLoanPayment = this.m.add(this.prepayment);
     } else {
-      this.m = Num.literal(0);
+      this.m = new NamedOutput('pricipalAndInterest', Num.literal(0));
       this.monthlyLoanPayment = Num.literal(0);
     }
     this.monthlyNonLoanPayment =
