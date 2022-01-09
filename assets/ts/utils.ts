@@ -4,7 +4,7 @@ import {Decimal} from 'decimal.js';
 import {Context} from './context';
 import {Formatter} from './formatter';
 import {HidableOutput} from './hidable_output';
-import {Literal, Num} from './num';
+import {Num} from './num';
 import {HidableContainer, hidableContainers, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType, templateTypes} from './types';
 
 // Returns the numeric value of the input element, or 0 if the input was empty.
@@ -86,7 +86,7 @@ export function cumulativeSumByFields(
   const results = new Array<PaymentRecordWithMonth>(data.length + 1);
   results[0] = {
     month: 0,
-    data: mkRecord(fields, () => new Literal(0)),
+    data: mkRecord(fields, () => Num.literal(0)),
   };
   for (const [idx, datum] of data.entries()) {
     results[idx + 1] = {
@@ -161,7 +161,7 @@ export function chooseNonzero(...xs: readonly Num[]): Num {
   for (const x of xs) {
     if (!x.eq(0)) return x;
   }
-  return new Literal(0);
+  return Num.literal(0);
 }
 
 // Computes the total stock assets at the end of `schedule`, assuming a given
@@ -182,7 +182,7 @@ export function computeStockAssets(
   // monthlyScaleFactor = M + 1 = (Y + 1)^(1/12)
   const monthlyScaleFactor = annualReturnRate.add(1).pow(Num.div(1, 12));
 
-  let assets: Num = new Literal(0);
+  let assets: Num = Num.literal(0);
   for (const investment of schedule) {
     assets = assets.mul(monthlyScaleFactor).add(investment);
   }
@@ -219,7 +219,7 @@ export function calculatePaymentSchedule(ctx: Context):
     const interestPayment = ctx.interestRate.div(12).mul(principalRemaining);
     const pmiPayment = equityOwned.lt(ctx.pmiEquityPct.mul(ctx.price)) ?
         ctx.pmi :
-        new Literal(0);
+        Num.literal(0);
     const principalPaidThisMonth = ctx.monthlyLoanPayment.sub(interestPayment)
                                        .clamp(0, principalRemaining);
     equityOwned = equityOwned.add(principalPaidThisMonth);
@@ -435,7 +435,7 @@ export function computeContents(
             countSatisfying(pointwise, m => m.data.principal.gt(0)),
             ctx.closingDate),
     lifetimePayment: ctx.m.eq(0) ?
-        fmt.formatCurrency(new Literal(0)) :
+        fmt.formatCurrency(Num.literal(0)) :
         fmt.formatCurrency(sumOfKeys(
             cumulative[cumulative.length - 1]!.data, loanPaymentTypes)),
     prepayComparison: showPrepaymentComparison ?
@@ -491,7 +491,7 @@ export function computeHidables(
         fmt.formatMonthNum(
             countBurndownMonths(
                 ctx.totalAssets.sub(
-                    (ctx.alreadyClosed ? new Literal(0) :
+                    (ctx.alreadyClosed ? Num.literal(0) :
                                          ctx.downPayment.add(ctx.closingCost))),
                 pointwise.slice(ctx.paymentsAlreadyMade).map(d => d.data),
                 ctx.monthlyDebt),
@@ -506,14 +506,14 @@ export function computeHidables(
   let remainingEquityToPayFor;
   if (!!ctx.paymentsAlreadyMade || ctx.alreadyClosed) {
     const absoluteEquityOwned =
-        (ctx.alreadyClosed ? ctx.downPayment : new Literal(0))
+        (ctx.alreadyClosed ? ctx.downPayment : Num.literal(0))
             .add(cumulative[ctx.paymentsAlreadyMade]!.data.principal);
 
     totalPaidSoFar = new HidableOutput(
         'total-paid-so-far-div',
         fmt.formatCurrency(
             (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
-                                 new Literal(0))
+                                 Num.literal(0))
                 .add(sumOfKeys(
                     cumulative[ctx.paymentsAlreadyMade]!.data, paymentTypes))));
     equityOwnedSoFar = new HidableOutput(
@@ -590,7 +590,7 @@ export function computeAmountHints(
     propertyTax: `(Effective ${
         fmt.formatCurrency(
             ctx.propertyTax.mul(12).div(ctx.homeValue).mul(1000) ||
-                new Literal(0),
+                Num.literal(0),
             true)} / $1000; ${fmt.formatCurrency(ctx.propertyTax, true)}/mo)`,
     residentialExemption:
         `(${fmt.formatCurrency(ctx.residentialExemptionPerMonth, true)}/mo)`,

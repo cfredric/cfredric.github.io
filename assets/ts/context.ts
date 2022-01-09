@@ -1,7 +1,7 @@
 import * as d3 from 'd3';
 import Decimal from 'decimal.js';
 
-import {Literal, NamedConstant, NamedOutput, Num} from './num';
+import {NamedConstant, NamedOutput, Num} from './num';
 import {ContextInput} from './types';
 import * as utils from './utils';
 
@@ -75,7 +75,7 @@ export class Context {
             .div(100);
     this.pointValue = new NamedConstant(
                           utils.chooseNonzero(
-                              Num.max(0, input.pointValue), new Literal(0.25)),
+                              Num.max(0, input.pointValue), Num.literal(0.25)),
                           'pointsValue')
                           .div(100);
     this.pointsPurchased = new NamedConstant(
@@ -94,7 +94,7 @@ export class Context {
         new NamedConstant(
             input.pmiEquityPercent.clamp(0, 100), 'pmiEquityCutoff')
             .div(100),
-        new NamedOutput('pmiEquityCutoff', new Literal(22).div(100)));
+        new NamedOutput('pmiEquityCutoff', Num.literal(22).div(100)));
     {
       const rawMonthlyAbsolute = new NamedConstant(
           Decimal.max(0, input.propertyTaxAbsolute), 'propertyTaxAbsolute');
@@ -166,7 +166,7 @@ export class Context {
     if (this.showMonthlySchedule) {
       this.m = new NamedOutput(
           'principalAndInterest',
-          this.downPayment.eq(this.price) ? new Literal(0) :
+          this.downPayment.eq(this.price) ? Num.literal(0) :
                                             utils.computeAmortizedPaymentAmount(
                                                 this.loanAmount,
                                                 this.interestRate.div(12),
@@ -174,8 +174,8 @@ export class Context {
                                                 ));
       this.monthlyLoanPayment = this.m.add(this.prepayment);
     } else {
-      this.m = new Literal(0);
-      this.monthlyLoanPayment = new Literal(0);
+      this.m = Num.literal(0);
+      this.monthlyLoanPayment = Num.literal(0);
     }
     this.monthlyNonLoanPayment =
         Num.sum(this.hoa, this.propertyTax, this.homeownersInsurance);

@@ -5,7 +5,7 @@ type AnyNumber = number|Num|Decimal;
 
 function toNum(x: AnyNumber): Num {
   if (x instanceof Num) return x;
-  return new Literal(x);
+  return Num.literal(x);
 }
 
 function valueOf(x: AnyNumber): Decimal {
@@ -21,6 +21,10 @@ export abstract class Num {
 
   toNumber(): number {
     return this.value().toNumber();
+  }
+
+  static literal(x: number|Decimal): Num {
+    return new Literal(x);
   }
 
   static max(a: AnyNumber, b: AnyNumber): Num {
@@ -123,7 +127,7 @@ function identity(op: Op): number {
   return op == Op.Plus ? 0 : 1;
 }
 
-export class Literal extends Num {
+class Literal extends Num {
   private readonly v: Decimal;
   private readonly s: string;
 
@@ -209,7 +213,7 @@ export class NamedConstant extends Num {
   }
 }
 
-export class DerivedNum extends Num {
+class DerivedNum extends Num {
   private readonly op: Op;
   private readonly v: Decimal;
   private ns: readonly Num[];
@@ -301,11 +305,11 @@ export class DerivedNum extends Num {
       case Op.Plus: {
         if (this.op === Op.Mult && this.ns.some(n => n.isElidable(0))) {
           // 0 times anything is 0.
-          return new Literal(0);
+          return Num.literal(0);
         }
         const ident = identity(this.op);
         this.ns = this.ns.filter(n => !n.isElidable(ident));
-        if (this.ns.length === 0) return new Literal(ident);
+        if (this.ns.length === 0) return Num.literal(ident);
         if (this.ns.length === 1) return this.ns[0]!;
         break;
       }
@@ -322,21 +326,21 @@ export class DerivedNum extends Num {
         }
         if (this.ns[0]!.isElidable(0)) {
           // 0 / X is 0.
-          return new Literal(0);
+          return Num.literal(0);
         }
         break;
       case Op.Pow:
         if (this.ns[0]!.isElidable(0)) {
           // 0 ^ X is 0.
-          return new Literal(0);
+          return Num.literal(0);
         }
         if (this.ns[0]!.isElidable(1)) {
           // 1 ^ X is 1.
-          return new Literal(1);
+          return Num.literal(1);
         }
         if (this.ns[1]!.isElidable(0)) {
           // X ^ 0 is 1.
-          return new Literal(1);
+          return Num.literal(1);
         }
         if (this.ns[1]!.isElidable(1)) {
           // X ^ 1 is X.

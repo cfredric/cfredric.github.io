@@ -5,7 +5,7 @@
 import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
-import {Literal} from './num';
+import {Num} from './num';
 import {PaymentType} from './types';
 import * as utils from './utils';
 
@@ -67,34 +67,34 @@ test('cumulativeSumByFields', () => {
                    {
                      month: 1,
                      data: {
-                       'principal': new Literal(1),
-                       'interest': new Literal(0),
-                       'hoa': new Literal(0),
-                       'property_tax': new Literal(0),
-                       'pmi': new Literal(0),
-                       'homeowners_insurance': new Literal(0),
+                       'principal': Num.literal(1),
+                       'interest': Num.literal(0),
+                       'hoa': Num.literal(0),
+                       'property_tax': Num.literal(0),
+                       'pmi': Num.literal(0),
+                       'homeowners_insurance': Num.literal(0),
                      },
                    },
                    {
                      month: 2,
                      data: {
-                       'principal': new Literal(2),
-                       'interest': new Literal(0),
-                       'hoa': new Literal(0),
-                       'property_tax': new Literal(0),
-                       'pmi': new Literal(0),
-                       'homeowners_insurance': new Literal(0),
+                       'principal': Num.literal(2),
+                       'interest': Num.literal(0),
+                       'hoa': Num.literal(0),
+                       'property_tax': Num.literal(0),
+                       'pmi': Num.literal(0),
+                       'homeowners_insurance': Num.literal(0),
                      },
                    },
                    {
                      month: 3,
                      data: {
-                       'principal': new Literal(4),
-                       'interest': new Literal(0),
-                       'hoa': new Literal(0),
-                       'property_tax': new Literal(0),
-                       'pmi': new Literal(0),
-                       'homeowners_insurance': new Literal(0),
+                       'principal': Num.literal(4),
+                       'interest': Num.literal(0),
+                       'hoa': Num.literal(0),
+                       'property_tax': Num.literal(0),
+                       'pmi': Num.literal(0),
+                       'homeowners_insurance': Num.literal(0),
                      },
                    },
                  ],
@@ -133,109 +133,109 @@ test('cumulativeSumByFields', () => {
 
 test('countBurndownMonths', () => {
   // Can handle an empty schedule slice.
-  expect(utils.countBurndownMonths(new Literal(50), [], new Literal(10)))
+  expect(utils.countBurndownMonths(Num.literal(50), [], Num.literal(10)))
       .toBe(5);
 
   // Can handle an empty schedule slice and no monthly debts.
-  expect(utils.countBurndownMonths(new Literal(50), [], new Literal(0)))
+  expect(utils.countBurndownMonths(Num.literal(50), [], Num.literal(0)))
       .toBe(Infinity);
 
   // Can pay off full loan, no recurring debts, no non-loan payments.
   expect(utils.countBurndownMonths(
-             new Literal(100),
+             Num.literal(100),
              [
                {
-                 'principal': new Literal(99),
-                 'interest': new Literal(0),
-                 'hoa': new Literal(0),
-                 'property_tax': new Literal(0),
-                 'pmi': new Literal(0),
-                 'homeowners_insurance': new Literal(0),
+                 'principal': Num.literal(99),
+                 'interest': Num.literal(0),
+                 'hoa': Num.literal(0),
+                 'property_tax': Num.literal(0),
+                 'pmi': Num.literal(0),
+                 'homeowners_insurance': Num.literal(0),
                },
              ],
-             new Literal(0)))
+             Num.literal(0)))
       .toBe(Infinity);
 
   // Can pay off full loan, no recurring debts, but some non-loan payments.
   expect(utils.countBurndownMonths(
-             new Literal(100),
+             Num.literal(100),
              [
                {
-                 'principal': new Literal(95),
-                 'interest': new Literal(0),
-                 'hoa': new Literal(1),
-                 'property_tax': new Literal(0),
-                 'pmi': new Literal(0),
-                 'homeowners_insurance': new Literal(0),
+                 'principal': Num.literal(95),
+                 'interest': Num.literal(0),
+                 'hoa': Num.literal(1),
+                 'property_tax': Num.literal(0),
+                 'pmi': Num.literal(0),
+                 'homeowners_insurance': Num.literal(0),
                },
              ],
-             new Literal(0)))
+             Num.literal(0)))
       .toBe(5);
 
   // Can't pay off full loan; no recurring debts; some non-loan payments.
   expect(utils.countBurndownMonths(
-             new Literal(100),
+             Num.literal(100),
              [
                {
-                 'principal': new Literal(95),
-                 'interest': new Literal(0),
-                 'hoa': new Literal(1),
-                 'property_tax': new Literal(0),
-                 'pmi': new Literal(0),
-                 'homeowners_insurance': new Literal(0),
+                 'principal': Num.literal(95),
+                 'interest': Num.literal(0),
+                 'hoa': Num.literal(1),
+                 'property_tax': Num.literal(0),
+                 'pmi': Num.literal(0),
+                 'homeowners_insurance': Num.literal(0),
                },
                {
-                 'principal': new Literal(95),
-                 'interest': new Literal(0),
-                 'hoa': new Literal(1),
-                 'property_tax': new Literal(0),
-                 'pmi': new Literal(0),
-                 'homeowners_insurance': new Literal(0),
+                 'principal': Num.literal(95),
+                 'interest': Num.literal(0),
+                 'hoa': Num.literal(1),
+                 'property_tax': Num.literal(0),
+                 'pmi': Num.literal(0),
+                 'homeowners_insurance': Num.literal(0),
                },
              ],
-             new Literal(0)))
+             Num.literal(0)))
       .toBe(1);
 
   // Can't pay off full loan; some recurring debts; some non-loan payments.
   expect(utils.countBurndownMonths(
-             new Literal(100),
+             Num.literal(100),
              [
                {
-                 'principal': new Literal(95),
-                 'interest': new Literal(0),
-                 'hoa': new Literal(1),
-                 'property_tax': new Literal(0),
-                 'pmi': new Literal(0),
-                 'homeowners_insurance': new Literal(0),
+                 'principal': Num.literal(95),
+                 'interest': Num.literal(0),
+                 'hoa': Num.literal(1),
+                 'property_tax': Num.literal(0),
+                 'pmi': Num.literal(0),
+                 'homeowners_insurance': Num.literal(0),
                },
                {
-                 'principal': new Literal(95),
-                 'interest': new Literal(0),
-                 'hoa': new Literal(1),
-                 'property_tax': new Literal(0),
-                 'pmi': new Literal(0),
-                 'homeowners_insurance': new Literal(0),
+                 'principal': Num.literal(95),
+                 'interest': Num.literal(0),
+                 'hoa': Num.literal(1),
+                 'property_tax': Num.literal(0),
+                 'pmi': Num.literal(0),
+                 'homeowners_insurance': Num.literal(0),
                },
              ],
-             new Literal(2)))
+             Num.literal(2)))
       .toBe(1);
 
   // Can pay off full loan; some recurring debts; some non-loan payments.  At
   // the end of the mortgage, assets will be 9; then return schedule.length +
   // (9 / (2 + 4)) = 1 + 1 = 2
   expect(utils.countBurndownMonths(
-             new Literal(16),
+             Num.literal(16),
              [
                {
-                 'principal': new Literal(1),
-                 'interest': new Literal(0),
-                 'hoa': new Literal(2),
-                 'property_tax': new Literal(0),
-                 'pmi': new Literal(0),
-                 'homeowners_insurance': new Literal(0),
+                 'principal': Num.literal(1),
+                 'interest': Num.literal(0),
+                 'hoa': Num.literal(2),
+                 'property_tax': Num.literal(0),
+                 'pmi': Num.literal(0),
+                 'homeowners_insurance': Num.literal(0),
                },
              ],
-             new Literal(4)))
+             Num.literal(4)))
       .toBe(2);
 });
 
@@ -348,15 +348,15 @@ test('updateURLParam', () => {
 test('computeStockAssets', () => {
   // Investing something during one month doesn't cause any growth, since
   // there's no time to compound.
-  expect(utils.computeStockAssets([new Literal(1)], new Literal(1)).toNumber())
+  expect(utils.computeStockAssets([Num.literal(1)], Num.literal(1)).toNumber())
       .toBeCloseTo(1, 6);
 
   // Investing something for a year, with no expected annual return, should
   // have no effect.
   expect(utils
              .computeStockAssets(
-                 [new Literal(1)].concat(new Array(12).fill(new Literal(0))),
-                 new Literal(0))
+                 [Num.literal(1)].concat(new Array(12).fill(Num.literal(0))),
+                 Num.literal(0))
              .toNumber())
       .toBeCloseTo(1, 6);
 
@@ -364,8 +364,8 @@ test('computeStockAssets', () => {
   // should cause it to grow 1.5x (modulo rounding accuracy).
   expect(utils
              .computeStockAssets(
-                 [new Literal(10)].concat(new Array(12).fill(new Literal(0))),
-                 new Literal(0.5))
+                 [Num.literal(10)].concat(new Array(12).fill(Num.literal(0))),
+                 Num.literal(0.5))
              .toNumber())
       .toBeCloseTo(15, 6);
 
@@ -373,8 +373,8 @@ test('computeStockAssets', () => {
   // cause it to double (modulo rounding accuracy).
   expect(utils
              .computeStockAssets(
-                 [new Literal(7)].concat(new Array(12).fill(new Literal(0))),
-                 new Literal(1))
+                 [Num.literal(7)].concat(new Array(12).fill(Num.literal(0))),
+                 Num.literal(1))
              .toNumber())
       .toBeCloseTo(14, 6);
 
@@ -382,7 +382,7 @@ test('computeStockAssets', () => {
   // should come out to their simple sum.
   expect(utils
              .computeStockAssets(
-                 new Array(12).fill(new Literal(1)), new Literal(0))
+                 new Array(12).fill(Num.literal(1)), Num.literal(0))
              .toNumber())
       .toBeCloseTo(12, 6);
 
@@ -390,7 +390,7 @@ test('computeStockAssets', () => {
   // should compound.
   expect(utils
              .computeStockAssets(
-                 new Array(12).fill(new Literal(1)), new Literal(0.1))
+                 new Array(12).fill(Num.literal(1)), Num.literal(0.1))
              .toNumber())
       .toBeGreaterThan(12.54);
 });
