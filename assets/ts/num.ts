@@ -129,12 +129,10 @@ function identity(op: Op): number {
 
 class Literal extends Num {
   private readonly v: Decimal;
-  private readonly s: string;
 
   constructor(value: number|Decimal) {
     super();
     this.v = valueOf(value);
-    this.s = value.toString();
   }
 
   value(): Decimal {
@@ -162,11 +160,11 @@ class Literal extends Num {
   }
 
   printInternal(_simplify: boolean): string {
-    return this.s;
+    return this.v.toString();
   }
 
   toString(): string {
-    return this.s;
+    return this.v.toString();
   }
 }
 
