@@ -262,33 +262,41 @@ function updateCookie(elt: HTMLInputElement, entry: InputEntry) {
   }
 }
 
-const COOKIE_ATTRIBUTES: Readonly<string[]> = [
-  'Secure',
-  'SameSite=Lax',
-  `Domain=${window.location.hostname}`,
-  'Path=/Mortgage',
-];
+function cookieAttributes(): string[] {
+  return [
+    'Secure',
+    'SameSite=Lax',
+    `Domain=${window.location.hostname}`,
+    'Path=/Mortgage',
+  ];
+}
 
-const COOKIE_SUFFIX = COOKIE_ATTRIBUTES
-                          .concat([
-                            `max-age=${60 * 60 * 24 * 365 * 10}`,
-                          ])
-                          .join(';');
+function cookieSuffix(): string {
+  return cookieAttributes()
+      .concat([
+        `max-age=${60 * 60 * 24 * 365 * 10}`,
+      ])
+      .join(';');
+}
 
-const COOKIE_SUFFIX_DELETE = COOKIE_ATTRIBUTES.concat([
-  'max-age=0',
-])
+function cookieSuffixDelete(): string {
+  return cookieAttributes()
+      .concat([
+        'max-age=0',
+      ])
+      .join(';');
+}
 
 // Sets the value of the cookie with the given name.
 function setCookie(name: string, value: string) {
-  document.cookie = `${name}=${encodeURIComponent(value)};${COOKIE_SUFFIX}`;
+  document.cookie = `${name}=${encodeURIComponent(value)};${cookieSuffix()}`;
 }
 
 // "Deletes" the cookie with the given name. This doesn't seem to really delete
 // the cookie; it just makes it a session cookie, so that it won't be present in
 // the next session of the browser.
 export function deleteCookie(name: string) {
-  document.cookie = `${name}=0;${COOKIE_SUFFIX_DELETE}`;
+  document.cookie = `${name}=0;${cookieSuffixDelete()}`;
 }
 
 // Saves fields to the URL and cookies.
