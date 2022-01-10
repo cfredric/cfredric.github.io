@@ -76,3 +76,7 @@ test('toString()', () => {
              .prettyPrint(true))
       .toEqual('3');
 });
+
+test('Sum', () => {
+  expect(Num.sum(1, 2, 4).toNumber()).toEqual(7);
+});

@@ -149,11 +149,11 @@ export class Context {
                                    input.paymentsAlreadyMade,
                                    {min: 0, max: this.n.value().toNumber()}) ||
         (input.closingDate ?
-             utils.computeMonthDiff(input.closingDate, new Date()) :
+             utils.computeMonthDiff(input.closingDate, input.now) :
              0);
     this.closingDate =
         input.closingDate ? d3.timeMonth.floor(input.closingDate) : undefined;
-    this.prepayment = new NamedConstant(
+    let prepayment = new NamedConstant(
         'prepayment', input.prepayment.clamp(0, this.price.value()));
     this.stocksReturnRate =
         new NamedConstant(
@@ -161,22 +161,22 @@ export class Context {
             input.stocksReturnRate ? input.stocksReturnRate : new Decimal(7))
             .div(100);
 
-    this.showMonthlySchedule =
-        !this.interestRate.eq(0) || this.downPayment.eq(this.price);
-    if (this.showMonthlySchedule) {
+    this.showMonthlySchedule = !this.interestRate.eq(0) ||
+        (!this.price.eq(0) && this.downPayment.eq(this.price));
+    if (this.showMonthlySchedule && !this.downPayment.eq(this.price)) {
       this.m = new NamedOutput(
           'principalAndInterest',
-          this.downPayment.eq(this.price) ? Num.literal(0) :
-                                            utils.computeAmortizedPaymentAmount(
-                                                this.loanAmount,
-                                                this.interestRate.div(12),
-                                                this.n,
-                                                ));
-      this.monthlyLoanPayment = this.m.add(this.prepayment);
+          utils.computeAmortizedPaymentAmount(
+              this.loanAmount,
+              this.interestRate.div(12),
+              this.n,
+              ));
     } else {
       this.m = new NamedOutput('pricipalAndInterest', Num.literal(0));
-      this.monthlyLoanPayment = Num.literal(0);
+      prepayment = new NamedConstant('prepayment', Num.literal(0));
     }
+    this.prepayment = prepayment;
+    this.monthlyLoanPayment = this.m.add(this.prepayment);
     this.monthlyNonLoanPayment =
         Num.sum(this.hoa, this.propertyTax, this.homeownersInsurance);
 
