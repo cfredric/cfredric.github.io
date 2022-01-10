@@ -197,7 +197,6 @@ function attachListeners(
 
 // Set the contents of all the outputs based on the `ctx`.
 function setContents(ctx: Context, elts: Elements): void {
-  console.log('setting contents');
   utils.setEltVisibility(
       utils.getHtmlElt('simplify-derivations-span'), ctx.showDerivations);
   fmt.setDerivationParams(ctx.showDerivations, ctx.simplifyDerivations);
