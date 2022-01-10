@@ -159,7 +159,7 @@ export function updateURLParam(
 // zero (or none are provided).
 export function chooseNonzero(...xs: readonly Num[]): Num {
   for (const x of xs) {
-    if (!x.eq(0) && !x.value().isNaN()) return x;
+    if (!x.eq(0) && !x.value().isNaN() && x.value().isFinite()) return x;
   }
   return Num.literal(0);
 }

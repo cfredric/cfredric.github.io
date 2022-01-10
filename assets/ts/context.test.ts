@@ -451,7 +451,7 @@ test('amortized amount', () => {
       .toEqual(new Context(input).m.toNumber() + 5);
 });
 
-test('monthylNonLoanPayment', () => {
+test('monthlyNonLoanPayment', () => {
   const input = defaultInput();
 
   // Unspecified:
@@ -460,9 +460,13 @@ test('monthylNonLoanPayment', () => {
   expect(new Context(input).monthlyNonLoanPayment.toNumber()).toEqual(0);
 
   input.hoa = new Decimal(1);
+  // Property tax doesn't get counted, since we didn't provide enough to compute
+  // the annual rate.
   input.propertyTaxAbsolute = new Decimal(2);
-  input.price = new Decimal(3000);
   input.homeownersInsurance = new Decimal(4);
+  expect(new Context(input).monthlyNonLoanPayment.toNumber()).toEqual(5);
+
+  input.price = new Decimal(3000);
   expect(new Context(input).monthlyNonLoanPayment.toNumber()).toEqual(7);
 });
 
