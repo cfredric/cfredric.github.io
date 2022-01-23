@@ -366,12 +366,20 @@ test('closingDate', () => {
   // Unspecified:
   expect(new Context(input).closingDate).toEqual(undefined);
 
-  // Explicit:
-  input.closingDate = new Date(0);
-  // Really, we would want to test that the closing date is defined properly, in
-  // addition to being defined at all. Time zones are involved here -
-  // something's not quite right.
-  expect(new Context(input).closingDate).toBeDefined();
+  // As long as the tests use local time consistently, this shouldn't run into
+  // issues depending on server timezone.
+
+  // Explicit, close to month boundary.
+  input.closingDate =
+      new Date(2020, 3, 1, 5, 6, 7, 8);  // April 1st, local time.
+  expect(new Context(input).closingDate)
+      .toEqual(new Date(2020, 3, 1));  // April 1st, local time.
+
+  // Explicit, mid-month.
+  input.closingDate =
+      new Date(2020, 3, 20, 5, 6, 7, 8);  // April 20th, local time.
+  expect(new Context(input).closingDate)
+      .toEqual(new Date(2020, 3, 1));  // April 1st, local time.
 });
 
 test('prepayment', () => {
