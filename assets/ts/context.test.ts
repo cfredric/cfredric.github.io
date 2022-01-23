@@ -371,13 +371,13 @@ test('closingDate', () => {
 
   // Explicit, close to month boundary.
   input.closingDate =
-      new Date(2020, 3, 1, 5, 6, 7, 8);  // April 1st, local time.
+      new Date(2020, 3, 1, 1, 1, 1, 1);  // April 1st, local time.
   expect(new Context(input).closingDate)
       .toEqual(new Date(2020, 3, 1));  // April 1st, local time.
 
   // Explicit, mid-month.
   input.closingDate =
-      new Date(2020, 3, 20, 5, 6, 7, 8);  // April 20th, local time.
+      new Date(2020, 3, 20, 1, 1, 1, 1);  // April 20th, local time.
   expect(new Context(input).closingDate)
       .toEqual(new Date(2020, 3, 1));  // April 1st, local time.
 });
