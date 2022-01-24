@@ -3,9 +3,12 @@ import Decimal from 'decimal.js';
 
 type AnyNumber = number|Num|Decimal;
 
-function toNum(x: AnyNumber): Num {
-  if (x instanceof Num) return x;
-  return Num.literal(x);
+function toNumBase(x: AnyNumber): NumBase {
+  if (x instanceof NumBase) return x;
+  if (x instanceof Num) {
+    throw new Error('unreachable');
+  }
+  return NumBase.literal(x);
 }
 
 function valueOf(x: AnyNumber): Decimal {
@@ -24,76 +27,98 @@ export abstract class Num {
   }
 
   static literal(x: number|Decimal): Num {
-    return new Literal(x);
+    return NumBase.literal(x);
   }
 
   static max(a: AnyNumber, b: AnyNumber): Num {
-    a = toNum(a);
-    b = toNum(b);
+    a = toNumBase(a);
+    b = toNumBase(b);
     if (a.gt(b)) return a;
     return b;
   }
 
   static floor(x: AnyNumber): Num {
-    x = toNum(x);
-    return new DerivedNum(Op.Floor, x);
+    const xb = toNumBase(x);
+    return new DerivedNum(Op.Floor, xb);
   }
 
   clamp(min: AnyNumber, max: AnyNumber): Num {
-    min = toNum(min);
-    max = toNum(max);
+    min = toNumBase(min);
+    max = toNumBase(max);
     if (this.gt(max)) return max;
     if (this.lt(min)) return min;
     return this;
   }
 
   gte(b: AnyNumber): boolean {
-    b = toNum(b);
+    b = toNumBase(b);
     return this.value().gte(b.value());
   }
   gt(b: AnyNumber): boolean {
-    b = toNum(b);
+    b = toNumBase(b);
     return this.value().gt(b.value());
   }
   lte(b: AnyNumber): boolean {
-    b = toNum(b);
+    b = toNumBase(b);
     return this.value().lte(b.value());
   }
   lt(b: AnyNumber): boolean {
-    b = toNum(b);
+    b = toNumBase(b);
     return this.value().lt(b.value());
   }
   eq(b: AnyNumber): boolean {
-    b = toNum(b);
+    b = toNumBase(b);
     return this.value().eq(b.value());
   }
   cmp(b: AnyNumber): number {
-    b = toNum(b);
+    b = toNumBase(b);
     return this.value().cmp(b.value());
   }
 
   add(b: AnyNumber): Num {
-    b = toNum(b);
-    return new DerivedNum(Op.Plus, this, b)
+    const bb = toNumBase(b);
+    return new DerivedNum(Op.Plus, toNumBase(this), bb)
   }
   sub(b: AnyNumber): Num {
-    b = toNum(b);
-    return new DerivedNum(Op.Minus, this, b);
+    const bb = toNumBase(b);
+    return new DerivedNum(Op.Minus, toNumBase(this), bb);
   }
   mul(b: AnyNumber): Num {
-    b = toNum(b);
-    return new DerivedNum(Op.Mult, this, b);
+    const bb = toNumBase(b);
+    return new DerivedNum(Op.Mult, toNumBase(this), bb);
   }
   static div(a: AnyNumber, b: AnyNumber): Num {
-    return toNum(a).div(b);
+    return toNumBase(a).div(b);
   }
   div(b: AnyNumber): Num {
-    b = toNum(b);
-    return new DerivedNum(Op.Div, this, b);
+    const bb = toNumBase(b);
+    return new DerivedNum(Op.Div, toNumBase(this), bb);
   }
   pow(b: AnyNumber): Num {
-    b = toNum(b);
-    return new DerivedNum(Op.Pow, this, b);
+    const bb = toNumBase(b);
+    return new DerivedNum(Op.Pow, toNumBase(this), bb);
+  }
+
+  static sum(...xs: readonly AnyNumber[]): Num {
+    const ns = xs.map(x => toNumBase(x));
+    return new DerivedNum(Op.Plus, ...ns);
+  }
+
+  // Returns a flattened version of the tree rooted at this Num, where adjacent
+  // subtrees with the same commutative operator have been merged.
+  abstract flatten(): void;
+
+  // `prettyPrint` is the top-level call to get the derivation.
+  abstract prettyPrint(simplify: boolean): string;
+}
+
+abstract class NumBase extends Num {
+  constructor() {
+    super();
+  }
+
+  static literal(x: number|Decimal): NumBase {
+    return new Literal(x);
   }
 
   // Implementation detail used in simplifying the expression tree when
@@ -104,30 +129,18 @@ export abstract class Num {
   // parentheses around it (unless it's a single atom).
   abstract parenthesized(simplify: boolean): string;
 
-  abstract mergeWith(op: Op): readonly Num[];
+  abstract mergeWith(op: Op): readonly NumBase[];
 
   abstract isElidable(ident: number): boolean;
 
-  // Returns a flattened version of the tree rooted at this Num, where adjacent
-  // subtrees with the same commutative operator have been merged.
-  abstract flatten(): void;
-
-  // `prettyPrint` is the top-level call to get the derivation.
-  abstract prettyPrint(simplify: boolean): string;
-
   abstract printInternal(simplify: boolean): string;
-
-  static sum(...xs: readonly AnyNumber[]): Num {
-    const ns = xs.map(x => toNum(x));
-    return new DerivedNum(Op.Plus, ...ns);
-  }
 }
 
 function identity(op: Op): number {
   return op == Op.Plus ? 0 : 1;
 }
 
-class Literal extends Num {
+class Literal extends NumBase {
   private readonly v: Decimal;
 
   constructor(value: number|Decimal) {
@@ -147,7 +160,7 @@ class Literal extends Num {
   }
 
   flatten() {}
-  mergeWith(_op: Op): readonly Num[] {
+  mergeWith(_op: Op): readonly NumBase[] {
     return [this];
   }
 
@@ -168,7 +181,7 @@ class Literal extends Num {
   }
 }
 
-export class NamedConstant extends Num {
+export class NamedConstant extends NumBase {
   private readonly v: Decimal;
   private readonly name: string;
 
@@ -190,7 +203,7 @@ export class NamedConstant extends Num {
   }
 
   flatten() {}
-  mergeWith(_op: Op): readonly Num[] {
+  mergeWith(_op: Op): readonly NumBase[] {
     return [this];
   }
   isElidable(ident: number): boolean {
@@ -211,17 +224,17 @@ export class NamedConstant extends Num {
   }
 }
 
-class DerivedNum extends Num {
+class DerivedNum extends NumBase {
   private readonly op: Op;
   private readonly v: Decimal;
-  private ns: readonly Num[];
+  private ns: readonly NumBase[];
 
   // Lazily compute the symoblic representation. We build some complicated
   // numbers, so if we don't have to care about the symoblic representation, we
   // shouldn't.
   private s: (simplify: boolean) => string;
 
-  constructor(op: Op, ...ns: readonly Num[]) {
+  constructor(op: Op, ...ns: readonly NumBase[]) {
     super();
     this.op = op;
     this.ns = ns;
@@ -267,17 +280,17 @@ class DerivedNum extends Num {
     return this.v;
   }
 
-  simplify(): Num|null {
+  simplify(): NumBase|null {
     switch (this.op) {
       case Op.Mult:
       case Op.Plus: {
         if (this.op === Op.Mult && this.ns.some(n => n.isElidable(0))) {
           // 0 times anything is 0.
-          return Num.literal(0);
+          return NumBase.literal(0);
         }
         const ident = identity(this.op);
         this.ns = this.ns.filter(n => !n.isElidable(ident));
-        if (this.ns.length === 0) return Num.literal(ident);
+        if (this.ns.length === 0) return NumBase.literal(ident);
         if (this.ns.length === 1) return this.ns[0]!;
         break;
       }
@@ -294,21 +307,21 @@ class DerivedNum extends Num {
         }
         if (this.ns[0]!.isElidable(0)) {
           // 0 / X is 0.
-          return Num.literal(0);
+          return NumBase.literal(0);
         }
         break;
       case Op.Pow:
         if (this.ns[0]!.isElidable(0)) {
           // 0 ^ X is 0.
-          return Num.literal(0);
+          return NumBase.literal(0);
         }
         if (this.ns[0]!.isElidable(1)) {
           // 1 ^ X is 1.
-          return Num.literal(1);
+          return NumBase.literal(1);
         }
         if (this.ns[1]!.isElidable(0)) {
           // X ^ 0 is 1.
-          return Num.literal(1);
+          return NumBase.literal(1);
         }
         if (this.ns[1]!.isElidable(1)) {
           // X ^ 1 is X.
@@ -340,7 +353,7 @@ class DerivedNum extends Num {
     return this.parenthesized(simplify);
   }
 
-  mergeWith(op: Op): readonly Num[] {
+  mergeWith(op: Op): readonly NumBase[] {
     switch (this.op) {
       case Op.Floor:
       case Op.Pow:
@@ -391,7 +404,7 @@ class DerivedNum extends Num {
   }
 }
 
-export class NamedOutput extends Num {
+export class NamedOutput extends NumBase {
   private readonly name: string;
   private readonly num: Num;
 
@@ -413,7 +426,7 @@ export class NamedOutput extends Num {
   parenthesized(): string {
     return this.name;
   }
-  mergeWith(_op: Op): readonly Num[] {
+  mergeWith(_op: Op): readonly NumBase[] {
     return [this];
   }
   isElidable(_ident: number): boolean {
