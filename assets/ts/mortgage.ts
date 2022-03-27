@@ -176,10 +176,12 @@ function contextFromInputs(inputs: Inputs): Context {
 
 // Attaches listeners to react to user input, URL changes.
 function attachListeners(
-    elts: Elements, urlParamMap: InputParamMap,
-    privateValueMap: InputParamMap): void {
+    elts: Elements, urlParamMap: InputParamMap, privateValueMap: InputParamMap,
+    existingCookies: Readonly<Set<string>>): void {
   elts.clearInputsButton.addEventListener(
-      'click', () => void clearInputs(elts, urlParamMap, privateValueMap));
+      'click',
+      () => void clearInputs(
+          elts, urlParamMap, privateValueMap, existingCookies));
   const set = () => setContents(contextFromInputs(elts.inputs), elts);
   const reactToInput = (elt: HTMLInputElement) => () => {
     utils.saveFields(urlParamMap, privateValueMap, elt);
@@ -223,7 +225,7 @@ function setContents(ctx: Context, elts: Elements): void {
 // accordingly.
 function populateFields(
     elts: Elements, urlParamMap: InputParamMap,
-    privateValueMap: InputParamMap): void {
+    privateValueMap: InputParamMap): Readonly<Set<string>> {
   const url = new URL(location.href);
   let hasValue = false;
   for (const [elt, {name}] of urlParamMap.entries()) {
@@ -247,32 +249,57 @@ function populateFields(
     const parts = x.split('=');
     return {name: parts[0]?.trim(), value: decodeURIComponent(parts[1]!)};
   });
+  const existingCookies = new Set<string>();
   for (const [elt, {name}] of privateValueMap.entries()) {
+    // LocalStorage takes precedence over cookies, but we still try to read from
+    // both to provide a smooth upgrade experience.
+    const savedStorageValue = window.localStorage.getItem(name);
+    if (savedStorageValue) {
+      hasValue = true;
+      switch (elt.type) {
+        case 'text':
+          elt.value = savedStorageValue;
+          break;
+        case 'checkbox':
+          elt.checked = savedStorageValue === '1';
+          break;
+        default:
+          throw new Error('unreachable');
+      }
+    }
+
+    // Always look for cookies that we can clear, but don't do anything with
+    // them unless we don't have a value for this
     const savedCookie =
         cookies.find(({name: cookieName}) => name === cookieName);
-    switch (elt.type) {
-      case 'text':
-        hasValue = hasValue || savedCookie !== undefined;
-        elt.value = savedCookie ? savedCookie.value! : '';
-        break;
-      case 'checkbox':
-        const checked = !!savedCookie;
-        hasValue = hasValue || checked;
-        elt.checked = checked;
-        break;
-      default:
-        throw new Error('unreachable');
+    if (savedCookie !== undefined) existingCookies.add(name);
+
+    if (!savedStorageValue) {
+      switch (elt.type) {
+        case 'text':
+          hasValue = hasValue || savedCookie !== undefined;
+          elt.value = savedCookie ? savedCookie.value! : '';
+          break;
+        case 'checkbox':
+          const checked = !!savedCookie;
+          hasValue = hasValue || checked;
+          elt.checked = checked;
+          break;
+        default:
+          throw new Error('unreachable');
+      }
     }
   }
   if (hasValue) {
     setContents(contextFromInputs(elts.inputs), elts);
   }
+  return existingCookies;
 }
 
 // Clears all parameters from the `url`, and clears all cookies.
 function clearInputs(
-    elts: Elements, urlParamMap: InputParamMap,
-    privateValueMap: InputParamMap): void {
+    elts: Elements, urlParamMap: InputParamMap, privateValueMap: InputParamMap,
+    existingCookies: Readonly<Set<string>>): void {
   const url = new URL(location.href);
   let urlChanged = false;
   for (const [elt, entry] of urlParamMap.entries()) {
@@ -282,7 +309,8 @@ function clearInputs(
   if (urlChanged) history.pushState({}, '', url.toString());
   for (const [elt, entry] of privateValueMap.entries()) {
     elt.value = '';
-    utils.deleteCookie(entry.name);
+    window.localStorage.removeItem(entry.name);
+    if (existingCookies.has(entry.name)) utils.deleteCookie(entry.name);
   }
   setContents(contextFromInputs(elts.inputs), elts);
 }
@@ -297,11 +325,11 @@ export function main(): void {
   };
   const urlParamMap = getUrlParamMap(elts.inputs);
   const privateValueMap = getPrivateValueMap(elts.inputs);
-  populateFields(elts, urlParamMap, privateValueMap);
+  const existingCookies = populateFields(elts, urlParamMap, privateValueMap);
   // To support URL param / cookie deprecations cleanly, we write out the UI
   // fields immediately after populating them. This "upgrades" fields that
   // have been moved from URL params to cookies (or vice versa).
   utils.saveFields(urlParamMap, privateValueMap);
-  utils.clearDeprecatedStorage(urlParamMap, privateValueMap);
-  attachListeners(elts, urlParamMap, privateValueMap);
+  utils.clearDeprecatedStorage(urlParamMap, privateValueMap, existingCookies);
+  attachListeners(elts, urlParamMap, privateValueMap, existingCookies);
 }

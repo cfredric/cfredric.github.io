@@ -238,58 +238,31 @@ export function calculatePaymentSchedule(ctx: Context):
   return schedule;
 }
 
-// Updates the value of the given cookie.
-function updateCookie(elt: HTMLInputElement, entry: InputEntry) {
+// Updates the value of the given entry in private storage.
+function updatePrivateStorage(elt: HTMLInputElement, entry: InputEntry) {
   if (entry.deprecated) return;
   let value;
-  let hasValue;
   switch (elt.type) {
     case 'text':
       value = elt.value;
-      hasValue = value !== '';
       break;
     case 'checkbox':
-      value = '1';
-      hasValue = elt.checked;
+      value = elt.checked ? '1' : '0';
       break;
     default:
       throw new Error('unreachable');
   }
-  if (hasValue) {
-    setCookie(entry.name, value);
-  } else {
-    deleteCookie(entry.name);
-  }
+  window.localStorage.setItem(entry.name, value);
 }
 
-function cookieAttributes(): string[] {
+function cookieSuffixDelete(): string {
   return [
     'Secure',
     'SameSite=Lax',
     `Domain=${window.location.hostname}`,
     'Path=/Mortgage',
-  ];
-}
-
-function cookieSuffix(): string {
-  return cookieAttributes()
-      .concat([
-        `max-age=${60 * 60 * 24 * 365 * 10}`,
-      ])
-      .join(';');
-}
-
-function cookieSuffixDelete(): string {
-  return cookieAttributes()
-      .concat([
-        'max-age=0',
-      ])
-      .join(';');
-}
-
-// Sets the value of the cookie with the given name.
-function setCookie(name: string, value: string) {
-  document.cookie = `${name}=${encodeURIComponent(value)};${cookieSuffix()}`;
+    'max-age=0',
+  ].join(';');
 }
 
 // "Deletes" the cookie with the given name. This doesn't seem to really delete
@@ -307,27 +280,30 @@ export function saveFields(
   const url = new URL(location.href);
   let urlChanged = false;
   if (changed) {
+    // Just check the one element that changed.
     if (urlParams.has(changed)) {
       urlChanged =
           updateURLParam(url, changed, urlParams.get(changed)!) || urlChanged;
     }
     if (privateValues.has(changed))
-      updateCookie(changed, privateValues.get(changed)!);
+      updatePrivateStorage(changed, privateValues.get(changed)!);
   } else {
+    // Check all elements, since we don't know what changed.
     for (const [elt, entry] of urlParams.entries()) {
       urlChanged = updateURLParam(url, elt, entry) || urlChanged;
     }
     for (const [elt, entry] of privateValues.entries()) {
-      updateCookie(elt, entry);
+      updatePrivateStorage(elt, entry);
     }
   }
   if (urlChanged) history.pushState({}, '', url.toString());
 }
 
-// Clears out deprecated URL params and cookies.
+// Clears out deprecated URL params and private storage.
 export function clearDeprecatedStorage(
     urlParams: Readonly<Map<HTMLInputElement, InputEntry>>,
-    privateValues: Readonly<Map<HTMLInputElement, InputEntry>>) {
+    privateValues: Readonly<Map<HTMLInputElement, InputEntry>>,
+    existingCookies: Readonly<Set<string>>) {
   const url = new URL(location.href);
   let modified = false;
   for (const {name, deprecated} of urlParams.values())
@@ -335,8 +311,11 @@ export function clearDeprecatedStorage(
 
   if (modified) history.pushState({}, '', url.toString());
 
-  for (const {name, deprecated} of privateValues.values())
-    if (deprecated) deleteCookie(name);
+  for (const {name, deprecated} of privateValues.values()) {
+    // We don't use cookies for any storage anymore, so delete any that exist.
+    if (existingCookies.has(name)) deleteCookie(name);
+    if (deprecated) window.localStorage.removeItem(name);
+  }
 }
 
 export function removeChildren(node: Node) {
