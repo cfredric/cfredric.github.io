@@ -131,7 +131,7 @@ function getUrlParamMap(inputs: Inputs): InputParamMap {
   ]);
 }
 
-function getCookieValueMap(inputs: Inputs): InputParamMap {
+function getPrivateValueMap(inputs: Inputs): InputParamMap {
   return new Map([
     [inputs.annualIncome, {name: 'annual_income'}],
     [inputs.totalAssets, {name: 'total_assets'}],
@@ -177,22 +177,22 @@ function contextFromInputs(inputs: Inputs): Context {
 // Attaches listeners to react to user input, URL changes.
 function attachListeners(
     elts: Elements, urlParamMap: InputParamMap,
-    cookieValueMap: InputParamMap): void {
+    privateValueMap: InputParamMap): void {
   elts.clearInputsButton.addEventListener(
-      'click', () => void clearInputs(elts, urlParamMap, cookieValueMap));
+      'click', () => void clearInputs(elts, urlParamMap, privateValueMap));
   const set = () => setContents(contextFromInputs(elts.inputs), elts);
   const reactToInput = (elt: HTMLInputElement) => () => {
-    utils.saveFields(urlParamMap, cookieValueMap, elt);
+    utils.saveFields(urlParamMap, privateValueMap, elt);
     set();
   };
   for (const elt of urlParamMap.keys()) {
     elt.addEventListener('input', reactToInput(elt));
   }
-  for (const elt of cookieValueMap.keys()) {
+  for (const elt of privateValueMap.keys()) {
     elt.addEventListener('input', reactToInput(elt));
   }
   window.onpopstate = () =>
-      void populateFields(elts, urlParamMap, cookieValueMap);
+      void populateFields(elts, urlParamMap, privateValueMap);
 }
 
 // Set the contents of all the outputs based on the `ctx`.
@@ -223,7 +223,7 @@ function setContents(ctx: Context, elts: Elements): void {
 // accordingly.
 function populateFields(
     elts: Elements, urlParamMap: InputParamMap,
-    cookieValueMap: InputParamMap): void {
+    privateValueMap: InputParamMap): void {
   const url = new URL(location.href);
   let hasValue = false;
   for (const [elt, {name}] of urlParamMap.entries()) {
@@ -247,7 +247,7 @@ function populateFields(
     const parts = x.split('=');
     return {name: parts[0]?.trim(), value: decodeURIComponent(parts[1]!)};
   });
-  for (const [elt, {name}] of cookieValueMap.entries()) {
+  for (const [elt, {name}] of privateValueMap.entries()) {
     const savedCookie =
         cookies.find(({name: cookieName}) => name === cookieName);
     switch (elt.type) {
@@ -272,7 +272,7 @@ function populateFields(
 // Clears all parameters from the `url`, and clears all cookies.
 function clearInputs(
     elts: Elements, urlParamMap: InputParamMap,
-    cookieValueMap: InputParamMap): void {
+    privateValueMap: InputParamMap): void {
   const url = new URL(location.href);
   let urlChanged = false;
   for (const [elt, entry] of urlParamMap.entries()) {
@@ -280,7 +280,7 @@ function clearInputs(
     urlChanged = utils.deleteParam(url, entry.name) || urlChanged;
   }
   if (urlChanged) history.pushState({}, '', url.toString());
-  for (const [elt, entry] of cookieValueMap.entries()) {
+  for (const [elt, entry] of privateValueMap.entries()) {
     elt.value = '';
     utils.deleteCookie(entry.name);
   }
@@ -296,12 +296,12 @@ export function main(): void {
     clearInputsButton: utils.getHtmlElt('clear-inputs-button'),
   };
   const urlParamMap = getUrlParamMap(elts.inputs);
-  const cookieValueMap = getCookieValueMap(elts.inputs);
-  populateFields(elts, urlParamMap, cookieValueMap);
+  const privateValueMap = getPrivateValueMap(elts.inputs);
+  populateFields(elts, urlParamMap, privateValueMap);
   // To support URL param / cookie deprecations cleanly, we write out the UI
   // fields immediately after populating them. This "upgrades" fields that
   // have been moved from URL params to cookies (or vice versa).
-  utils.saveFields(urlParamMap, cookieValueMap);
-  utils.clearDeprecatedStorage(urlParamMap, cookieValueMap);
-  attachListeners(elts, urlParamMap, cookieValueMap);
+  utils.saveFields(urlParamMap, privateValueMap);
+  utils.clearDeprecatedStorage(urlParamMap, privateValueMap);
+  attachListeners(elts, urlParamMap, privateValueMap);
 }

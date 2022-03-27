@@ -302,7 +302,7 @@ export function deleteCookie(name: string) {
 // Saves fields to the URL and cookies.
 export function saveFields(
     urlParams: Readonly<Map<HTMLInputElement, InputEntry>>,
-    cookieValues: Readonly<Map<HTMLInputElement, InputEntry>>,
+    privateValues: Readonly<Map<HTMLInputElement, InputEntry>>,
     changed?: HTMLInputElement): void {
   const url = new URL(location.href);
   let urlChanged = false;
@@ -311,13 +311,13 @@ export function saveFields(
       urlChanged =
           updateURLParam(url, changed, urlParams.get(changed)!) || urlChanged;
     }
-    if (cookieValues.has(changed))
-      updateCookie(changed, cookieValues.get(changed)!);
+    if (privateValues.has(changed))
+      updateCookie(changed, privateValues.get(changed)!);
   } else {
     for (const [elt, entry] of urlParams.entries()) {
       urlChanged = updateURLParam(url, elt, entry) || urlChanged;
     }
-    for (const [elt, entry] of cookieValues.entries()) {
+    for (const [elt, entry] of privateValues.entries()) {
       updateCookie(elt, entry);
     }
   }
@@ -327,7 +327,7 @@ export function saveFields(
 // Clears out deprecated URL params and cookies.
 export function clearDeprecatedStorage(
     urlParams: Readonly<Map<HTMLInputElement, InputEntry>>,
-    cookieValues: Readonly<Map<HTMLInputElement, InputEntry>>) {
+    privateValues: Readonly<Map<HTMLInputElement, InputEntry>>) {
   const url = new URL(location.href);
   let modified = false;
   for (const {name, deprecated} of urlParams.values())
@@ -335,7 +335,7 @@ export function clearDeprecatedStorage(
 
   if (modified) history.pushState({}, '', url.toString());
 
-  for (const {name, deprecated} of cookieValues.values())
+  for (const {name, deprecated} of privateValues.values())
     if (deprecated) deleteCookie(name);
 }
 
