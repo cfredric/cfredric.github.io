@@ -51,6 +51,7 @@ function clearCumulativeChart() {
 function clearTables() {
   utils.removeChildren(utils.getHtmlElt('schedule_tab'));
   utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
+  utils.removeChildren(utils.getHtmlElt('tax_interest_tab'));
 }
 
 // Builds the chart of monthly payments over time.
@@ -344,19 +345,51 @@ export function setChartsAndButtonsContent(
 
   buildCumulativeChart(ctx, cumulative, fmt, loanPaymentTypes);
 
+  const makeColumnGeneratorForPaymentRecord =
+      (paymentTypes: readonly PaymentType[]) =>
+          (record: PaymentRecordWithMonth) => {
+            return [
+              fmt.formatMonthNum(record.month, ctx.closingDate),
+              ...paymentTypes.map(ty => fmt.formatCurrency(record.data[ty]))
+            ];
+          };
+
   const makeTabler =
-      (data: readonly PaymentRecordWithMonth[], ts: readonly PaymentType[]):
-          () => HTMLTableElement => () => utils.makeTable(
-              ['Month', ...ts.map(utils.toCapitalized)],
-              data.map(
-                  d =>
-                      [fmt.formatMonthNum(d.month, ctx.closingDate),
-                       ...ts.map(k => fmt.formatCurrency(d.data[k])),
-  ]));
+      <T,>(data: readonly T[], paymentTypes: readonly PaymentType[],
+       firstColumnName: string,
+       genColumns: (t: T) => string[]): () =>
+          HTMLTableElement => {
+            return () => utils.makeTable(
+                       [firstColumnName, ...paymentTypes.map(utils.toCapitalized)],
+                       data.map(genColumns))
+          };
   new ExpandableElement(
       utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
-      makeTabler(pointwise, paymentTypes));
+      makeTabler(
+          pointwise, paymentTypes, 'Month',
+          makeColumnGeneratorForPaymentRecord(paymentTypes)));
   new ExpandableElement(
       utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
-      makeTabler(cumulative, loanPaymentTypes));
+      makeTabler(
+          cumulative, loanPaymentTypes, 'Month',
+          makeColumnGeneratorForPaymentRecord(loanPaymentTypes)));
+
+  if (ctx.closingDate) {
+    const yearGroups = d3.group(
+        pointwise,
+        (payment) =>
+            d3.timeMonth.offset(ctx.closingDate!, payment.month).getFullYear());
+    const sumsByYear = [...yearGroups.keys()].sort(d3.ascending).map((year) => {
+      const group = yearGroups.get(year)!;
+      const interest =
+          Num.sum(...group.map((payment) => payment.data.interest));
+      return {year, interest};
+    });
+
+    new ExpandableElement(
+        utils.getHtmlElt('tax_interest_tab'), 'Interest Paid by Tax Year',
+        makeTabler(
+            sumsByYear, ['interest'], 'Year',
+            (x) => [x.year.toString(), fmt.formatCurrency(x.interest)]));
+  }
 }
