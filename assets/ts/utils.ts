@@ -324,6 +324,11 @@ export function removeChildren(node: Node) {
   }
 }
 
+export function makePaymentTableHeader(
+    firstColumnName: string, paymentTypes: readonly PaymentType[]): string[] {
+  return [firstColumnName, ...paymentTypes.map(toCapitalized)];
+}
+
 export function makeTable(
     headers: readonly string[], rows: readonly string[][]): HTMLTableElement {
   const table = document.createElement('table');
