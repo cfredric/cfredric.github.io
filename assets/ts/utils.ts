@@ -4,7 +4,7 @@ import {Decimal} from 'decimal.js';
 import {Context} from './context';
 import {Formatter} from './formatter';
 import {HidableOutput} from './hidable_output';
-import {Num} from './num';
+import {AnyNumber, Num} from './num';
 import {HidableContainer, hidableContainers, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType, templateTypes} from './types';
 
 // Returns the numeric value of the input element, or 0 if the input was empty.
@@ -95,6 +95,20 @@ export function cumulativeSumByFields(
     };
   }
   return results;
+}
+
+// Returns a Record where the value of each key is the sum of the values of that
+// key in `data`.
+export function sumByFields<K extends string>(
+    data: readonly Record<K, AnyNumber>[],
+    fields: readonly K[]): Record<K, Num> {
+  const result = mkRecord(fields, () => Num.literal(0));
+  for (const datum of data.values()) {
+    for (const f of fields) {
+      result[f] = result[f].add(datum[f]);
+    }
+  }
+  return result;
 }
 
 // Returns the number of payments that can be made with the given total assets,
@@ -324,12 +338,49 @@ export function removeChildren(node: Node) {
   }
 }
 
-export function makePaymentTableHeader(
+function makePaymentTableHeader(
     firstColumnName: string, paymentTypes: readonly PaymentType[]): string[] {
   return [firstColumnName, ...paymentTypes.map(toCapitalized)];
 }
 
-export function makeTable(
+function makeColumnGeneratorForPaymentRecord(
+    ctx: Context, fmt: Formatter, paymentTypes: readonly PaymentType[]) {
+  return (record: PaymentRecordWithMonth): string[] => {
+    return [
+      fmt.formatMonthNum(record.month, ctx.closingDate),
+      ...paymentTypes.map(ty => fmt.formatCurrency(record.data[ty]))
+    ];
+  };
+}
+
+export function makeMonthlyTable(
+    ctx: Context, fmt: Formatter, paymentTypes: readonly PaymentType[],
+    data: readonly PaymentRecordWithMonth[]): HTMLTableElement {
+  return makeTable(
+      makePaymentTableHeader('Month', paymentTypes),
+      data.map(makeColumnGeneratorForPaymentRecord(ctx, fmt, paymentTypes)));
+}
+
+export function makeYearlyTable(
+    closingDate: Date, paymentTypes: readonly PaymentType[],
+    data: readonly PaymentRecordWithMonth[],
+    yearToColumns: (year: number, payments: PaymentRecordWithMonth[]) =>
+        string[]): HTMLTableElement {
+  const dataByYear = [
+    ...d3
+        .group(
+            data,
+            (payment) =>
+                d3.timeMonth.offset(closingDate, payment.month).getFullYear())
+        .entries()
+  ].sort(([yearA], [yearB]) => d3.ascending(yearA, yearB));
+
+  return makeTable(
+      makePaymentTableHeader('Year', paymentTypes),
+      dataByYear.map(([year, group]) => yearToColumns(year, group)));
+}
+
+function makeTable(
     headers: readonly string[], rows: readonly string[][]): HTMLTableElement {
   const table = document.createElement('table');
   const headRow = table.createTHead().insertRow();

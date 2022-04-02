@@ -1,7 +1,7 @@
 
 import Decimal from 'decimal.js';
 
-type AnyNumber = number|Num|Decimal;
+export type AnyNumber = number|Num|Decimal;
 
 function toNumBase(x: AnyNumber): NumBase {
   if (x instanceof NumBase) return x;

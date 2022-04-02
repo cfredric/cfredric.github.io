@@ -345,45 +345,28 @@ export function setChartsAndButtonsContent(
 
   buildCumulativeChart(ctx, cumulative, fmt, loanPaymentTypes);
 
-  const makeColumnGeneratorForPaymentRecord =
-      (paymentTypes: readonly PaymentType[]) =>
-          (record: PaymentRecordWithMonth): string[] => {
-            return [
-              fmt.formatMonthNum(record.month, ctx.closingDate),
-              ...paymentTypes.map(ty => fmt.formatCurrency(record.data[ty]))
-            ];
-          };
-
   new ExpandableElement(
       utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
-      () => utils.makeTable(
-          utils.makePaymentTableHeader('Month', paymentTypes),
-          pointwise.map(makeColumnGeneratorForPaymentRecord(paymentTypes))));
+      () => utils.makeMonthlyTable(ctx, fmt, paymentTypes, pointwise));
   new ExpandableElement(
       utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
-      () => utils.makeTable(
-          utils.makePaymentTableHeader('Month', loanPaymentTypes),
-          cumulative.map(
-              makeColumnGeneratorForPaymentRecord(loanPaymentTypes))));
+      () => utils.makeMonthlyTable(ctx, fmt, loanPaymentTypes, cumulative));
 
   if (ctx.closingDate) {
     const closingDate = ctx.closingDate;
     new ExpandableElement(
         utils.getHtmlElt('tax_interest_tab'), 'Interest Paid by Tax Year',
-        () => utils.makeTable(
-            utils.makePaymentTableHeader('Year', ['interest']),
-            [...d3
-                 .group(
-                     pointwise,
-                     (payment) =>
-                         d3.timeMonth.offset(closingDate, payment.month)
-                             .getFullYear())
-                 .entries()]
-                .sort(([yearA], [yearB]) => d3.ascending(yearA, yearB))
-                .map(
-                    ([year, group]) =>
-                        [year.toString(),
-                         fmt.formatCurrency(Num.sum(...group.map(
-                             (payment) => payment.data.interest)))])));
+        () => {
+          const columnValueTypes = ['interest'] as const;
+          return utils.makeYearlyTable(
+              closingDate, columnValueTypes, pointwise, (year, payments) => {
+                const sums = utils.sumByFields(
+                    payments.map((d) => d.data), columnValueTypes);
+                return [
+                  year.toString(),
+                  fmt.formatCurrency(sums.interest),
+                ];
+              });
+        });
   }
 }
