@@ -182,16 +182,11 @@ function attachListeners(
       'click',
       () => void clearInputs(
           elts, urlParamMap, privateValueMap, existingCookies));
-  const set = () => setContents(contextFromInputs(elts.inputs), elts);
-  const reactToInput = (elt: HTMLInputElement) => () => {
-    utils.saveFields(urlParamMap, privateValueMap, elt);
-    set();
-  };
-  for (const elt of urlParamMap.keys()) {
-    elt.addEventListener('input', reactToInput(elt));
-  }
-  for (const elt of privateValueMap.keys()) {
-    elt.addEventListener('input', reactToInput(elt));
+  for (const elt of [...urlParamMap.keys(), ...privateValueMap.keys()]) {
+    elt.addEventListener('input', () => {
+      utils.saveFields(urlParamMap, privateValueMap, elt);
+      setContents(contextFromInputs(elts.inputs), elts);
+    });
   }
   window.onpopstate = () =>
       void populateFields(elts, urlParamMap, privateValueMap);
