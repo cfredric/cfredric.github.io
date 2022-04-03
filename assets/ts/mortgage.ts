@@ -221,7 +221,19 @@ function setContents(ctx: Context, elts: Elements): void {
 function populateFields(
     elts: Elements, urlParamMap: InputParamMap,
     privateValueMap: InputParamMap): Readonly<Set<string>> {
-  const url = new URL(location.href);
+  const hasURLParam =
+      populateFieldsFromURLParams(new URL(location.href), urlParamMap);
+  const {cookies, hasValue: hasPrivateValue} =
+      populateFieldsFromPrivateStorage(document.cookie, privateValueMap);
+
+  if (hasURLParam || hasPrivateValue)
+    setContents(contextFromInputs(elts.inputs), elts);
+
+  return cookies;
+}
+
+function populateFieldsFromURLParams(
+    url: URL, urlParamMap: InputParamMap): boolean {
   let hasValue = false;
   for (const [elt, {name}] of urlParamMap.entries()) {
     switch (elt.type) {
@@ -240,11 +252,19 @@ function populateFields(
         throw new Error('unreachable');
     }
   }
-  const cookies = document.cookie.split(';').map(x => {
-    const parts = x.split('=');
-    return {name: parts[0]?.trim(), value: decodeURIComponent(parts[1]!)};
-  });
+  return hasValue;
+}
+
+function populateFieldsFromPrivateStorage(
+    cookieString: string, privateValueMap: InputParamMap):
+    {cookies: Readonly<Set<string>>, hasValue: boolean} {
+  const cookiesToCheck = new Map<string, string>(
+      cookieString.split(';')
+          .map((c) => c.split('='))
+          .filter(([name, value]) => name && value)
+          .map(([name, value]) => [name!.trim(), decodeURIComponent(value!)]));
   const existingCookies = new Set<string>();
+  let hasValue = false;
   for (const [elt, {name}] of privateValueMap.entries()) {
     // LocalStorage takes precedence over cookies, but we still try to read from
     // both to provide a smooth upgrade experience.
@@ -265,15 +285,14 @@ function populateFields(
 
     // Always look for cookies that we can clear, but don't do anything with
     // them unless we don't have a value for this
-    const savedCookie =
-        cookies.find(({name: cookieName}) => name === cookieName);
+    const savedCookie = cookiesToCheck.get(name);
     if (savedCookie !== undefined) existingCookies.add(name);
 
     if (!savedStorageValue) {
       switch (elt.type) {
         case 'text':
           hasValue = hasValue || savedCookie !== undefined;
-          elt.value = savedCookie ? savedCookie.value! : '';
+          elt.value = savedCookie || '';
           break;
         case 'checkbox':
           const checked = !!savedCookie;
@@ -285,10 +304,11 @@ function populateFields(
       }
     }
   }
-  if (hasValue) {
-    setContents(contextFromInputs(elts.inputs), elts);
-  }
-  return existingCookies;
+
+  return {
+    cookies: existingCookies,
+    hasValue,
+  };
 }
 
 // Clears all parameters from the `url`, and clears all cookies.
