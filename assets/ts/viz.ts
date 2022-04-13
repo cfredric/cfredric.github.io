@@ -51,7 +51,7 @@ function clearCumulativeChart() {
 function clearTables() {
   utils.removeChildren(utils.getHtmlElt('schedule_tab'));
   utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
-  utils.removeChildren(utils.getHtmlElt('tax_interest_tab'));
+  utils.removeChildren(utils.getHtmlElt('tax_year_tab'));
 }
 
 // Builds the chart of monthly payments over time.
@@ -355,9 +355,8 @@ export function setChartsAndButtonsContent(
   if (ctx.closingDate) {
     const closingDate = ctx.closingDate;
     new ExpandableElement(
-        utils.getHtmlElt('tax_interest_tab'), 'Interest Paid by Tax Year',
-        () => {
-          const columnValueTypes = ['interest'] as const;
+        utils.getHtmlElt('tax_year_tab'), 'Moneys Paid by Tax Year', () => {
+          const columnValueTypes = ['interest', 'property_tax'] as const;
           return utils.makeYearlyTable(
               closingDate, columnValueTypes, pointwise, (year, payments) => {
                 const sums = utils.sumByFields(
@@ -365,6 +364,7 @@ export function setChartsAndButtonsContent(
                 return [
                   year.toString(),
                   fmt.formatCurrency(sums.interest),
+                  fmt.formatCurrency(sums.property_tax),
                 ];
               });
         });
