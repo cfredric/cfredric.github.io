@@ -23,3 +23,5 @@ gem "github-pages", group: :jekyll_plugins
     gem "jekyll-feed"
     gem "jekyll-remote-theme"
  end
+
+gem "webrick", "~> 1.7"
