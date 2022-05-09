@@ -10,7 +10,7 @@ test('toString()', () => {
   expect(Num.literal(1).add(2).add(3).toString()).toEqual('1 + 2 + 3');
   expect(Num.literal(1).mul(2).mul(3).toString()).toEqual('1 * 2 * 3');
 
-  expect(Num.literal(1).sub(2).sub(3).toString()).toEqual('{(1 - 2)} - 3');
+  expect(Num.literal(1).sub(2).sub(3).toString()).toEqual('1 - 2 - 3');
   expect(Num.literal(1).sub(Num.literal(2).sub(3)).toString())
       .toEqual('1 - {(2 - 3)}');
 

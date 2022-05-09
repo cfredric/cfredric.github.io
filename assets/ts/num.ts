@@ -75,11 +75,11 @@ export abstract class Num {
     return this.value().cmp(b.value());
   }
 
-  add(b: AnyNumber): Num {
+  add(b: AnyNumber): DerivedNum {
     const bb = toNumBase(b);
     return new DerivedNum(Op.Plus, toNumBase(this), bb)
   }
-  sub(b: AnyNumber): Num {
+  sub(b: AnyNumber): DerivedNum {
     const bb = toNumBase(b);
     return new DerivedNum(Op.Minus, toNumBase(this), bb);
   }
@@ -90,23 +90,23 @@ export abstract class Num {
   static div(a: AnyNumber, b: AnyNumber): Num {
     return toNumBase(a).div(b);
   }
-  div(b: AnyNumber): Num {
+  div(b: AnyNumber): DerivedNum {
     const bb = toNumBase(b);
     return new DerivedNum(Op.Div, toNumBase(this), bb);
   }
-  pow(b: AnyNumber): Num {
+  pow(b: AnyNumber): DerivedNum {
     const bb = toNumBase(b);
     return new DerivedNum(Op.Pow, toNumBase(this), bb);
   }
 
-  static sum(...xs: readonly AnyNumber[]): Num {
+  static sum(...xs: readonly AnyNumber[]): NumBase {
     const ns = xs.map(x => toNumBase(x));
     if (ns.length == 1) {
       return ns[0]!;
     }
     return new DerivedNum(Op.Plus, ...ns);
   }
-  static product(...xs: readonly AnyNumber[]): Num {
+  static product(...xs: readonly AnyNumber[]): NumBase {
     const ns = xs.map(x => toNumBase(x));
     if (ns.length == 1) {
       return ns[0]!;
@@ -281,13 +281,18 @@ class DerivedNum extends NumBase {
       case Op.Plus:
         this.v = Decimal.sum(...ns.map(n => n.value()));
         this.s = (simplify: boolean) =>
-            this.ns.map(n => n.parenOrUnparen(this.op, simplify)).join(' + ');
+            this.ns.map(n => n.printInternal(simplify)).join(' + ');
         break;
       case Op.Minus:
+        if (this.ns.length !== 2) {
+          throw new Error('Expected 2 operands for subtraction');
+        }
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.sub(n.value()), valueOf(ns[0]!));
-        this.s = (simplify: boolean) =>
-            this.ns.map(n => n.parenOrUnparen(this.op, simplify)).join(' - ');
+        this.s = (simplify: boolean) => {
+          return `${this.ns[0]!.printInternal(simplify)} - ${
+              this.ns[1]!.parenOrUnparen(this.op, simplify)}`;
+        };
         break;
       case Op.Mult:
         this.v = ns.slice(1).reduce(
@@ -298,7 +303,7 @@ class DerivedNum extends NumBase {
           if (denominators.length) {
             const numerator = Num.product(...numerators);
             const denominator = Num.product(...denominators);
-            return numerator.div(denominator).prettyPrint(simplify);
+            return numerator.div(denominator).printInternal(simplify);
           }
           // Base case: no quotients involved.
           return numerators.map(n => n.parenOrUnparen(this.op, simplify))
@@ -318,8 +323,8 @@ class DerivedNum extends NumBase {
             throw new Error('unreachable');
           }
           const denominator = Num.product(...denominators);
-          return `\\frac{${numerator.prettyPrint(simplify)}}{${
-              denominator.prettyPrint(simplify)}}`;
+          return `\\frac{${numerator.printInternal(simplify)}}{${
+              denominator.printInternal(simplify)}}`;
         };
         break;
       case Op.Floor:
