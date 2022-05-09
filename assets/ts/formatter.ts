@@ -2,6 +2,20 @@ import * as d3 from 'd3';
 
 import {Num} from './num';
 
+export class FormatResult {
+  readonly value: string;
+  readonly derivation?: string;
+
+  constructor(value: string, derivation?: string) {
+    this.value = value;
+    this.derivation = derivation;
+  }
+
+  map(f: (value: string) => string): FormatResult {
+    return new FormatResult(f(this.value), this.derivation);
+  }
+}
+
 export class Formatter {
   private showDerivations: boolean;
   private simplifyDerivations: boolean;
@@ -26,33 +40,42 @@ export class Formatter {
     this.simplifyDerivations = simplify;
   }
 
-  formatCurrency(n: Num, withDerivation = false): string {
-    const s = this.fmt.format(n.toNumber());
-    if (withDerivation && this.showDerivations) {
-      return `${s} {${n.prettyPrint(this.simplifyDerivations)}}`;
+  formatCurrency(n: Num): string {
+    return this.fmt.format(n.toNumber());
+  }
+  formatCurrencyWithDerivation(n: Num): FormatResult {
+    const value = this.formatCurrency(n);
+    if (this.showDerivations) {
+      return new FormatResult(value, n.prettyPrint(this.simplifyDerivations));
     }
-    return s;
+    return new FormatResult(value);
   }
 
-  formatPercent(p: Num, withDerivation = false): string {
-    const s = this.pctFmt.format(p.toNumber());
-    if (withDerivation && this.showDerivations) {
-      return `${s} {${p.prettyPrint(this.simplifyDerivations)}}`;
+  formatPercent(p: Num): string {
+    return this.pctFmt.format(p.toNumber());
+  }
+  formatPercentWithDerivation(p: Num): FormatResult {
+    const value = this.formatPercent(p);
+    if (this.showDerivations) {
+      return new FormatResult(value, p.prettyPrint(this.simplifyDerivations));
     }
-    return s;
+    return new FormatResult(value);
   }
 
-  formatHundredthsPercent(p: Num, withDerivation = false): string {
-    const s = this.hundredthsPctFmt.format(p.toNumber());
-    if (withDerivation && this.showDerivations) {
-      return `${s} {${p.prettyPrint(this.simplifyDerivations)}}`;
+  formatHundredthsPercent(p: Num): string {
+    return this.hundredthsPctFmt.format(p.toNumber());
+  }
+  formatHundredthsPercentWithDerivation(p: Num): FormatResult {
+    const value = this.formatHundredthsPercent(p);
+    if (this.showDerivations) {
+      return new FormatResult(value, p.prettyPrint(this.simplifyDerivations));
     }
-    return s;
+    return new FormatResult(value);
   }
 
   // Formats a number of months into an integral number of years and integral
   // number of months.
-  formatMonthNum(m: number, baseDate?: Date) {
+  formatMonthNum(m: number, baseDate?: Date): string {
     if (!Number.isFinite(m)) {
       if (Number.isNaN(m)) return 'NaN';
       if (m > 0) return 'forever';

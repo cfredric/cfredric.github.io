@@ -201,11 +201,31 @@ function setContents(ctx: Context, elts: Elements): void {
   const schedules = utils.computeSchedules(ctx);
 
   for (const [h, v] of Object.entries(utils.computeAmountHints(ctx, fmt))) {
-    elts.hints[h as HintType].innerText = v;
+    const e = elts.hints[h as HintType];
+    if (typeof v === 'string') {
+      e.innerText = v;
+    } else {
+      e.innerText = v.value;
+      if (v.derivation) {
+        const span = document.createElement('span');
+        span.innerText = v.derivation;
+        e.parentNode?.insertBefore(span, e.nextSibling);
+      }
+    }
   }
   for (const [o, v] of Object.entries(
            utils.computeContents(ctx, fmt, schedules))) {
-    elts.outputs[o as OutputType].innerText = v;
+    const e = elts.outputs[o as OutputType];
+    if (typeof v === 'string') {
+      e.innerText = v;
+    } else {
+      e.innerText = v.value;
+      if (v.derivation) {
+        const span = document.createElement('span');
+        span.innerText = v.derivation;
+        e.parentNode?.insertBefore(span, e.nextSibling);
+      }
+    }
   }
   for (const v of Object.values(utils.computeHidables(ctx, fmt, schedules))) {
     v.display(c => elts.hidables[hidableContainerMap[c]]);

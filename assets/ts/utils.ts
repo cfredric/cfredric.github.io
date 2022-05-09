@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
 import {Context} from './context';
-import {Formatter} from './formatter';
+import {FormatResult, Formatter} from './formatter';
 import {HidableOutput} from './hidable_output';
 import {AnyNumber, Num} from './num';
 import {HidableContainer, hidableContainers, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType, templateTypes} from './types';
@@ -440,19 +440,17 @@ export function computeSchedules(ctx: Context): Schedules|undefined {
 // Compute hint strings and set output strings.
 export function computeContents(
     ctx: Context, fmt: Formatter,
-    schedules: Schedules|undefined): Record<OutputType, string> {
+    schedules: Schedules|undefined): Record<OutputType, FormatResult|string> {
   const showPrepaymentComparison = ctx.prepayment.gt(0);
   setClassVisibility('prepay', showPrepaymentComparison);
 
-  const loanAmount = fmt.formatCurrency(ctx.loanAmount, true);
+  const loanAmount = fmt.formatCurrencyWithDerivation(ctx.loanAmount);
 
-  const purchasePayment = fmt.formatCurrency(
-      Num.sum(
-          ctx.downPayment,
-          ctx.closingCost,
-          ctx.loanAmount.div(100).mul(ctx.pointsPurchased),
-          ),
-      true);
+  const purchasePayment = fmt.formatCurrencyWithDerivation(Num.sum(
+      ctx.downPayment,
+      ctx.closingCost,
+      ctx.loanAmount.div(100).mul(ctx.pointsPurchased),
+      ));
 
   if (!schedules) {
     return {
@@ -495,9 +493,9 @@ export function computeContents(
             new Array(ctx.n.toNumber()).fill(ctx.prepayment),
             ctx.stocksReturnRate)) :
         '',
-    principalAndInterest: fmt.formatCurrency(ctx.m, true),
-    monthlyExpensesAmount: fmt.formatCurrency(
-        ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment), true),
+    principalAndInterest: fmt.formatCurrencyWithDerivation(ctx.m),
+    monthlyExpensesAmount: fmt.formatCurrencyWithDerivation(
+        ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment)),
   };
 }
 
@@ -512,9 +510,8 @@ export function computeHidables(
   if (ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct)) {
     monthlyExpensesPmi = new HidableOutput(
         'monthly-expenses-pmi-div',
-        fmt.formatCurrency(
-            Num.sum(ctx.monthlyLoanPayment, ctx.monthlyNonLoanPayment, ctx.pmi),
-            true),
+        fmt.formatCurrencyWithDerivation(Num.sum(
+            ctx.monthlyLoanPayment, ctx.monthlyNonLoanPayment, ctx.pmi)),
     );
     const pmiMonths =
         countSatisfying(pointwise, payment => !payment.data.pmi.eq(0));
@@ -586,13 +583,12 @@ export function computeHidables(
   if (ctx.annualIncome.gt(0)) {
     debtToIncomeRatio = new HidableOutput(
         'debt-to-income-ratio-div',
-        fmt.formatPercent(
+        fmt.formatPercentWithDerivation(
             Num.sum(
                    ctx.monthlyDebt, ctx.monthlyLoanPayment,
                    ctx.monthlyNonLoanPayment, ctx.pmi)
                 .div(ctx.annualIncome)
-                .mul(12),
-            true),
+                .mul(12)),
     );
   } else {
     debtToIncomeRatio = new HidableOutput('debt-to-income-ratio-div');
@@ -623,20 +619,24 @@ export function computeTemplates(
 
 // Updates the "hints"/previews displayed alongside the input fields.
 export function computeAmountHints(
-    ctx: Context, fmt: Formatter): Record<HintType, string> {
+    ctx: Context, fmt: Formatter): Record<HintType, FormatResult|string> {
   return {
-    homeValue: `(${fmt.formatCurrency(ctx.homeValue, true)})`,
-    downPayment: `(${fmt.formatCurrency(ctx.downPayment, true)})`,
+    homeValue:
+        fmt.formatCurrencyWithDerivation(ctx.homeValue).map((v) => `(${v})`),
+    downPayment:
+        fmt.formatCurrencyWithDerivation(ctx.downPayment).map((v) => `(${v})`),
     interestRate: `(${fmt.formatHundredthsPercent(ctx.interestRate)})`,
     pointValue: `(${fmt.formatHundredthsPercent(ctx.pointValue)})`,
-    pmiEquityPercentage: `(${fmt.formatPercent(ctx.pmiEquityPct, true)})`,
+    pmiEquityPercentage:
+        fmt.formatPercentWithDerivation(ctx.pmiEquityPct).map((v) => `(${v})`),
     propertyTax: `(Effective ${
         fmt.formatCurrency(
             ctx.propertyTax.mul(12).div(ctx.homeValue).mul(1000) ||
-                Num.literal(0),
-            true)} / $1000; ${fmt.formatCurrency(ctx.propertyTax, true)}/mo)`,
+            Num.literal(
+                0))} / $1000; ${fmt.formatCurrency(ctx.propertyTax)}/mo)`,
     residentialExemption:
-        `(${fmt.formatCurrency(ctx.residentialExemptionPerMonth, true)}/mo)`,
+        fmt.formatCurrencyWithDerivation(ctx.residentialExemptionPerMonth)
+            .map((v) => `(${v}/mo)`),
     mortgageTerm: `(${ctx.mortgageTerm.toNumber()} yrs)`,
     paymentsAlreadyMade: `(${ctx.paymentsAlreadyMade} payments)`,
     stocksReturnRate: `(${fmt.formatHundredthsPercent(ctx.stocksReturnRate)})`,
