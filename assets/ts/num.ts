@@ -329,7 +329,7 @@ class DerivedNum extends NumBase {
         break;
       case Op.Floor:
         if (this.ns.length !== 1) {
-          throw new Error('Expected 2 operands for floor');
+          throw new Error('Expected 1 operand for floor');
         }
         this.v = valueOf(ns[0]!).floor();
         this.s = (simplify: boolean) =>
