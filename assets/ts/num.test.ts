@@ -3,29 +3,30 @@ import {NamedConstant, NamedOutput, Num} from './num';
 test('toString()', () => {
   expect(Num.literal(1).toString()).toEqual('1');
 
-  expect(Num.literal(1).add(2).mul(3).toString()).toEqual('(1 + 2) * 3');
+  expect(Num.literal(1).add(2).mul(3).toString()).toEqual('{(1 + 2)} * 3');
   expect(Num.literal(1).add(Num.literal(2).mul(3)).toString())
       .toEqual('1 + 2 * 3');
 
   expect(Num.literal(1).add(2).add(3).toString()).toEqual('1 + 2 + 3');
   expect(Num.literal(1).mul(2).mul(3).toString()).toEqual('1 * 2 * 3');
 
-  expect(Num.literal(1).sub(2).sub(3).toString()).toEqual('(1 - 2) - 3');
+  expect(Num.literal(1).sub(2).sub(3).toString()).toEqual('{(1 - 2)} - 3');
   expect(Num.literal(1).sub(Num.literal(2).sub(3)).toString())
-      .toEqual('1 - (2 - 3)');
+      .toEqual('1 - {(2 - 3)}');
 
-  expect(Num.sum(1, 2, 3).div(4).toString()).toEqual('(1 + 2 + 3) / 4');
+  expect(Num.sum(1, 2, 3).div(4).toString()).toEqual('\\frac{1 + 2 + 3}{4}');
 
   expect(Num.literal(1).pow(Num.literal(2).add(3)).toString())
-      .toEqual('1 ^ (2 + 3)');
+      .toEqual('{1} ^ {{(2 + 3)}}');
   expect(Num.literal(1).add(Num.literal(2).pow(3)).toString())
-      .toEqual('1 + 2 ^ 3');
+      .toEqual('1 + {2} ^ {3}');
 
   expect(Num.floor(1.2).toString()).toEqual('floor(1.2)');
   expect(Num.floor(Num.literal(1).add(2)).toString()).toEqual('floor(1 + 2)');
 
-  expect(Num.literal(1).div(2).div(3).toString()).toEqual('(1 / 2) / 3');
-  expect(Num.literal(1).mul(2).div(3).toString()).toEqual('(1 * 2) / 3');
+  expect(Num.literal(1).div(2).div(3).toString())
+      .toEqual('\\frac{\\frac{1}{2}}{3}');
+  expect(Num.literal(1).mul(2).div(3).toString()).toEqual('\\frac{1 * 2}{3}');
 
   const out = new NamedOutput('outName', Num.literal(1).add(2).add(3));
   expect(out.prettyPrint(false)).toEqual('1 + 2 + 3');
@@ -65,7 +66,7 @@ test('toString()', () => {
       .toEqual('1 + 1');
   expect(
       Num.literal(1).add(Num.literal(1).div(Num.literal(1))).prettyPrint(false))
-      .toEqual('1 + 1 / 1');
+      .toEqual('1 + \\frac{1}{1}');
   expect(
       Num.literal(1).add(Num.literal(1).div(Num.literal(1))).prettyPrint(true))
       .toEqual('1 + 1');

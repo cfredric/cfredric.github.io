@@ -264,9 +264,10 @@ class DerivedNum extends NumBase {
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.div(n.value()), valueOf(ns[0]!));
         this.s = (simplify: boolean) => {
-          const ns = this.ns.map(n => n.parenOrUnparen(this.op, simplify));
+          const ns = this.ns.map(n => n.printInternal(simplify));
           return `\\frac{${ns[0]}}{${ns[1]}}`;
-        } break;
+        };
+        break;
       case Op.Floor:
         if (this.ns.length !== 1) {
           throw new Error('Expected 2 operands for floor');
@@ -282,8 +283,8 @@ class DerivedNum extends NumBase {
         this.v = valueOf(ns[0]!).pow(valueOf(ns[1]!));
         const [base, power] = this.ns;
         this.s = (simplify: boolean) =>
-            `{(${base!.parenthesized(simplify)})} ^ {(${
-                power!.parenthesized(simplify)})}`;
+            `{${base!.parenthesized(simplify)}} ^ {${
+                power!.parenthesized(simplify)}}`;
       } break;
     }
   }
@@ -392,7 +393,7 @@ class DerivedNum extends NumBase {
   }
 
   parenthesized(simplify: boolean): string {
-    return `{${this.unparen(simplify)}}`;
+    return `{(${this.unparen(simplify)})}`;
   }
   unparen(simplify: boolean): string {
     return this.printInternal(simplify);
@@ -496,5 +497,5 @@ function precedence(op: Op): Precedence {
 }
 
 function commutative(op: Op): boolean {
-  return op == Op.Plus || op == Op.Mult;
+  return op == Op.Plus || op == Op.Mult || op == Op.Div;
 }
