@@ -24,8 +24,7 @@ test('toString()', () => {
   expect(Num.floor(1.2).toString()).toEqual('floor(1.2)');
   expect(Num.floor(Num.literal(1).add(2)).toString()).toEqual('floor(1 + 2)');
 
-  expect(Num.literal(1).div(2).div(3).toString())
-      .toEqual('\\frac{\\frac{1}{2}}{3}');
+  expect(Num.literal(1).div(2).div(3).toString()).toEqual('\\frac{1}{2 * 3}');
   expect(Num.literal(1).mul(2).div(3).toString()).toEqual('\\frac{1 * 2}{3}');
 
   const out = new NamedOutput('outName', Num.literal(1).add(2).add(3));
@@ -55,6 +54,19 @@ test('toString()', () => {
   expect(Num.literal(1).mul(1).prettyPrint(false)).toEqual('1 * 1');
   expect(Num.literal(1).mul(1).prettyPrint(true)).toEqual('1');
 
+  const a = new NamedConstant('a', 2);
+  const b = new NamedConstant('b', 3);
+  const c = new NamedConstant('c', 5);
+  const d = new NamedConstant('d', 7);
+  // Denominator is a fraction: a / (c/d) == (a*d) / c
+  expect(a.div(c.div(d)).prettyPrint(false)).toEqual('\\frac{a * d}{c}');
+  // Numerator is a fraction: (a/b) / d == a / (b * d).
+  expect(a.div(b).div(d).prettyPrint(false)).toEqual('\\frac{a}{b * d}');
+  // Both numerator and denominator are fractions: (a/b) / (c/d) == (a*d) /
+  // (b*c).
+  expect(a.div(b).div(c.div(d)).prettyPrint(false))
+      .toEqual('\\frac{a * d}{b * c}');
+
   // Elide useless subtrees.
   expect(Num.literal(1).add(zero).prettyPrint(false)).toEqual('1 + zero');
   expect(Num.literal(1).add(zero).prettyPrint(true)).toEqual('1');
@@ -76,6 +88,13 @@ test('toString()', () => {
              .mul(Num.sum(zero, Num.literal(0), Num.literal(1)))
              .prettyPrint(true))
       .toEqual('3');
+
+  expect(
+      Num.literal(1).div(Num.literal(2).div(Num.literal(3))).prettyPrint(false))
+      .toEqual('\\frac{1 * 3}{2}');
+  expect(
+      Num.literal(1).div(Num.literal(2).div(Num.literal(3))).prettyPrint(true))
+      .toEqual('\\frac{3}{2}');
 });
 
 test('Sum', () => {

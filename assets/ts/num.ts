@@ -83,7 +83,7 @@ export abstract class Num {
     const bb = toNumBase(b);
     return new DerivedNum(Op.Minus, toNumBase(this), bb);
   }
-  mul(b: AnyNumber): Num {
+  mul(b: AnyNumber): DerivedNum {
     const bb = toNumBase(b);
     return new DerivedNum(Op.Mult, toNumBase(this), bb);
   }
@@ -119,6 +119,10 @@ abstract class NumBase extends Num {
 
   static literal(x: number|Decimal): NumBase {
     return new Literal(x);
+  }
+
+  isQuotient(): boolean {
+    return this instanceof DerivedNum && this.op == Op.Div;
   }
 
   // Implementation detail used in simplifying the expression tree when
@@ -225,7 +229,7 @@ export class NamedConstant extends NumBase {
 }
 
 class DerivedNum extends NumBase {
-  private readonly op: Op;
+  readonly op: Op;
   private readonly v: Decimal;
   private ns: readonly NumBase[];
 
@@ -254,6 +258,7 @@ class DerivedNum extends NumBase {
       case Op.Mult:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.mul(n.value()), valueOf(ns[0]!));
+        // TODO: merge products and fractions.
         this.s = (simplify: boolean) =>
             this.ns.map(n => n.parenOrUnparen(this.op, simplify)).join(' * ');
         break;
@@ -264,6 +269,28 @@ class DerivedNum extends NumBase {
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.div(n.value()), valueOf(ns[0]!));
         this.s = (simplify: boolean) => {
+          const [numerator, denominator] = this.ns;
+          if (numerator!.isQuotient()) {
+            // (a/b) / X.
+            const [a, b] = (numerator! as DerivedNum).fractionParts();
+            if (denominator!.isQuotient()) {
+              // (a/b) / (c/d).
+              const [c, d] = (denominator! as DerivedNum).fractionParts();
+              // Result is (a * d) / (b * c).
+              return `\\frac{${a.mul(d).printInternal(simplify)}}{${
+                  b.mul(c).printInternal(simplify)}}`;
+            } else {
+              // Result is a / (b * X).
+              return `\\frac{${a.printInternal(simplify)}}{${
+                  b.mul(denominator!).printInternal(simplify)}}`;
+            }
+          } else if (denominator!.isQuotient()) {
+            // X / (c/d).
+            const [c, d] = (denominator! as DerivedNum).fractionParts();
+            // Result is (X * d) / c.
+            return `\\frac{${numerator?.mul(d).printInternal(simplify)}}{${
+                c.printInternal(simplify)}}`;
+          }
           const ns = this.ns.map(n => n.printInternal(simplify));
           return `\\frac{${ns[0]}}{${ns[1]}}`;
         };
@@ -291,6 +318,13 @@ class DerivedNum extends NumBase {
 
   value(): Decimal {
     return this.v;
+  }
+
+  fractionParts(): [NumBase, NumBase] {
+    if (!this.isQuotient()) {
+      throw new Error('Unreachable');
+    }
+    return [this.ns[0]!, this.ns[1]!];
   }
 
   simplify(): NumBase|null {
