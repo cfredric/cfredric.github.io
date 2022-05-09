@@ -1,5 +1,6 @@
 import {FormatResult} from './formatter';
 import {HidableContainer} from './types';
+import * as utils from './utils';
 import {getHtmlElt} from './utils';
 
 export class HidableOutput {
@@ -24,11 +25,7 @@ export class HidableOutput {
     const e = elt(this.container);
     e.innerText = this.output();
     if (this.formattedOrStr && typeof this.formattedOrStr !== 'string') {
-      if (this.formattedOrStr.derivation) {
-        const span = document.createElement('span');
-        span.innerText = this.formattedOrStr.derivation;
-        e.parentNode?.insertBefore(span, e.nextSibling);
-      }
+      utils.maybeShowDerivation(e, this.formattedOrStr.derivation);
     }
   }
 }

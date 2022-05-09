@@ -258,21 +258,33 @@ class DerivedNum extends NumBase {
             this.ns.map(n => n.parenOrUnparen(this.op, simplify)).join(' * ');
         break;
       case Op.Div:
+        if (this.ns.length !== 2) {
+          throw new Error('Expected 2 operands for division');
+        }
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.div(n.value()), valueOf(ns[0]!));
-        this.s = (simplify: boolean) =>
-            this.ns.map(n => n.parenOrUnparen(this.op, simplify)).join(' / ');
-        break;
+        this.s = (simplify: boolean) => {
+          const ns = this.ns.map(n => n.parenOrUnparen(this.op, simplify));
+          return `\\frac{${ns[0]}}{${ns[1]}}`;
+        } break;
       case Op.Floor:
+        if (this.ns.length !== 1) {
+          throw new Error('Expected 2 operands for floor');
+        }
         this.v = valueOf(ns[0]!).floor();
         this.s = (simplify: boolean) =>
             'floor(' + ns[0]!.printInternal(simplify) + ')';
         break;
-      case Op.Pow:
+      case Op.Pow: {
+        if (this.ns.length !== 2) {
+          throw new Error('Expected 2 operands for exponentiation');
+        }
         this.v = valueOf(ns[0]!).pow(valueOf(ns[1]!));
-        this.s = (simplify: boolean) => this.ns[0]!.parenthesized(simplify) +
-            ' ^ ' + this.ns[1]!.parenthesized(simplify);
-        break;
+        const [base, power] = this.ns;
+        this.s = (simplify: boolean) =>
+            `{(${base!.parenthesized(simplify)})} ^ {(${
+                power!.parenthesized(simplify)})}`;
+      } break;
     }
   }
 
@@ -380,7 +392,7 @@ class DerivedNum extends NumBase {
   }
 
   parenthesized(simplify: boolean): string {
-    return `(${this.unparen(simplify)})`;
+    return `{${this.unparen(simplify)}}`;
   }
   unparen(simplify: boolean): string {
     return this.printInternal(simplify);

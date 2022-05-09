@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
+import katex from 'katex';
 
 import {Context} from './context';
 import {FormatResult, Formatter} from './formatter';
@@ -335,6 +336,22 @@ export function clearDeprecatedStorage(
 export function removeChildren(node: Node) {
   while (node.firstChild) {
     node.removeChild(node.firstChild);
+  }
+}
+
+export function removeClass(className: string) {
+  const elements = document.getElementsByClassName(className);
+  while (elements.length > 0) {
+    elements[0]!.parentNode!.removeChild(elements[0]!);
+  }
+}
+
+export function maybeShowDerivation(sibling: Element, derivation?: string) {
+  if (derivation) {
+    const elt = document.createElement('span');
+    elt.classList.add('derivation-elt');
+    katex.render(` = ${derivation}`, elt);
+    sibling.parentNode?.insertBefore(elt, sibling.nextSibling);
   }
 }
 

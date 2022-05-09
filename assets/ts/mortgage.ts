@@ -198,6 +198,8 @@ function setContents(ctx: Context, elts: Elements): void {
       utils.getHtmlElt('simplify-derivations-span'), ctx.showDerivations);
   fmt.setDerivationParams(ctx.showDerivations, ctx.simplifyDerivations);
 
+  utils.removeClass('derivation-elt');
+
   const schedules = utils.computeSchedules(ctx);
 
   for (const [h, v] of Object.entries(utils.computeAmountHints(ctx, fmt))) {
@@ -206,11 +208,7 @@ function setContents(ctx: Context, elts: Elements): void {
       e.innerText = v;
     } else {
       e.innerText = v.value;
-      if (v.derivation) {
-        const span = document.createElement('span');
-        span.innerText = v.derivation;
-        e.parentNode?.insertBefore(span, e.nextSibling);
-      }
+      utils.maybeShowDerivation(e, v.derivation);
     }
   }
   for (const [o, v] of Object.entries(
@@ -220,11 +218,7 @@ function setContents(ctx: Context, elts: Elements): void {
       e.innerText = v;
     } else {
       e.innerText = v.value;
-      if (v.derivation) {
-        const span = document.createElement('span');
-        span.innerText = v.derivation;
-        e.parentNode?.insertBefore(span, e.nextSibling);
-      }
+      utils.maybeShowDerivation(e, v.derivation);
     }
   }
   for (const v of Object.values(utils.computeHidables(ctx, fmt, schedules))) {
