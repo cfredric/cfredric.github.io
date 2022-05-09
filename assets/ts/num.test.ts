@@ -67,6 +67,12 @@ test('toString()', () => {
   expect(a.div(b).div(c.div(d)).prettyPrint(false))
       .toEqual('\\frac{a * d}{b * c}');
 
+  // Multiplication is merged into the numerators/denominators.
+  expect(a.mul(c.div(d)).prettyPrint(false)).toEqual('\\frac{a * c}{d}');
+  expect(a.div(b).mul(c.div(d)).prettyPrint(false))
+      .toEqual('\\frac{a * c}{b * d}');
+
+
   // Elide useless subtrees.
   expect(Num.literal(1).add(zero).prettyPrint(false)).toEqual('1 + zero');
   expect(Num.literal(1).add(zero).prettyPrint(true)).toEqual('1');
