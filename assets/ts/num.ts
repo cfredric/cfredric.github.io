@@ -372,13 +372,6 @@ class DerivedNum extends NumBase {
     }
   }
 
-  fractionParts(): [NumBase, NumBase] {
-    if (!this.isQuotient()) {
-      throw new Error('Unreachable');
-    }
-    return [this.ns[0]!, this.ns[1]!];
-  }
-
   simplify(): NumBase|null {
     switch (this.op) {
       case Op.Mult:
