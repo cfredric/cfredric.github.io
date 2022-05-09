@@ -101,7 +101,17 @@ export abstract class Num {
 
   static sum(...xs: readonly AnyNumber[]): Num {
     const ns = xs.map(x => toNumBase(x));
+    if (ns.length == 1) {
+      return ns[0]!;
+    }
     return new DerivedNum(Op.Plus, ...ns);
+  }
+  static product(...xs: readonly AnyNumber[]): Num {
+    const ns = xs.map(x => toNumBase(x));
+    if (ns.length == 1) {
+      return ns[0]!;
+    }
+    return new DerivedNum(Op.Mult, ...ns);
   }
 
   // Returns a flattened version of the tree rooted at this Num, where adjacent
@@ -286,12 +296,11 @@ class DerivedNum extends NumBase {
           const numerators = this.numerators();
           const denominators = this.denominators();
           if (denominators.length) {
-            return `\\frac{${
-                numerators.map(n => n.parenOrUnparen(this.op, simplify))
-                    .join(' * ')}}{${
-                denominators.map(d => d.parenOrUnparen(this.op, simplify))
-                    .join(' * ')}}`;
+            const numerator = Num.product(...numerators);
+            const denominator = Num.product(...denominators);
+            return numerator.div(denominator).prettyPrint(simplify);
           }
+          // Base case: no quotients involved.
           return numerators.map(n => n.parenOrUnparen(this.op, simplify))
               .join(' * ');
         };
@@ -303,16 +312,14 @@ class DerivedNum extends NumBase {
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.div(n.value()), valueOf(ns[0]!));
         this.s = (simplify: boolean) => {
-          const numerators = this.numerators();
+          const numerator = Num.product(...this.numerators());
           const denominators = this.denominators();
           if (!denominators.length) {
             throw new Error('unreachable');
           }
-          return `\\frac{${
-              numerators.reduce((acc, n) => acc.mul(n))
-                  .prettyPrint(simplify)}}{${
-              denominators.reduce((acc, d) => acc.mul(d))
-                  .prettyPrint(simplify)}}`;
+          const denominator = Num.product(...denominators);
+          return `\\frac{${numerator.prettyPrint(simplify)}}{${
+              denominator.prettyPrint(simplify)}}`;
         };
         break;
       case Op.Floor:
