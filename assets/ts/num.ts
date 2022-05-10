@@ -549,5 +549,5 @@ function associative(op: Op): boolean {
 }
 
 function commutative(op: Op): boolean {
-  return op == Op.Plus || op == Op.Mult || op == Op.Div;
+  return op == Op.Plus || op == Op.Mult;
 }
