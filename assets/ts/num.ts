@@ -287,8 +287,7 @@ class DerivedNum extends NumBase {
         if (this.ns.length !== 2) {
           throw new Error('Expected 2 operands for subtraction');
         }
-        this.v = ns.slice(1).reduce(
-            (acc: Decimal, n: Num) => acc.sub(n.value()), valueOf(ns[0]!));
+        this.v = this.ns[0]!.value().sub(this.ns[1]!.value());
         this.s = (simplify: boolean) => {
           return `${this.ns[0]!.printInternal(simplify)} - ${
               this.ns[1]!.parenOrUnparen(this.op, simplify)}`;
