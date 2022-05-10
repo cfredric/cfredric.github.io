@@ -131,8 +131,6 @@ abstract class NumBase extends Num {
     return new Literal(x);
   }
 
-  abstract isQuotient(): boolean;
-
   abstract numerators(): NumBase[];
   abstract denominators(): NumBase[];
 
@@ -161,10 +159,6 @@ class Literal extends NumBase {
 
   value(): Decimal {
     return this.v;
-  }
-
-  isQuotient(): boolean {
-    return false;
   }
 
   numerators(): NumBase[] {
@@ -212,10 +206,6 @@ export class NamedConstant extends NumBase {
 
   value(): Decimal {
     return this.v;
-  }
-
-  isQuotient(): boolean {
-    return false;
   }
 
   numerators(): NumBase[] {
@@ -337,11 +327,6 @@ class DerivedNum extends NumBase {
 
   value(): Decimal {
     return this.v;
-  }
-
-  isQuotient(): boolean {
-    return this.op == Op.Div ||
-        (this.op == Op.Mult && this.ns.some(n => n.isQuotient()));
   }
 
   numerators(): NumBase[] {
@@ -493,10 +478,6 @@ export class NamedOutput extends NumBase {
 
   value(): Decimal {
     return this.num.value();
-  }
-
-  isQuotient(): boolean {
-    return false;
   }
 
   numerators(): NumBase[] {
