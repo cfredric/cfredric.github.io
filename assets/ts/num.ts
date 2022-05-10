@@ -339,8 +339,8 @@ class DerivedNum extends NumBase {
         this.v = valueOf(ns[0]!).pow(valueOf(ns[1]!));
         const [base, power] = this.ns;
         this.s = (simplify: boolean) =>
-            `{${base!.parenthesized(simplify)}} ^ {${
-                power!.parenthesized(simplify)}}`;
+            `{${base!.parenOrUnparen(this.op, simplify)}} ^ {${
+                power!.printInternal(simplify)}}`;
       } break;
     }
   }

@@ -14,10 +14,14 @@ test('toString()', () => {
   expect(Num.literal(1).sub(Num.literal(2).sub(3)).toString())
       .toEqual('1 - {(2 - 3)}');
 
+  expect(Num.literal(1).sub(2).mul(3).toString()).toEqual('{(1 - 2)} * 3');
+  expect(Num.literal(1).sub(Num.literal(2).mul(3)).toString())
+      .toEqual('1 - 2 * 3');
+
   expect(Num.sum(1, 2, 3).div(4).toString()).toEqual('\\frac{1 + 2 + 3}{4}');
 
   expect(Num.literal(1).pow(Num.literal(2).add(3)).toString())
-      .toEqual('{1} ^ {{(2 + 3)}}');
+      .toEqual('{1} ^ {2 + 3}');
   expect(Num.literal(1).add(Num.literal(2).pow(3)).toString())
       .toEqual('1 + {2} ^ {3}');
 
