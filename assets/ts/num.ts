@@ -424,14 +424,11 @@ class DerivedNum extends NumBase {
 
   mergeWith(op: Op): readonly NumBase[] {
     switch (this.op) {
-      case Op.Floor:
-      case Op.Pow:
-      case Op.Minus:
-      case Op.Div:
-        return [this];
       case Op.Plus:
       case Op.Mult:
         if (this.op == op) return this.ns;
+        return [this];
+      default:
         return [this];
     }
   }
