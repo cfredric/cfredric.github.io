@@ -288,10 +288,9 @@ class DerivedNum extends NumBase {
           throw new Error('Expected 2 operands for subtraction');
         }
         this.v = this.ns[0]!.value().sub(this.ns[1]!.value());
-        this.s = (simplify: boolean) => {
-          return `${this.ns[0]!.printInternal(simplify)} - ${
-              this.ns[1]!.parenOrUnparen(this.op, simplify)}`;
-        };
+        this.s = (simplify: boolean) =>
+            `${this.ns[0]!.printInternal(simplify)} - ${
+                this.ns[1]!.parenOrUnparen(this.op, simplify)}`;
         break;
       case Op.Mult:
         this.v = ns.slice(1).reduce(
@@ -313,8 +312,7 @@ class DerivedNum extends NumBase {
         if (this.ns.length !== 2) {
           throw new Error('Expected 2 operands for division');
         }
-        this.v = ns.slice(1).reduce(
-            (acc: Decimal, n: Num) => acc.div(n.value()), valueOf(ns[0]!));
+        this.v = ns[0]!.value().div(ns[1]!.value());
         this.s = (simplify: boolean) => {
           const numerator = Num.product(...this.numerators());
           const denominators = this.denominators();
