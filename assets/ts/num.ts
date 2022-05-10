@@ -277,7 +277,7 @@ class DerivedNum extends NumBase {
         break;
       case Op.Mult:
         this.v = ns.slice(1).reduce(
-            (acc: Decimal, n: Num) => acc.mul(n.value()), valueOf(ns[0]!));
+            (acc: Decimal, n: Num) => acc.mul(n.value()), ns[0]!.value());
         this.s = (simplify: boolean) => {
           const numerators = this.numerators();
           const denominators = this.denominators();
@@ -311,7 +311,7 @@ class DerivedNum extends NumBase {
         if (this.ns.length !== 1) {
           throw new Error('Expected 1 operand for floor');
         }
-        this.v = valueOf(ns[0]!).floor();
+        this.v = ns[0]!.value().floor();
         this.s = (simplify: boolean) =>
             'floor(' + ns[0]!.printInternal(simplify) + ')';
         break;
@@ -319,7 +319,7 @@ class DerivedNum extends NumBase {
         if (this.ns.length !== 2) {
           throw new Error('Expected 2 operands for exponentiation');
         }
-        this.v = valueOf(ns[0]!).pow(valueOf(ns[1]!));
+        this.v = ns[0]!.value().pow(ns[1]!.value());
         const [base, power] = this.ns;
         this.s = (simplify: boolean) =>
             `{${base!.parenOrUnparen(this.op, simplify)}} ^ {${
