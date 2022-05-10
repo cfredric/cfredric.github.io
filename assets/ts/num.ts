@@ -115,7 +115,7 @@ export abstract class Num {
   }
 
   // Returns a flattened version of the tree rooted at this Num, where adjacent
-  // subtrees with the same commutative operator have been merged.
+  // subtrees with the same associative operator have been merged.
   abstract flatten(): void;
 
   // `prettyPrint` is the top-level call to get the derivation.
@@ -138,6 +138,9 @@ abstract class NumBase extends Num {
   // stringifying.
   abstract parenOrUnparen(op: Op, simplify: boolean): string;
 
+  // Returns a list of all operands, if the subtree rooted at this NumBase
+  // instance uses the same operator and the operator is associative. Otherwise,
+  // returns a singleton list of [this].
   abstract mergeWith(op: Op): readonly NumBase[];
 
   abstract isElidable(ident: number): boolean;
@@ -423,14 +426,8 @@ class DerivedNum extends NumBase {
   }
 
   mergeWith(op: Op): readonly NumBase[] {
-    switch (this.op) {
-      case Op.Plus:
-      case Op.Mult:
-        if (this.op == op) return this.ns;
-        return [this];
-      default:
-        return [this];
-    }
+    if (this.op == op && associative(op)) return this.ns;
+    return [this];
   }
 
   flatten() {
@@ -545,6 +542,10 @@ function precedence(op: Op): Precedence {
     case Op.Floor:
       return Precedence.Call;
   }
+}
+
+function associative(op: Op): boolean {
+  return op == Op.Plus || op == Op.Mult;
 }
 
 function commutative(op: Op): boolean {
