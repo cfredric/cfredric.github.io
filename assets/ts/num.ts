@@ -140,10 +140,6 @@ abstract class NumBase extends Num {
   // stringifying.
   abstract parenOrUnparen(op: Op, simplify: boolean): string;
 
-  // `parenthesized` returns a string representation of this number, with
-  // parentheses around it (unless it's a single atom).
-  abstract parenthesized(simplify: boolean): string;
-
   abstract mergeWith(op: Op): readonly NumBase[];
 
   abstract isElidable(ident: number): boolean;
@@ -179,9 +175,6 @@ class Literal extends NumBase {
   }
 
   parenOrUnparen(_op: Op, _simplify: boolean): string {
-    return this.toString();
-  }
-  parenthesized(_simplify: boolean): string {
     return this.toString();
   }
 
@@ -234,9 +227,6 @@ export class NamedConstant extends NumBase {
   }
 
   parenOrUnparen(_op: Op, _simplify: boolean): string {
-    return this.name;
-  }
-  parenthesized(_simplify: boolean): string {
     return this.name;
   }
 
@@ -435,16 +425,16 @@ class DerivedNum extends NumBase {
     if (precedence(op) < precedence(this.op)) {
       // The parent's precedence is lower than ours, so ours binds more
       // tightly and we don't need parens.
-      return this.unparen(simplify);
+      return this.printInternal(simplify);
     }
     if (op == this.op && commutative(this.op)) {
       // The parent op is the same as ours, *and* the op is commutative, so
       // order doesn't matter - so we don't need parens.
-      return this.unparen(simplify);
+      return this.printInternal(simplify);
     }
     // The parent op binds more tightly than ours, *or* it's the same op but
     // it isn't commutative, so we need parens.
-    return this.parenthesized(simplify);
+    return `{(${this.printInternal(simplify)})}`;
   }
 
   mergeWith(op: Op): readonly NumBase[] {
@@ -471,13 +461,6 @@ class DerivedNum extends NumBase {
 
   isElidable(ident: number): boolean {
     return this.value().eq(ident);
-  }
-
-  parenthesized(simplify: boolean): string {
-    return `{(${this.unparen(simplify)})}`;
-  }
-  unparen(simplify: boolean): string {
-    return this.printInternal(simplify);
   }
 
   toString(): string {
@@ -529,9 +512,6 @@ export class NamedOutput extends NumBase {
   }
 
   flatten() {}
-  parenthesized(): string {
-    return this.name;
-  }
   mergeWith(_op: Op): readonly NumBase[] {
     return [this];
   }
