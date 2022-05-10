@@ -415,13 +415,13 @@ class DerivedNum extends NumBase {
       // tightly and we don't need parens.
       return this.printInternal(simplify);
     }
-    if (op == this.op && commutative(this.op)) {
-      // The parent op is the same as ours, *and* the op is commutative, so
+    if (op == this.op && associative(this.op)) {
+      // The parent op is the same as ours, *and* the op is associative, so
       // order doesn't matter - so we don't need parens.
       return this.printInternal(simplify);
     }
     // The parent op binds more tightly than ours, *or* it's the same op but
-    // it isn't commutative, so we need parens.
+    // it isn't associative, so we need parens.
     return `{(${this.printInternal(simplify)})}`;
   }
 
@@ -545,9 +545,5 @@ function precedence(op: Op): Precedence {
 }
 
 function associative(op: Op): boolean {
-  return op == Op.Plus || op == Op.Mult;
-}
-
-function commutative(op: Op): boolean {
   return op == Op.Plus || op == Op.Mult;
 }
