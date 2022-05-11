@@ -114,10 +114,6 @@ export abstract class Num {
     return new DerivedNum(Op.Mult, ...ns);
   }
 
-  // Returns a flattened version of the tree rooted at this Num, where adjacent
-  // subtrees with the same associative operator have been merged.
-  abstract flatten(): void;
-
   // `prettyPrint` is the top-level call to get the derivation.
   abstract prettyPrint(simplify: boolean): string;
 }
@@ -138,6 +134,9 @@ abstract class NumBase extends Num {
   // stringifying.
   abstract parenOrUnparen(op: Op, simplify: boolean): string;
 
+  // Flattens the tree rooted at this Num, where adjacent subtrees with the same
+  // associative operator have been merged.
+  abstract flatten(): void;
   // Returns a list of all operands, if the subtree rooted at this NumBase
   // instance uses the same operator and the operator is associative. Otherwise,
   // returns a singleton list of [this].
@@ -462,12 +461,12 @@ class DerivedNum extends NumBase {
 
 export class NamedOutput extends NumBase {
   private readonly name: string;
-  private readonly num: Num;
+  private readonly num: NumBase;
 
   constructor(name: string, num: Num) {
     super();
     this.name = name;
-    this.num = num;
+    this.num = toNumBase(num);
   }
 
   value(): Decimal {
