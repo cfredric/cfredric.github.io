@@ -21,6 +21,9 @@ function isConstantOrLiteral(n: NumBase): boolean {
   return n instanceof Literal || n instanceof NamedConstant;
 }
 
+// Simplifications are done by pattern-matching on the expression AST, and
+// potentially returning a mutated version of the expression. This is the
+// typical approach taken by computer algebra systems.
 abstract class SimplificationRule {
   constructor() {}
 
