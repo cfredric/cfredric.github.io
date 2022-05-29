@@ -40,7 +40,7 @@ class AdditionIdentity extends SimplificationRule {
       } else if (nontrivials.length === 1) {
         return nontrivials[0]!;
       } else if (nontrivials.length) {
-        return new DerivedNum(Op.Plus, ...nontrivials);
+        return Num.sum(...nontrivials);
       } else {
         return new Literal(0);
       }
@@ -71,7 +71,7 @@ class MultiplicationIdentity extends SimplificationRule {
       } else if (nontrivials.length === 1) {
         return nontrivials[0]!;
       } else if (nontrivials.length) {
-        return new DerivedNum(Op.Mult, ...nontrivials);
+        return Num.product(...nontrivials);
       } else {
         return new Literal(1);
       }
@@ -95,12 +95,10 @@ class MultiplicationByFraction extends SimplificationRule {
     if (root instanceof DerivedNum && root.op === Op.Mult) {
       for (const [i, n] of root.ns.entries()) {
         if (n instanceof DerivedNum && n.op === Op.Div) {
-          return new DerivedNum(
-              Op.Div,
-              Num.product(
-                  ...root.ns.slice(0, i), n.ns[0]!, ...root.ns.slice(i + 1)),
-              n.ns[1]!,
-          );
+          return Num
+              .product(
+                  ...root.ns.slice(0, i), n.ns[0]!, ...root.ns.slice(i + 1))
+              .div(n.ns[1]!);
         }
       }
     }
@@ -137,11 +135,8 @@ class DenominatorIsFraction extends SimplificationRule {
     if (root instanceof DerivedNum && root.op === Op.Div) {
       const denominator = root.ns[1]!;
       if (denominator instanceof DerivedNum && denominator.op === Op.Div) {
-        return new DerivedNum(
-            Op.Div,
-            Num.product(root.ns[0]!, denominator.ns[1]!),
-            denominator.ns[0]!,
-        );
+        return Num.product(root.ns[0]!, denominator.ns[1]!)
+            .div(denominator.ns[0]!);
       }
     }
     return null;
@@ -153,11 +148,7 @@ class NumeratorIsFraction extends SimplificationRule {
     if (root instanceof DerivedNum && root.op === Op.Div) {
       const numerator = root.ns[0]!;
       if (numerator instanceof DerivedNum && numerator.op === Op.Div) {
-        return new DerivedNum(
-            Op.Div,
-            numerator.ns[0]!,
-            Num.product(root.ns[1]!, numerator.ns[1]!),
-        );
+        return numerator.ns[0]!.div(Num.product(root.ns[1]!, numerator.ns[1]!));
       }
     }
     return null;
