@@ -277,7 +277,7 @@ export abstract class Num {
   prettyPrint(simplify: boolean): string {
     const nb = toNumBase(this);
     const exp = simplify ? nb.simplify() : nb;
-    return exp.printInternal();
+    return exp.toString();
   }
 
   // Returns a simplified version of the expression rooted at this node.
@@ -336,8 +336,6 @@ abstract class NumBase extends Num {
   // stringifying.
   abstract parenOrUnparen(op: Op): string;
 
-  abstract printInternal(): string;
-
   // Runs a single simplification rule on this subtree. Returns a new subtree if
   // simplification was successful, or null if it was a no-op.
   simplifyOne(rule: SimplificationRule): NumBase|null {
@@ -361,11 +359,7 @@ class Literal extends NumBase {
     return this.toString();
   }
 
-  override printInternal(): string {
-    return this.v.toString();
-  }
-
-  toString(): string {
+  override toString(): string {
     return this.v.toString();
   }
 }
@@ -388,11 +382,7 @@ export class NamedConstant extends NumBase {
     return this.name;
   }
 
-  override printInternal(): string {
-    return this.name;
-  }
-
-  toString(): string {
+  override toString(): string {
     return this.name;
   }
 }
@@ -415,15 +405,14 @@ class DerivedNum extends NumBase {
     switch (this.op) {
       case Op.Plus:
         this.v = Decimal.sum(...ns.map(n => n.value()));
-        this.s = () => this.ns.map(n => n.printInternal()).join(' + ');
+        this.s = () => this.ns.join(' + ');
         break;
       case Op.Minus:
         if (this.ns.length !== 2) {
           throw new Error('Expected 2 operands for subtraction');
         }
         this.v = this.ns[0]!.value().sub(this.ns[1]!.value());
-        this.s = () => `${this.ns[0]!.printInternal()} - ${
-            this.ns[1]!.parenOrUnparen(this.op)}`;
+        this.s = () => `${this.ns[0]} - ${this.ns[1]!.parenOrUnparen(this.op)}`;
         break;
       case Op.Mult:
         this.v = ns.slice(1).reduce(
@@ -435,15 +424,14 @@ class DerivedNum extends NumBase {
           throw new Error('Expected 2 operands for division');
         }
         this.v = ns[0]!.value().div(ns[1]!.value());
-        this.s = () => `\\frac{${this.ns[0]!.printInternal()}}{${
-            this.ns[1]!.printInternal()}}`;
+        this.s = () => `\\frac{${this.ns[0]}}{${this.ns[1]}}`;
         break;
       case Op.Floor:
         if (this.ns.length !== 1) {
           throw new Error('Expected 1 operand for floor');
         }
         this.v = ns[0]!.value().floor();
-        this.s = () => 'floor(' + ns[0]!.printInternal() + ')';
+        this.s = () => `floor(${ns[0]})`;
         break;
       case Op.Pow: {
         if (this.ns.length !== 2) {
@@ -451,8 +439,7 @@ class DerivedNum extends NumBase {
         }
         this.v = ns[0]!.value().pow(ns[1]!.value());
         const [base, power] = this.ns;
-        this.s = () =>
-            `{${base!.parenOrUnparen(this.op)}} ^ {${power!.printInternal()}}`;
+        this.s = () => `{${base!.parenOrUnparen(this.op)}} ^ {${power}}`;
       } break;
     }
   }
@@ -465,24 +452,20 @@ class DerivedNum extends NumBase {
     if (precedence(op) < precedence(this.op)) {
       // The parent's precedence is lower than ours, so ours binds more
       // tightly and we don't need parens.
-      return this.printInternal();
+      return this.toString();
     }
     if (op == Op.Mult && this.op == Op.Div) {
       // If the expression is some factor times a fraction, we don't need to
       // care about parens, since LaTeX already represents fractions in an
       // unambiguous way.
-      return this.printInternal();
+      return this.toString();
     }
     // The parent op binds more tightly than ours, *or* it's the same op but
     // it isn't associative, so we need parens.
-    return `{(${this.printInternal()})}`;
+    return `{(${this})}`;
   }
 
-  toString(): string {
-    return this.printInternal();
-  }
-
-  override printInternal(): string {
+  override toString(): string {
     return this.s();
   }
 
@@ -534,10 +517,6 @@ export class NamedOutput extends NumBase {
     return this.num.prettyPrint(simplify);
   }
 
-  override printInternal(): string {
-    return this.name;
-  }
-
   override simplifyOne(rule: SimplificationRule): NumBase|null {
     // Simplify the underlying subtree via this rule, if it matches.
     const simp = this.num.simplifyOne(rule);
@@ -547,7 +526,7 @@ export class NamedOutput extends NumBase {
     return null;
   }
 
-  toString(): string {
+  override toString(): string {
     return this.name;
   }
 }
