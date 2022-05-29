@@ -106,6 +106,32 @@ class MultiplicationCollapse extends SimplificationRule {
   }
 }
 
+class MultiplicationByFraction extends SimplificationRule {
+  private operandMatches(n: NumBase): boolean {
+    return n instanceof DerivedNum && n.op === Op.Div;
+  }
+
+  matches(root: NumBase): boolean {
+    return root instanceof DerivedNum && root.op === Op.Mult &&
+        root.ns.some(n => this.operandMatches(n));
+  }
+
+  apply(root: NumBase): NumBase {
+    const s = root as DerivedNum;
+    const nonfractionFactors = s.ns.slice();
+    const fractionIndex = s.ns.findIndex(n => this.operandMatches(n));
+    const fraction =
+        nonfractionFactors.splice(fractionIndex, 1)[0]! as DerivedNum;
+    return new DerivedNum(
+        Op.Div,
+        Num.product(
+            ...nonfractionFactors.slice(0, fractionIndex), fraction.ns[0]!,
+            ...nonfractionFactors.slice(fractionIndex)),
+        fraction.ns[1]!,
+    );
+  }
+}
+
 class DivisionIdentity extends SimplificationRule {
   private operandMatches(n: NumBase): boolean {
     return n.value().eq(1) &&
@@ -139,12 +165,9 @@ class DivisionCollapse extends SimplificationRule {
   }
 }
 
-class DivisionByFraction extends SimplificationRule {
+class DenominatorIsFraction extends SimplificationRule {
   private operandMatches(n: NumBase): boolean {
-    return n instanceof DerivedNum &&
-        (n.op === Op.Div ||
-         (n.op === Op.Mult &&
-          n.ns.some(m => m instanceof DerivedNum && m.op === Op.Div)));
+    return n instanceof DerivedNum && n.op === Op.Div;
   }
 
   matches(root: NumBase): boolean {
@@ -154,11 +177,33 @@ class DivisionByFraction extends SimplificationRule {
 
   apply(root: NumBase): NumBase {
     const s = root as DerivedNum;
+    const denominator = s.ns[1]! as DerivedNum;
+
     return new DerivedNum(
         Op.Div,
-        Num.product(...s.numerators()),
-        Num.product(...s.denominators()),
+        Num.product(s.ns[0]!, denominator.ns[1]!),
+        denominator.ns[0]!,
     );
+  }
+}
+
+class NumeratorIsFraction extends SimplificationRule {
+  private operandMatches(n: NumBase): boolean {
+    return n instanceof DerivedNum && n.op === Op.Div;
+  }
+
+  matches(root: NumBase): boolean {
+    return root instanceof DerivedNum && root.op === Op.Div &&
+        this.operandMatches(root.ns[0]!);
+  }
+
+  apply(root: NumBase): NumBase {
+    const s = root as DerivedNum;
+    const numerator = s.ns[0]! as DerivedNum;
+    const denominator = s.ns[1]!;
+
+    return new DerivedNum(
+        Op.Div, numerator.ns[0]!, Num.product(denominator, numerator.ns[1]!));
   }
 }
 
@@ -212,9 +257,11 @@ const simplifications = [
   new SubtractionIdentity(),
   new MultiplicationIdentity(),
   new MultiplicationCollapse(),
+  new MultiplicationByFraction(),
   new DivisionIdentity(),
   new DivisionCollapse(),
-  new DivisionByFraction(),
+  new DenominatorIsFraction(),
+  new NumeratorIsFraction(),
   new PowerIdentity(),
   new PowerCollapse(),
 ];
@@ -335,17 +382,19 @@ export abstract class Num {
 
   static sum(...xs: readonly AnyNumber[]): NumBase {
     const ns = xs.map(x => toNumBase(x));
-    if (ns.length == 1) {
-      return ns[0]!;
+    let result = ns[0]!;
+    for (const n of ns.slice(1)) {
+      result = result.add(n);
     }
-    return new DerivedNum(Op.Plus, ...ns);
+    return result;
   }
   static product(...xs: readonly AnyNumber[]): NumBase {
     const ns = xs.map(x => toNumBase(x));
-    if (ns.length == 1) {
-      return ns[0]!;
+    let result = ns[0]!;
+    for (const n of ns.slice(1)) {
+      result = result.mul(n);
     }
-    return new DerivedNum(Op.Mult, ...ns);
+    return result;
   }
 
   // `prettyPrint` is the top-level call to get the derivation.
@@ -374,9 +423,6 @@ abstract class NumBase extends Num {
     return new Literal(x);
   }
 
-  abstract numerators(): NumBase[];
-  abstract denominators(): NumBase[];
-
   // Implementation detail used in simplifying the expression tree when
   // stringifying.
   abstract parenOrUnparen(op: Op): string;
@@ -398,13 +444,6 @@ class Literal extends NumBase {
 
   value(): Decimal {
     return this.v;
-  }
-
-  numerators(): NumBase[] {
-    return [this];
-  }
-  denominators(): NumBase[] {
-    return [];
   }
 
   parenOrUnparen(_op: Op): string {
@@ -439,14 +478,6 @@ export class NamedConstant extends NumBase {
 
   value(): Decimal {
     return this.v;
-  }
-
-  numerators(): NumBase[] {
-    return [this];
-  }
-
-  denominators(): NumBase[] {
-    return [];
   }
 
   parenOrUnparen(_op: Op): string {
@@ -500,33 +531,15 @@ class DerivedNum extends NumBase {
       case Op.Mult:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.mul(n.value()), ns[0]!.value());
-        this.s = () => {
-          const numerators = this.numerators();
-          const denominators = this.denominators();
-          if (denominators.length) {
-            const numerator = Num.product(...numerators);
-            const denominator = Num.product(...denominators);
-            return numerator.div(denominator).printInternal();
-          }
-          // Base case: no quotients involved.
-          return numerators.map(n => n.parenOrUnparen(this.op)).join(' * ');
-        };
+        this.s = () => this.ns.map(n => n.parenOrUnparen(this.op)).join(' * ');
         break;
       case Op.Div:
         if (this.ns.length !== 2) {
           throw new Error('Expected 2 operands for division');
         }
         this.v = ns[0]!.value().div(ns[1]!.value());
-        this.s = () => {
-          const numerator = Num.product(...this.numerators());
-          const denominators = this.denominators();
-          if (!denominators.length) {
-            throw new Error('unreachable');
-          }
-          const denominator = Num.product(...denominators);
-          return `\\frac{${numerator.printInternal()}}{${
-              denominator.printInternal()}}`;
-        };
+        this.s = () => `\\frac{${this.ns[0]!.printInternal()}}{${
+            this.ns[1]!.printInternal()}}`;
         break;
       case Op.Floor:
         if (this.ns.length !== 1) {
@@ -551,30 +564,16 @@ class DerivedNum extends NumBase {
     return this.v;
   }
 
-  numerators(): NumBase[] {
-    if (this.op == Op.Div) {
-      return [...this.ns[0]!.numerators(), ...this.ns[1]!.denominators()];
-    } else if (this.op == Op.Mult) {
-      return this.ns.flatMap(n => n.numerators());
-    } else {
-      return [this];
-    }
-  }
-
-  denominators(): NumBase[] {
-    if (this.op == Op.Div) {
-      return [...this.ns[0]!.denominators(), ...this.ns[1]!.numerators()];
-    } else if (this.op == Op.Mult) {
-      return this.ns.flatMap(n => n.denominators());
-    } else {
-      return [];
-    }
-  }
-
   parenOrUnparen(op: Op): string {
     if (precedence(op) < precedence(this.op)) {
       // The parent's precedence is lower than ours, so ours binds more
       // tightly and we don't need parens.
+      return this.printInternal();
+    }
+    if (op == Op.Mult && this.op == Op.Div) {
+      // If the expression is some factor times a fraction, we don't need to
+      // care about parens, since LaTeX already represents fractions in an
+      // unambiguous way.
       return this.printInternal();
     }
     // The parent op binds more tightly than ours, *or* it's the same op but
@@ -625,14 +624,6 @@ export class NamedOutput extends NumBase {
 
   value(): Decimal {
     return this.num.value();
-  }
-
-  numerators(): NumBase[] {
-    return [this];
-  }
-
-  denominators(): NumBase[] {
-    return [];
   }
 
   parenOrUnparen(_op: Op): string {

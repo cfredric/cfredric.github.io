@@ -28,7 +28,8 @@ test('toString()', () => {
   expect(Num.floor(1.2).toString()).toEqual('floor(1.2)');
   expect(Num.floor(Num.literal(1).add(2)).toString()).toEqual('floor(1 + 2)');
 
-  expect(Num.literal(1).div(2).div(3).toString()).toEqual('\\frac{1}{2 * 3}');
+  expect(Num.literal(1).div(2).div(3).toString())
+      .toEqual('\\frac{\\frac{1}{2}}{3}');
   expect(Num.literal(1).mul(2).div(3).toString()).toEqual('\\frac{1 * 2}{3}');
 
   const out = new NamedOutput('outName', Num.literal(1).add(2).add(3));
@@ -63,17 +64,24 @@ test('toString()', () => {
   const c = new NamedConstant('c', 5);
   const d = new NamedConstant('d', 7);
   // Denominator is a fraction: a / (c/d) == (a*d) / c
-  expect(a.div(c.div(d)).prettyPrint(false)).toEqual('\\frac{a * d}{c}');
+  expect(a.div(c.div(d)).prettyPrint(false)).toEqual('\\frac{a}{\\frac{c}{d}}');
+  expect(a.div(c.div(d)).prettyPrint(true)).toEqual('\\frac{a * d}{c}');
   // Numerator is a fraction: (a/b) / d == a / (b * d).
-  expect(a.div(b).div(d).prettyPrint(false)).toEqual('\\frac{a}{b * d}');
+  expect(a.div(b).div(d).prettyPrint(false)).toEqual('\\frac{\\frac{a}{b}}{d}');
+  expect(a.div(b).div(d).prettyPrint(true)).toEqual('\\frac{a}{d * b}');
   // Both numerator and denominator are fractions: (a/b) / (c/d) == (a*d) /
   // (b*c).
   expect(a.div(b).div(c.div(d)).prettyPrint(false))
-      .toEqual('\\frac{a * d}{b * c}');
+      .toEqual('\\frac{\\frac{a}{b}}{\\frac{c}{d}}');
+  expect(a.div(b).div(c.div(d)).prettyPrint(true))
+      .toEqual('\\frac{a * d}{c * b}');
 
   // Multiplication is merged into the numerators/denominators.
-  expect(a.mul(c.div(d)).prettyPrint(false)).toEqual('\\frac{a * c}{d}');
+  expect(a.mul(c.div(d)).prettyPrint(false)).toEqual('a * \\frac{c}{d}');
+  expect(a.mul(c.div(d)).prettyPrint(true)).toEqual('\\frac{a * c}{d}');
   expect(a.div(b).mul(c.div(d)).prettyPrint(false))
+      .toEqual('\\frac{a}{b} * \\frac{c}{d}');
+  expect(a.div(b).mul(c.div(d)).prettyPrint(true))
       .toEqual('\\frac{a * c}{b * d}');
 
 
@@ -99,11 +107,9 @@ test('toString()', () => {
              .prettyPrint(true))
       .toEqual('3');
 
-  expect(
-      Num.literal(1).div(Num.literal(2).div(Num.literal(3))).prettyPrint(false))
-      .toEqual('\\frac{1 * 3}{2}');
-  expect(
-      Num.literal(1).div(Num.literal(2).div(Num.literal(3))).prettyPrint(true))
+  expect(Num.literal(1).div(Num.literal(2).div(3)).prettyPrint(false))
+      .toEqual('\\frac{1}{\\frac{2}{3}}');
+  expect(Num.literal(1).div(Num.literal(2).div(3)).prettyPrint(true))
       .toEqual('\\frac{3}{2}');
 });
 
