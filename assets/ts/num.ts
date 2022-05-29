@@ -401,16 +401,14 @@ export abstract class Num {
   prettyPrint(simplify: boolean): string {
     const nb = toNumBase(this);
     if (simplify) {
-      const s = Num.simplify(nb);
-      return s.printInternal();
+      return Num.simplify(nb).printInternal();
     }
     return nb.printInternal();
   }
 
   // Returns a simplified version of the expression rooted at `root`.
   static simplify(root: Num): NumBase {
-    const nb = toNumBase(root);
-    return simplifyAll(nb, simplifications);
+    return simplifyAll(toNumBase(root), simplifications);
   }
 }
 
@@ -442,19 +440,19 @@ class Literal extends NumBase {
     this.v = valueOf(value);
   }
 
-  value(): Decimal {
+  override value(): Decimal {
     return this.v;
   }
 
-  parenOrUnparen(_op: Op): string {
+  override parenOrUnparen(_op: Op): string {
     return this.toString();
   }
 
-  printInternal(): string {
+  override printInternal(): string {
     return this.v.toString();
   }
 
-  simplifyOne(rule: SimplificationRule): NumBase|null {
+  override simplifyOne(rule: SimplificationRule): NumBase|null {
     if (rule.matches(this)) {
       return rule.apply(this);
     }
@@ -476,19 +474,19 @@ export class NamedConstant extends NumBase {
     this.v = valueOf(value);
   }
 
-  value(): Decimal {
+  override value(): Decimal {
     return this.v;
   }
 
-  parenOrUnparen(_op: Op): string {
+  override parenOrUnparen(_op: Op): string {
     return this.name;
   }
 
-  printInternal(): string {
+  override printInternal(): string {
     return this.name;
   }
 
-  simplifyOne(rule: SimplificationRule): NumBase|null {
+  override simplifyOne(rule: SimplificationRule): NumBase|null {
     if (rule.matches(this)) {
       return rule.apply(this);
     }
@@ -560,11 +558,11 @@ class DerivedNum extends NumBase {
     }
   }
 
-  value(): Decimal {
+  override value(): Decimal {
     return this.v;
   }
 
-  parenOrUnparen(op: Op): string {
+  override parenOrUnparen(op: Op): string {
     if (precedence(op) < precedence(this.op)) {
       // The parent's precedence is lower than ours, so ours binds more
       // tightly and we don't need parens.
@@ -585,11 +583,11 @@ class DerivedNum extends NumBase {
     return this.printInternal();
   }
 
-  printInternal(): string {
+  override printInternal(): string {
     return this.s();
   }
 
-  simplifyOne(rule: SimplificationRule): NumBase|null {
+  override simplifyOne(rule: SimplificationRule): NumBase|null {
     if (rule.matches(this)) {
       // If the subtree rooted here has a match, we apply the rule and return.
       return rule.apply(this);
@@ -622,11 +620,11 @@ export class NamedOutput extends NumBase {
     this.num = toNumBase(num);
   }
 
-  value(): Decimal {
+  override value(): Decimal {
     return this.num.value();
   }
 
-  parenOrUnparen(_op: Op): string {
+  override parenOrUnparen(_op: Op): string {
     return this.name;
   }
 
@@ -636,11 +634,11 @@ export class NamedOutput extends NumBase {
     return this.num.prettyPrint(simplify);
   }
 
-  printInternal(): string {
+  override printInternal(): string {
     return this.name;
   }
 
-  simplifyOne(rule: SimplificationRule): NumBase|null {
+  override simplifyOne(rule: SimplificationRule): NumBase|null {
     // Simplify the underlying subtree via this rule, if it matches.
     const simp = this.num.simplifyOne(rule);
     if (simp) {
