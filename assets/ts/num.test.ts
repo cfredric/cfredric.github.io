@@ -107,6 +107,46 @@ test('toString()', () => {
       .toEqual('\\frac{3}{2}');
 });
 
+test('simplify', () => {
+  expect(Num.simplify(Num.literal(1).add(0)).toString())
+      .toEqual('1');  // + identity
+  expect(Num.simplify(Num.literal(0).add(1)).toString())
+      .toEqual('1');  // + identity
+
+  expect(Num.simplify(Num.literal(1).sub(0)).toString())
+      .toEqual('1');  // - identity
+
+  expect(Num.simplify(Num.literal(2).mul(0)).toString())
+      .toEqual('0');  // * identity
+  expect(Num.simplify(Num.literal(0).mul(2)).toString())
+      .toEqual('0');  // * identity
+  expect(Num.simplify(Num.literal(1).mul(2)).toString())
+      .toEqual('2');  // * collapse
+
+  expect(Num.simplify(Num.literal(2).div(1)).toString())
+      .toEqual('2');  // / identity
+  expect(Num.simplify(Num.literal(0).div(2)).toString())
+      .toEqual('0');  // / collapse
+  expect(Num.simplify(Num.literal(2).div(Num.literal(3).div(5))).toString())
+      .toEqual('\\frac{2 * 5}{3}');  // division by fraction
+  expect(Num.simplify(
+                Num.literal(2).div(Num.literal(3).mul(Num.literal(5).div(7))))
+             .toString())
+      .toEqual(
+          '\\frac{2 * 7}{3 * 5}');  // division by product involving a fraction
+
+  expect(Num.simplify(Num.literal(2).pow(1)).toString())
+      .toEqual('2');  // ^ identity
+  expect(Num.simplify(Num.literal(0).pow(2)).toString())
+      .toEqual('0');  // ^ collapse
+  expect(Num.simplify(Num.literal(2).pow(0)).toString())
+      .toEqual('1');  // ^ collapse
+  expect(Num.simplify(Num.literal(0).pow(0)).toString())
+      .toEqual('1');  // ^ collapse
+  expect(Num.simplify(Num.literal(1).pow(2)).toString())
+      .toEqual('1');  // ^ collapse
+});
+
 test('Sum', () => {
   expect(Num.sum(1, 2, 4).toNumber()).toEqual(7);
 });

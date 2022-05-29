@@ -17,6 +17,245 @@ function valueOf(x: AnyNumber): Decimal {
   return new Decimal(x);
 }
 
+abstract class SimplificationRule {
+  constructor() {}
+
+  abstract matches(root: NumBase): boolean;
+
+  abstract apply(root: NumBase): NumBase;
+}
+
+class AdditionIdentity extends SimplificationRule {
+  private operandMatches(n: NumBase): boolean {
+    return n.value().eq(0) &&
+        (n instanceof Literal || n instanceof NamedConstant);
+  }
+
+  matches(root: NumBase): boolean {
+    return root instanceof DerivedNum && root.op == Op.Plus &&
+        root.ns.some(this.operandMatches);
+  }
+
+  apply(root: NumBase): NumBase {
+    const s = root as DerivedNum;
+    const nontrivials = s.ns.filter(n => !this.operandMatches(n));
+    if (nontrivials.length === 1) {
+      return nontrivials[0]!;
+    } else if (nontrivials.length) {
+      return new DerivedNum(Op.Plus, ...nontrivials);
+    } else {
+      return new Literal(0);
+    }
+  }
+}
+
+class SubtractionIdentity extends SimplificationRule {
+  private operandMatches(n: NumBase): boolean {
+    return n.value().eq(0) &&
+        (n instanceof Literal || n instanceof NamedConstant);
+  }
+
+  matches(root: NumBase): boolean {
+    return root instanceof DerivedNum && root.op == Op.Minus &&
+        this.operandMatches(root.ns[1]!);
+  }
+
+  apply(root: NumBase): NumBase {
+    const s = root as DerivedNum;
+    return s.ns[0]!;
+  }
+}
+
+class MultiplicationIdentity extends SimplificationRule {
+  private operandMatches(n: NumBase): boolean {
+    return n.value().eq(1) &&
+        (n instanceof Literal || n instanceof NamedConstant);
+  }
+
+  matches(root: NumBase): boolean {
+    return root instanceof DerivedNum && root.op === Op.Mult &&
+        root.ns.some(this.operandMatches);
+  }
+
+  apply(root: NumBase): NumBase {
+    const s = root as DerivedNum;
+    const nontrivials = s.ns.filter(n => !this.operandMatches(n));
+    if (nontrivials.length === 1) {
+      return nontrivials[0]!;
+    } else if (nontrivials.length) {
+      return new DerivedNum(Op.Mult, ...nontrivials);
+    } else {
+      return new Literal(1);
+    }
+  }
+}
+
+class MultiplicationCollapse extends SimplificationRule {
+  private operandMatches(n: NumBase): boolean {
+    return n.value().eq(0) &&
+        (n instanceof Literal || n instanceof NamedConstant);
+  }
+
+  matches(root: NumBase): boolean {
+    return root instanceof DerivedNum && root.op === Op.Mult &&
+        root.ns.some(this.operandMatches);
+  }
+
+  apply(_root: NumBase): NumBase {
+    return new Literal(0);
+  }
+}
+
+class DivisionIdentity extends SimplificationRule {
+  private operandMatches(n: NumBase): boolean {
+    return n.value().eq(1) &&
+        (n instanceof Literal || n instanceof NamedConstant);
+  }
+
+  matches(root: NumBase): boolean {
+    return root instanceof DerivedNum && root.op === Op.Div &&
+        this.operandMatches(root.ns[1]!);
+  }
+
+  apply(root: NumBase): NumBase {
+    const s = root as DerivedNum;
+    return s.ns[0]!;
+  }
+}
+
+class DivisionCollapse extends SimplificationRule {
+  private operandMatches(n: NumBase): boolean {
+    return n.value().eq(0) &&
+        (n instanceof Literal || n instanceof NamedConstant);
+  }
+
+  matches(root: NumBase): boolean {
+    return root instanceof DerivedNum && root.op === Op.Div &&
+        this.operandMatches(root.ns[0]!);
+  }
+
+  apply(_root: NumBase): NumBase {
+    return new Literal(0);
+  }
+}
+
+class DivisionByFraction extends SimplificationRule {
+  private operandMatches(n: NumBase): boolean {
+    return n instanceof DerivedNum &&
+        (n.op === Op.Div ||
+         (n.op === Op.Mult &&
+          n.ns.some(m => m instanceof DerivedNum && m.op === Op.Div)));
+  }
+
+  matches(root: NumBase): boolean {
+    return root instanceof DerivedNum && root.op === Op.Div &&
+        this.operandMatches(root.ns[1]!);
+  }
+
+  apply(root: NumBase): NumBase {
+    const s = root as DerivedNum;
+    return new DerivedNum(
+        Op.Div,
+        Num.product(...s.numerators()),
+        Num.product(...s.denominators()),
+    );
+  }
+}
+
+class PowerIdentity extends SimplificationRule {
+  private operandMatches(n: NumBase): boolean {
+    return n.value().eq(1) &&
+        (n instanceof Literal || n instanceof NamedConstant);
+  }
+
+  matches(root: NumBase): boolean {
+    return root instanceof DerivedNum && root.op === Op.Pow &&
+        this.operandMatches(root.ns[1]!);
+  }
+
+  apply(root: NumBase): NumBase {
+    const s = root as DerivedNum;
+    return s.ns[0]!;
+  }
+}
+
+class PowerCollapse extends SimplificationRule {
+  private operandMatches(n: NumBase, x: number): boolean {
+    return n.value().eq(x) &&
+        (n instanceof Literal || n instanceof NamedConstant);
+  }
+
+  matches(root: NumBase): boolean {
+    return root instanceof DerivedNum && root.op === Op.Pow &&
+        (this.operandMatches(root.ns[0]!, 1) ||
+         this.operandMatches(root.ns[0]!, 0) ||
+         this.operandMatches(root.ns[1]!, 0));
+  }
+
+  apply(root: NumBase): NumBase {
+    const s = root as DerivedNum;
+    const base = s.ns[0]!;
+    const power = s.ns[1]!;
+    if (power.eq(0)) {
+      return new Literal(1);
+    } else if (base.eq(0)) {
+      return new Literal(0);
+    } else if (base.eq(1)) {
+      return new Literal(1);
+    }
+    throw new Error('unreachable');
+  }
+}
+
+const simplifications = [
+  new AdditionIdentity(),
+  new SubtractionIdentity(),
+  new MultiplicationIdentity(),
+  new MultiplicationCollapse(),
+  new DivisionIdentity(),
+  new DivisionCollapse(),
+  new DivisionByFraction(),
+  new PowerIdentity(),
+  new PowerCollapse(),
+];
+
+function simplifyAll(
+    root: NumBase, rules: readonly SimplificationRule[]): NumBase {
+  // Run a fixed-point algorithm: loop over rules repeatedly until we go through
+  // all the rules and don't find anything to simplify.
+  let keepGoing = true;
+  while (keepGoing) {
+    keepGoing = false;
+    for (const rule of rules) {
+      // Another fixed-point algorithm: simplify using this rule repeatedly,
+      // until it doesn't match anything anymore.
+      let lookForMatch = true;
+      while (lookForMatch) {
+        lookForMatch = false;
+        const simplified = root.simplifyOne(rule);
+        if (simplified) {
+          root = simplified;
+          lookForMatch = true;
+          keepGoing = true;
+        }
+      }
+    }
+  }
+  return root;
+}
+
+function mergeSiblings(a: NumBase, b: NumBase, op: Op): NumBase {
+  if (a instanceof DerivedNum && a.op === op && b instanceof DerivedNum &&
+      b.op === op) {
+    return new DerivedNum(op, ...a.ns, ...b.ns);
+  } else if (a instanceof DerivedNum && a.op === op) {
+    return new DerivedNum(op, ...a.ns, b);
+  } else if (b instanceof DerivedNum && b.op === op) {
+    return new DerivedNum(op, a, ...b.ns);
+  }
+  return new DerivedNum(op, a, b);
+}
+
 export abstract class Num {
   constructor() {}
 
@@ -75,28 +314,23 @@ export abstract class Num {
     return this.value().cmp(b.value());
   }
 
-  add(b: AnyNumber): DerivedNum {
-    const bb = toNumBase(b);
-    return new DerivedNum(Op.Plus, toNumBase(this), bb)
+  add(b: AnyNumber): NumBase {
+    return mergeSiblings(toNumBase(this), toNumBase(b), Op.Plus);
   }
   sub(b: AnyNumber): DerivedNum {
-    const bb = toNumBase(b);
-    return new DerivedNum(Op.Minus, toNumBase(this), bb);
+    return new DerivedNum(Op.Minus, toNumBase(this), toNumBase(b));
   }
-  mul(b: AnyNumber): DerivedNum {
-    const bb = toNumBase(b);
-    return new DerivedNum(Op.Mult, toNumBase(this), bb);
+  mul(b: AnyNumber): NumBase {
+    return mergeSiblings(toNumBase(this), toNumBase(b), Op.Mult);
   }
   static div(a: AnyNumber, b: AnyNumber): Num {
     return toNumBase(a).div(b);
   }
   div(b: AnyNumber): DerivedNum {
-    const bb = toNumBase(b);
-    return new DerivedNum(Op.Div, toNumBase(this), bb);
+    return new DerivedNum(Op.Div, toNumBase(this), toNumBase(b));
   }
   pow(b: AnyNumber): DerivedNum {
-    const bb = toNumBase(b);
-    return new DerivedNum(Op.Pow, toNumBase(this), bb);
+    return new DerivedNum(Op.Pow, toNumBase(this), toNumBase(b));
   }
 
   static sum(...xs: readonly AnyNumber[]): NumBase {
@@ -115,7 +349,20 @@ export abstract class Num {
   }
 
   // `prettyPrint` is the top-level call to get the derivation.
-  abstract prettyPrint(simplify: boolean): string;
+  prettyPrint(simplify: boolean): string {
+    const nb = toNumBase(this);
+    if (simplify) {
+      const s = Num.simplify(nb);
+      return s.printInternal();
+    }
+    return nb.printInternal();
+  }
+
+  // Returns a simplified version of the expression rooted at `root`.
+  static simplify(root: Num): NumBase {
+    const nb = toNumBase(root);
+    return simplifyAll(nb, simplifications);
+  }
 }
 
 abstract class NumBase extends Num {
@@ -132,23 +379,13 @@ abstract class NumBase extends Num {
 
   // Implementation detail used in simplifying the expression tree when
   // stringifying.
-  abstract parenOrUnparen(op: Op, simplify: boolean): string;
+  abstract parenOrUnparen(op: Op): string;
 
-  // Flattens the tree rooted at this Num, where adjacent subtrees with the same
-  // associative operator have been merged.
-  abstract flatten(): void;
-  // Returns a list of all operands, if the subtree rooted at this NumBase
-  // instance uses the same operator and the operator is associative. Otherwise,
-  // returns a singleton list of [this].
-  abstract mergeWith(op: Op): readonly NumBase[];
+  abstract printInternal(): string;
 
-  abstract isElidable(ident: number): boolean;
-
-  abstract printInternal(simplify: boolean): string;
-}
-
-function identity(op: Op): number {
-  return op == Op.Plus ? 0 : 1;
+  // Runs a single simplification rule on this subtree. Returns a new subtree if
+  // simplification was successful, or null if it was a no-op.
+  abstract simplifyOne(rule: SimplificationRule): NumBase|null;
 }
 
 class Literal extends NumBase {
@@ -170,25 +407,19 @@ class Literal extends NumBase {
     return [];
   }
 
-  parenOrUnparen(_op: Op, _simplify: boolean): string {
+  parenOrUnparen(_op: Op): string {
     return this.toString();
   }
 
-  flatten() {}
-  mergeWith(_op: Op): readonly NumBase[] {
-    return [this];
-  }
-
-  isElidable(ident: number): boolean {
-    return this.value().eq(ident);
-  }
-
-  prettyPrint(simplify: boolean): string {
-    return this.printInternal(simplify);
-  }
-
-  printInternal(_simplify: boolean): string {
+  printInternal(): string {
     return this.v.toString();
+  }
+
+  simplifyOne(rule: SimplificationRule): NumBase|null {
+    if (rule.matches(this)) {
+      return rule.apply(this);
+    }
+    return null;
   }
 
   toString(): string {
@@ -218,25 +449,19 @@ export class NamedConstant extends NumBase {
     return [];
   }
 
-  parenOrUnparen(_op: Op, _simplify: boolean): string {
+  parenOrUnparen(_op: Op): string {
     return this.name;
   }
 
-  flatten() {}
-  mergeWith(_op: Op): readonly NumBase[] {
-    return [this];
-  }
-  isElidable(ident: number): boolean {
-    // Elide named constants if their values are equal to the relevant identity.
-    return this.value().eq(ident);
-  }
-
-  prettyPrint(_simplify: boolean): string {
+  printInternal(): string {
     return this.name;
   }
 
-  printInternal(_simplify: boolean): string {
-    return this.name;
+  simplifyOne(rule: SimplificationRule): NumBase|null {
+    if (rule.matches(this)) {
+      return rule.apply(this);
+    }
+    return null;
   }
 
   toString(): string {
@@ -247,12 +472,12 @@ export class NamedConstant extends NumBase {
 class DerivedNum extends NumBase {
   readonly op: Op;
   private readonly v: Decimal;
-  private ns: readonly NumBase[];
+  ns: readonly NumBase[];
 
   // Lazily compute the symoblic representation. We build some complicated
   // numbers, so if we don't have to care about the symoblic representation, we
   // shouldn't.
-  private s: (simplify: boolean) => string;
+  private s: () => string;
 
   constructor(op: Op, ...ns: readonly NumBase[]) {
     super();
@@ -262,32 +487,29 @@ class DerivedNum extends NumBase {
     switch (this.op) {
       case Op.Plus:
         this.v = Decimal.sum(...ns.map(n => n.value()));
-        this.s = (simplify: boolean) =>
-            this.ns.map(n => n.printInternal(simplify)).join(' + ');
+        this.s = () => this.ns.map(n => n.printInternal()).join(' + ');
         break;
       case Op.Minus:
         if (this.ns.length !== 2) {
           throw new Error('Expected 2 operands for subtraction');
         }
         this.v = this.ns[0]!.value().sub(this.ns[1]!.value());
-        this.s = (simplify: boolean) =>
-            `${this.ns[0]!.printInternal(simplify)} - ${
-                this.ns[1]!.parenOrUnparen(this.op, simplify)}`;
+        this.s = () => `${this.ns[0]!.printInternal()} - ${
+            this.ns[1]!.parenOrUnparen(this.op)}`;
         break;
       case Op.Mult:
         this.v = ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.mul(n.value()), ns[0]!.value());
-        this.s = (simplify: boolean) => {
+        this.s = () => {
           const numerators = this.numerators();
           const denominators = this.denominators();
           if (denominators.length) {
             const numerator = Num.product(...numerators);
             const denominator = Num.product(...denominators);
-            return numerator.div(denominator).printInternal(simplify);
+            return numerator.div(denominator).printInternal();
           }
           // Base case: no quotients involved.
-          return numerators.map(n => n.parenOrUnparen(this.op, simplify))
-              .join(' * ');
+          return numerators.map(n => n.parenOrUnparen(this.op)).join(' * ');
         };
         break;
       case Op.Div:
@@ -295,15 +517,15 @@ class DerivedNum extends NumBase {
           throw new Error('Expected 2 operands for division');
         }
         this.v = ns[0]!.value().div(ns[1]!.value());
-        this.s = (simplify: boolean) => {
+        this.s = () => {
           const numerator = Num.product(...this.numerators());
           const denominators = this.denominators();
           if (!denominators.length) {
             throw new Error('unreachable');
           }
           const denominator = Num.product(...denominators);
-          return `\\frac{${numerator.printInternal(simplify)}}{${
-              denominator.printInternal(simplify)}}`;
+          return `\\frac{${numerator.printInternal()}}{${
+              denominator.printInternal()}}`;
         };
         break;
       case Op.Floor:
@@ -311,8 +533,7 @@ class DerivedNum extends NumBase {
           throw new Error('Expected 1 operand for floor');
         }
         this.v = ns[0]!.value().floor();
-        this.s = (simplify: boolean) =>
-            'floor(' + ns[0]!.printInternal(simplify) + ')';
+        this.s = () => 'floor(' + ns[0]!.printInternal() + ')';
         break;
       case Op.Pow: {
         if (this.ns.length !== 2) {
@@ -320,9 +541,8 @@ class DerivedNum extends NumBase {
         }
         this.v = ns[0]!.value().pow(ns[1]!.value());
         const [base, power] = this.ns;
-        this.s = (simplify: boolean) =>
-            `{${base!.parenOrUnparen(this.op, simplify)}} ^ {${
-                power!.printInternal(simplify)}}`;
+        this.s = () =>
+            `{${base!.parenOrUnparen(this.op)}} ^ {${power!.printInternal()}}`;
       } break;
     }
   }
@@ -351,111 +571,45 @@ class DerivedNum extends NumBase {
     }
   }
 
-  simplify(): NumBase|null {
-    switch (this.op) {
-      case Op.Mult:
-      case Op.Plus: {
-        if (this.op === Op.Mult && this.ns.some(n => n.isElidable(0))) {
-          // 0 times anything is 0.
-          return NumBase.literal(0);
-        }
-        const ident = identity(this.op);
-        this.ns = this.ns.filter(n => !n.isElidable(ident));
-        if (this.ns.length === 0) return NumBase.literal(ident);
-        if (this.ns.length === 1) return this.ns[0]!;
-        break;
-      }
-      case Op.Minus:
-        if (this.ns[1]!.isElidable(0)) {
-          // X - 0 is X.
-          return this.ns[0]!;
-        }
-        break;
-      case Op.Div:
-        if (this.ns[1]!.isElidable(1)) {
-          // X / 1 is X.
-          return this.ns[0]!;
-        }
-        if (this.ns[0]!.isElidable(0)) {
-          // 0 / X is 0.
-          return NumBase.literal(0);
-        }
-        break;
-      case Op.Pow:
-        if (this.ns[0]!.isElidable(0)) {
-          // 0 ^ X is 0.
-          return NumBase.literal(0);
-        }
-        if (this.ns[0]!.isElidable(1)) {
-          // 1 ^ X is 1.
-          return NumBase.literal(1);
-        }
-        if (this.ns[1]!.isElidable(0)) {
-          // X ^ 0 is 1.
-          return NumBase.literal(1);
-        }
-        if (this.ns[1]!.isElidable(1)) {
-          // X ^ 1 is X.
-          return this.ns[0]!;
-        }
-        break;
-      default:
-    }
-    return null;
-  }
-
-  parenOrUnparen(op: Op, simplify: boolean): string {
-    if (simplify) {
-      const simp = this.simplify();
-      if (simp) return simp.printInternal(simplify);
-    }
+  parenOrUnparen(op: Op): string {
     if (precedence(op) < precedence(this.op)) {
       // The parent's precedence is lower than ours, so ours binds more
       // tightly and we don't need parens.
-      return this.printInternal(simplify);
-    }
-    if (op == this.op && associative(this.op)) {
-      // The parent op is the same as ours, *and* the op is associative, so
-      // order doesn't matter - so we don't need parens.
-      return this.printInternal(simplify);
+      return this.printInternal();
     }
     // The parent op binds more tightly than ours, *or* it's the same op but
     // it isn't associative, so we need parens.
-    return `{(${this.printInternal(simplify)})}`;
-  }
-
-  mergeWith(op: Op): readonly NumBase[] {
-    if (this.op == op && associative(op)) return this.ns;
-    return [this];
-  }
-
-  flatten() {
-    for (const n of this.ns) {
-      n.flatten();
-    }
-
-    this.ns = this.ns.flatMap((n) => n.mergeWith(this.op));
-  }
-
-  isElidable(ident: number): boolean {
-    return this.value().eq(ident);
+    return `{(${this.printInternal()})}`;
   }
 
   toString(): string {
-    return this.printInternal(false);
+    return this.printInternal();
   }
 
-  prettyPrint(simplify: boolean): string {
-    if (simplify) this.flatten();
-    return this.printInternal(simplify);
+  printInternal(): string {
+    return this.s();
   }
 
-  printInternal(simplify: boolean): string {
-    if (simplify) {
-      const simp = this.simplify();
-      if (simp) return simp.printInternal(simplify);
+  simplifyOne(rule: SimplificationRule): NumBase|null {
+    if (rule.matches(this)) {
+      // If the subtree rooted here has a match, we apply the rule and return.
+      return rule.apply(this);
     }
-    return this.s(simplify);
+
+    // Otherwise, we apply the rule to the first matching subtree underneath us,
+    // and return a modified version of the subtree rooted at this node, if
+    // there's a match.
+    for (const [i, n] of this.ns.entries()) {
+      const s = n.simplifyOne(rule);
+      if (s) {
+        const updated = this.ns.slice();
+        updated[i] = s;
+        return new DerivedNum(this.op, ...updated);
+      }
+    }
+
+    // If there's no match, we indicate by returning null.
+    return null;
   }
 }
 
@@ -485,24 +639,23 @@ export class NamedOutput extends NumBase {
     return this.name;
   }
 
-  flatten() {}
-  mergeWith(_op: Op): readonly NumBase[] {
-    return [this];
-  }
-  isElidable(_ident: number): boolean {
-    // Never elide named outputs.
-    return false;
-  }
-
-  prettyPrint(simplify: boolean): string {
+  override prettyPrint(simplify: boolean): string {
     // If this gets called at top level, we'll print the whole derivation.
     // Otherwise, we only use the name associated with this output.
-    if (simplify) this.num.flatten();
     return this.num.prettyPrint(simplify);
   }
 
-  printInternal(_simplify: boolean): string {
+  printInternal(): string {
     return this.name;
+  }
+
+  simplifyOne(rule: SimplificationRule): NumBase|null {
+    // Simplify the underlying subtree via this rule, if it matches.
+    const simp = this.num.simplifyOne(rule);
+    if (simp) {
+      return new NamedOutput(this.name, simp);
+    }
+    return null;
   }
 
   toString(): string {
@@ -541,8 +694,4 @@ function precedence(op: Op): Precedence {
     case Op.Floor:
       return Precedence.Call;
   }
-}
-
-function associative(op: Op): boolean {
-  return op == Op.Plus || op == Op.Mult;
 }
