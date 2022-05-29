@@ -276,7 +276,8 @@ export abstract class Num {
   // `prettyPrint` is the top-level call to get the derivation.
   prettyPrint(simplify: boolean): string {
     const nb = toNumBase(this);
-    return (simplify ? nb.simplify() : nb).printInternal();
+    const exp = simplify ? nb.simplify() : nb;
+    return exp.printInternal();
   }
 
   // Returns a simplified version of the expression rooted at this node.
