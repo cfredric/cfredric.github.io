@@ -435,7 +435,7 @@ export class NamedConstant extends NumBase {
 class DerivedNum extends NumBase {
   readonly op: Op;
   private readonly v: Decimal;
-  ns: readonly NumBase[];
+  readonly ns: readonly NumBase[];
 
   // Lazily compute the symoblic representation. We build some complicated
   // numbers, so if we don't have to care about the symoblic representation, we
