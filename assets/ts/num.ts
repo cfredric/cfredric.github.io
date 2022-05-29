@@ -357,15 +357,12 @@ export abstract class Num {
   // `prettyPrint` is the top-level call to get the derivation.
   prettyPrint(simplify: boolean): string {
     const nb = toNumBase(this);
-    if (simplify) {
-      return Num.simplify(nb).printInternal();
-    }
-    return nb.printInternal();
+    return (simplify ? nb.simplify() : nb).printInternal();
   }
 
-  // Returns a simplified version of the expression rooted at `root`.
-  static simplify(num: Num): NumBase {
-    let root = toNumBase(num);
+  // Returns a simplified version of the expression rooted at this node.
+  simplify(): NumBase {
+    let root = toNumBase(this);
     // Run a fixed-point algorithm: loop over rules repeatedly until we go
     // through all the rules and don't find anything to simplify.
     let keepGoing = true;
