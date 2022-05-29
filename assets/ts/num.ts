@@ -17,28 +17,27 @@ function valueOf(x: AnyNumber): Decimal {
   return new Decimal(x);
 }
 
+function isConstantOrLiteral(n: NumBase): boolean {
+  return n instanceof Literal || n instanceof NamedConstant;
+}
+
 abstract class SimplificationRule {
   constructor() {}
 
-  abstract matches(root: NumBase): boolean;
-
-  abstract apply(root: NumBase): NumBase;
+  abstract apply(root: NumBase): NumBase|null;
 }
 
 class AdditionIdentity extends SimplificationRule {
-  private operandMatches(n: NumBase): boolean {
-    return n.value().eq(0) &&
-        (n instanceof Literal || n instanceof NamedConstant);
-  }
-
-  matches(root: NumBase): boolean {
-    return root instanceof DerivedNum && root.op == Op.Plus &&
-        root.ns.some(this.operandMatches);
-  }
-
-  apply(root: NumBase): NumBase {
+  override apply(root: NumBase): NumBase|null {
+    if (!(root instanceof DerivedNum) || root.op != Op.Plus) {
+      return null;
+    }
     const s = root as DerivedNum;
-    const nontrivials = s.ns.filter(n => !this.operandMatches(n));
+    const nontrivials =
+        s.ns.filter(n => !n.value().eq(0) || !isConstantOrLiteral(n));
+    if (nontrivials.length === s.ns.length) {
+      return null;
+    }
     if (nontrivials.length === 1) {
       return nontrivials[0]!;
     } else if (nontrivials.length) {
@@ -51,16 +50,14 @@ class AdditionIdentity extends SimplificationRule {
 
 class SubtractionIdentity extends SimplificationRule {
   private operandMatches(n: NumBase): boolean {
-    return n.value().eq(0) &&
-        (n instanceof Literal || n instanceof NamedConstant);
+    return n.value().eq(0) && isConstantOrLiteral(n);
   }
 
-  matches(root: NumBase): boolean {
-    return root instanceof DerivedNum && root.op == Op.Minus &&
-        this.operandMatches(root.ns[1]!);
-  }
-
-  apply(root: NumBase): NumBase {
+  override apply(root: NumBase): NumBase|null {
+    if (!(root instanceof DerivedNum) || root.op != Op.Minus ||
+        !this.operandMatches(root.ns[1]!)) {
+      return null;
+    }
     const s = root as DerivedNum;
     return s.ns[0]!;
   }
@@ -68,16 +65,14 @@ class SubtractionIdentity extends SimplificationRule {
 
 class MultiplicationIdentity extends SimplificationRule {
   private operandMatches(n: NumBase): boolean {
-    return n.value().eq(1) &&
-        (n instanceof Literal || n instanceof NamedConstant);
+    return n.value().eq(1) && isConstantOrLiteral(n);
   }
 
-  matches(root: NumBase): boolean {
-    return root instanceof DerivedNum && root.op === Op.Mult &&
-        root.ns.some(this.operandMatches);
-  }
-
-  apply(root: NumBase): NumBase {
+  override apply(root: NumBase): NumBase|null {
+    if (!(root instanceof DerivedNum) || root.op !== Op.Mult ||
+        !root.ns.some(this.operandMatches)) {
+      return null;
+    }
     const s = root as DerivedNum;
     const nontrivials = s.ns.filter(n => !this.operandMatches(n));
     if (nontrivials.length === 1) {
@@ -92,16 +87,14 @@ class MultiplicationIdentity extends SimplificationRule {
 
 class MultiplicationCollapse extends SimplificationRule {
   private operandMatches(n: NumBase): boolean {
-    return n.value().eq(0) &&
-        (n instanceof Literal || n instanceof NamedConstant);
+    return n.value().eq(0) && isConstantOrLiteral(n);
   }
 
-  matches(root: NumBase): boolean {
-    return root instanceof DerivedNum && root.op === Op.Mult &&
-        root.ns.some(this.operandMatches);
-  }
-
-  apply(_root: NumBase): NumBase {
+  override apply(root: NumBase): NumBase|null {
+    if (!(root instanceof DerivedNum) || root.op !== Op.Mult ||
+        !root.ns.some(this.operandMatches)) {
+      return null;
+    }
     return new Literal(0);
   }
 }
@@ -111,12 +104,11 @@ class MultiplicationByFraction extends SimplificationRule {
     return n instanceof DerivedNum && n.op === Op.Div;
   }
 
-  matches(root: NumBase): boolean {
-    return root instanceof DerivedNum && root.op === Op.Mult &&
-        root.ns.some(n => this.operandMatches(n));
-  }
-
-  apply(root: NumBase): NumBase {
+  override apply(root: NumBase): NumBase|null {
+    if (!(root instanceof DerivedNum) || root.op !== Op.Mult ||
+        !root.ns.some(n => this.operandMatches(n))) {
+      return null;
+    }
     const s = root as DerivedNum;
     const nonfractionFactors = s.ns.slice();
     const fractionIndex = s.ns.findIndex(n => this.operandMatches(n));
@@ -134,16 +126,14 @@ class MultiplicationByFraction extends SimplificationRule {
 
 class DivisionIdentity extends SimplificationRule {
   private operandMatches(n: NumBase): boolean {
-    return n.value().eq(1) &&
-        (n instanceof Literal || n instanceof NamedConstant);
+    return n.value().eq(1) && isConstantOrLiteral(n);
   }
 
-  matches(root: NumBase): boolean {
-    return root instanceof DerivedNum && root.op === Op.Div &&
-        this.operandMatches(root.ns[1]!);
-  }
-
-  apply(root: NumBase): NumBase {
+  override apply(root: NumBase): NumBase|null {
+    if (!(root instanceof DerivedNum) || root.op !== Op.Div ||
+        !this.operandMatches(root.ns[1]!)) {
+      return null;
+    }
     const s = root as DerivedNum;
     return s.ns[0]!;
   }
@@ -151,16 +141,14 @@ class DivisionIdentity extends SimplificationRule {
 
 class DivisionCollapse extends SimplificationRule {
   private operandMatches(n: NumBase): boolean {
-    return n.value().eq(0) &&
-        (n instanceof Literal || n instanceof NamedConstant);
+    return n.value().eq(0) && isConstantOrLiteral(n);
   }
 
-  matches(root: NumBase): boolean {
-    return root instanceof DerivedNum && root.op === Op.Div &&
-        this.operandMatches(root.ns[0]!);
-  }
-
-  apply(_root: NumBase): NumBase {
+  override apply(root: NumBase): NumBase|null {
+    if (!(root instanceof DerivedNum) || root.op !== Op.Div ||
+        !this.operandMatches(root.ns[0]!)) {
+      return null;
+    }
     return new Literal(0);
   }
 }
@@ -170,12 +158,11 @@ class DenominatorIsFraction extends SimplificationRule {
     return n instanceof DerivedNum && n.op === Op.Div;
   }
 
-  matches(root: NumBase): boolean {
-    return root instanceof DerivedNum && root.op === Op.Div &&
-        this.operandMatches(root.ns[1]!);
-  }
-
-  apply(root: NumBase): NumBase {
+  override apply(root: NumBase): NumBase|null {
+    if (!(root instanceof DerivedNum) || root.op !== Op.Div ||
+        !this.operandMatches(root.ns[1]!)) {
+      return null;
+    }
     const s = root as DerivedNum;
     const denominator = s.ns[1]! as DerivedNum;
 
@@ -192,12 +179,11 @@ class NumeratorIsFraction extends SimplificationRule {
     return n instanceof DerivedNum && n.op === Op.Div;
   }
 
-  matches(root: NumBase): boolean {
-    return root instanceof DerivedNum && root.op === Op.Div &&
-        this.operandMatches(root.ns[0]!);
-  }
-
-  apply(root: NumBase): NumBase {
+  override apply(root: NumBase): NumBase|null {
+    if (!(root instanceof DerivedNum) || root.op !== Op.Div ||
+        !this.operandMatches(root.ns[0]!)) {
+      return null;
+    }
     const s = root as DerivedNum;
     const numerator = s.ns[0]! as DerivedNum;
     const denominator = s.ns[1]!;
@@ -209,16 +195,14 @@ class NumeratorIsFraction extends SimplificationRule {
 
 class PowerIdentity extends SimplificationRule {
   private operandMatches(n: NumBase): boolean {
-    return n.value().eq(1) &&
-        (n instanceof Literal || n instanceof NamedConstant);
+    return n.value().eq(1) && isConstantOrLiteral(n);
   }
 
-  matches(root: NumBase): boolean {
-    return root instanceof DerivedNum && root.op === Op.Pow &&
-        this.operandMatches(root.ns[1]!);
-  }
-
-  apply(root: NumBase): NumBase {
+  override apply(root: NumBase): NumBase|null {
+    if (!(root instanceof DerivedNum) || root.op !== Op.Pow ||
+        !this.operandMatches(root.ns[1]!)) {
+      return null;
+    }
     const s = root as DerivedNum;
     return s.ns[0]!;
   }
@@ -226,18 +210,16 @@ class PowerIdentity extends SimplificationRule {
 
 class PowerCollapse extends SimplificationRule {
   private operandMatches(n: NumBase, x: number): boolean {
-    return n.value().eq(x) &&
-        (n instanceof Literal || n instanceof NamedConstant);
+    return n.value().eq(x) && isConstantOrLiteral(n);
   }
 
-  matches(root: NumBase): boolean {
-    return root instanceof DerivedNum && root.op === Op.Pow &&
-        (this.operandMatches(root.ns[0]!, 1) ||
-         this.operandMatches(root.ns[0]!, 0) ||
-         this.operandMatches(root.ns[1]!, 0));
-  }
-
-  apply(root: NumBase): NumBase {
+  override apply(root: NumBase): NumBase|null {
+    if (!(root instanceof DerivedNum) || root.op !== Op.Pow ||
+        (!this.operandMatches(root.ns[0]!, 1) &&
+         !this.operandMatches(root.ns[0]!, 0) &&
+         !this.operandMatches(root.ns[1]!, 0))) {
+      return null;
+    }
     const s = root as DerivedNum;
     const base = s.ns[0]!;
     const power = s.ns[1]!;
@@ -429,7 +411,9 @@ abstract class NumBase extends Num {
 
   // Runs a single simplification rule on this subtree. Returns a new subtree if
   // simplification was successful, or null if it was a no-op.
-  abstract simplifyOne(rule: SimplificationRule): NumBase|null;
+  simplifyOne(rule: SimplificationRule): NumBase|null {
+    return rule.apply(this);
+  }
 }
 
 class Literal extends NumBase {
@@ -450,13 +434,6 @@ class Literal extends NumBase {
 
   override printInternal(): string {
     return this.v.toString();
-  }
-
-  override simplifyOne(rule: SimplificationRule): NumBase|null {
-    if (rule.matches(this)) {
-      return rule.apply(this);
-    }
-    return null;
   }
 
   toString(): string {
@@ -484,13 +461,6 @@ export class NamedConstant extends NumBase {
 
   override printInternal(): string {
     return this.name;
-  }
-
-  override simplifyOne(rule: SimplificationRule): NumBase|null {
-    if (rule.matches(this)) {
-      return rule.apply(this);
-    }
-    return null;
   }
 
   toString(): string {
@@ -588,9 +558,10 @@ class DerivedNum extends NumBase {
   }
 
   override simplifyOne(rule: SimplificationRule): NumBase|null {
-    if (rule.matches(this)) {
+    const s = rule.apply(this);
+    if (s) {
       // If the subtree rooted here has a match, we apply the rule and return.
-      return rule.apply(this);
+      return s;
     }
 
     // Otherwise, we apply the rule to the first matching subtree underneath us,
