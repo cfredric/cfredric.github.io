@@ -281,8 +281,7 @@ export abstract class Num {
   }
 
   static floor(x: AnyNumber): Num {
-    const xb = toNumBase(x);
-    return new DerivedNum(Op.Floor, xb);
+    return new DerivedNum(Op.Floor, toNumBase(x));
   }
 
   clamp(min: AnyNumber, max: AnyNumber): Num {
@@ -294,28 +293,22 @@ export abstract class Num {
   }
 
   gte(b: AnyNumber): boolean {
-    b = toNumBase(b);
-    return this.value().gte(b.value());
+    return this.value().gte(toNumBase(b).value());
   }
   gt(b: AnyNumber): boolean {
-    b = toNumBase(b);
-    return this.value().gt(b.value());
+    return this.value().gt(toNumBase(b).value());
   }
   lte(b: AnyNumber): boolean {
-    b = toNumBase(b);
-    return this.value().lte(b.value());
+    return this.value().lte(toNumBase(b).value());
   }
   lt(b: AnyNumber): boolean {
-    b = toNumBase(b);
-    return this.value().lt(b.value());
+    return this.value().lt(toNumBase(b).value());
   }
   eq(b: AnyNumber): boolean {
-    b = toNumBase(b);
-    return this.value().eq(b.value());
+    return this.value().eq(toNumBase(b).value());
   }
   cmp(b: AnyNumber): number {
-    b = toNumBase(b);
-    return this.value().cmp(b.value());
+    return this.value().cmp(toNumBase(b).value());
   }
 
   add(b: AnyNumber): NumBase {
