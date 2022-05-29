@@ -37,8 +37,7 @@ class AdditionIdentity extends SimplificationRule {
         s.ns.filter(n => !n.value().eq(0) || !isConstantOrLiteral(n));
     if (nontrivials.length === s.ns.length) {
       return null;
-    }
-    if (nontrivials.length === 1) {
+    } else if (nontrivials.length === 1) {
       return nontrivials[0]!;
     } else if (nontrivials.length) {
       return new DerivedNum(Op.Plus, ...nontrivials);
@@ -69,13 +68,14 @@ class MultiplicationIdentity extends SimplificationRule {
   }
 
   override apply(root: NumBase): NumBase|null {
-    if (!(root instanceof DerivedNum) || root.op !== Op.Mult ||
-        !root.ns.some(this.operandMatches)) {
+    if (!(root instanceof DerivedNum) || root.op !== Op.Mult) {
       return null;
     }
     const s = root as DerivedNum;
     const nontrivials = s.ns.filter(n => !this.operandMatches(n));
-    if (nontrivials.length === 1) {
+    if (nontrivials.length === s.ns.length) {
+      return null;
+    } else if (nontrivials.length === 1) {
       return nontrivials[0]!;
     } else if (nontrivials.length) {
       return new DerivedNum(Op.Mult, ...nontrivials);
@@ -248,31 +248,6 @@ const simplifications = [
   new PowerCollapse(),
 ];
 
-function simplifyAll(
-    root: NumBase, rules: readonly SimplificationRule[]): NumBase {
-  // Run a fixed-point algorithm: loop over rules repeatedly until we go through
-  // all the rules and don't find anything to simplify.
-  let keepGoing = true;
-  while (keepGoing) {
-    keepGoing = false;
-    for (const rule of rules) {
-      // Another fixed-point algorithm: simplify using this rule repeatedly,
-      // until it doesn't match anything anymore.
-      let lookForMatch = true;
-      while (lookForMatch) {
-        lookForMatch = false;
-        const simplified = root.simplifyOne(rule);
-        if (simplified) {
-          root = simplified;
-          lookForMatch = true;
-          keepGoing = true;
-        }
-      }
-    }
-  }
-  return root;
-}
-
 function mergeSiblings(a: NumBase, b: NumBase, op: Op): NumBase {
   if (a instanceof DerivedNum && a.op === op && b instanceof DerivedNum &&
       b.op === op) {
@@ -389,8 +364,29 @@ export abstract class Num {
   }
 
   // Returns a simplified version of the expression rooted at `root`.
-  static simplify(root: Num): NumBase {
-    return simplifyAll(toNumBase(root), simplifications);
+  static simplify(num: Num): NumBase {
+    let root = toNumBase(num);
+    // Run a fixed-point algorithm: loop over rules repeatedly until we go
+    // through all the rules and don't find anything to simplify.
+    let keepGoing = true;
+    while (keepGoing) {
+      keepGoing = false;
+      for (const rule of simplifications) {
+        // Another fixed-point algorithm: simplify using this rule repeatedly,
+        // until it doesn't match anything anymore.
+        let lookForMatch = true;
+        while (lookForMatch) {
+          lookForMatch = false;
+          const simplified = root.simplifyOne(rule);
+          if (simplified) {
+            root = simplified;
+            lookForMatch = true;
+            keepGoing = true;
+          }
+        }
+      }
+    }
+    return root;
   }
 }
 
