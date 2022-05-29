@@ -317,29 +317,45 @@ export abstract class Num {
 
   // Returns a simplified version of the expression rooted at this node.
   simplify(): NumBase {
-    let root = toNumBase(this);
+    const root = toNumBase(this);
     // Run a fixed-point algorithm: loop over rules repeatedly until we go
     // through all the rules and don't find anything to simplify.
-    let keepGoing = true;
-    while (keepGoing) {
-      keepGoing = false;
-      for (const rule of simplifications) {
-        // Another fixed-point algorithm: simplify using this rule repeatedly,
-        // until it doesn't match anything anymore.
-        let lookForMatch = true;
-        while (lookForMatch) {
-          lookForMatch = false;
-          const simplified = root.simplifyOne(rule);
-          if (simplified) {
-            root = simplified;
-            lookForMatch = true;
-            keepGoing = true;
-          }
-        }
-      }
-    }
-    return root;
+    return runFixedPoint(root, (current) => {
+             let atLeastOnce = false;
+             for (const rule of simplifications) {
+               // Another fixed-point algorithm: simplify using this rule
+               // repeatedly, until it doesn't match anything anymore.
+               const applied = runFixedPoint(
+                   current, (current) => current.simplifyOne(rule));
+               if (applied) {
+                 current = applied;
+                 atLeastOnce = true;
+               }
+             }
+             return atLeastOnce ? current : null;
+           }) ?? root;
   }
+}
+
+// Runs a fixed-point algorithm. Starting from initial state `initial`, performs
+// `action` iteratively until `action` returns null. Returns null if `action`
+// never returned a non-null result, otherwise returns the result of the
+// actions.
+function runFixedPoint<T>(initial: T, action: (t: T) => T | null): T|null {
+  let current = initial;
+  let keepGoing = true;
+  let atLeastOnce = false;
+  while (keepGoing) {
+    keepGoing = false;
+    const next = action(current);
+    if (next) {
+      current = next;
+      keepGoing = true;
+      atLeastOnce = true;
+    }
+  }
+
+  return atLeastOnce ? current : null;
 }
 
 abstract class NumBase extends Num {
