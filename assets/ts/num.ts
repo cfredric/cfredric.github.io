@@ -17,6 +17,12 @@ function valueOf(x: AnyNumber): Decimal {
   return new Decimal(x);
 }
 
+function assertLength<T>(n: number, ts: readonly T[]) {
+  if (ts.length !== n) {
+    throw new Error(`Expected length of ${n} but found ${ts.length}`);
+  }
+}
+
 function isConstantOrLiteral(n: NumBase): boolean {
   return n instanceof Literal || n instanceof NamedConstant;
 }
@@ -392,55 +398,33 @@ class DerivedNum extends NumBase {
   private readonly v: Decimal;
   readonly ns: readonly NumBase[];
 
-  // Lazily compute the symoblic representation. We build some complicated
-  // numbers, so if we don't have to care about the symoblic representation, we
-  // shouldn't.
-  private s: () => string;
-
   constructor(op: Op, ...ns: readonly NumBase[]) {
     super();
     this.op = op;
     this.ns = ns;
+    this.v = DerivedNum.computeValue(this.op, this.ns);
+  }
 
-    switch (this.op) {
+  static computeValue(op: Op, ns: readonly NumBase[]): Decimal {
+    switch (op) {
       case Op.Plus:
-        this.v = Decimal.sum(...ns.map(n => n.value()));
-        this.s = () => this.ns.join(' + ');
-        break;
+        return Decimal.sum(...ns.map(n => n.value()));
       case Op.Minus:
-        if (this.ns.length !== 2) {
-          throw new Error('Expected 2 operands for subtraction');
-        }
-        this.v = this.ns[0]!.value().sub(this.ns[1]!.value());
-        this.s = () => `${this.ns[0]} - ${this.ns[1]!.parenOrUnparen(this.op)}`;
-        break;
+        assertLength(2, ns);
+        return ns[0]!.value().sub(ns[1]!.value());
       case Op.Mult:
-        this.v = ns.slice(1).reduce(
+        return ns.slice(1).reduce(
             (acc: Decimal, n: Num) => acc.mul(n.value()), ns[0]!.value());
-        this.s = () => this.ns.map(n => n.parenOrUnparen(this.op)).join(' * ');
-        break;
       case Op.Div:
-        if (this.ns.length !== 2) {
-          throw new Error('Expected 2 operands for division');
-        }
-        this.v = ns[0]!.value().div(ns[1]!.value());
-        this.s = () => `\\frac{${this.ns[0]}}{${this.ns[1]}}`;
-        break;
+        assertLength(2, ns);
+        return ns[0]!.value().div(ns[1]!.value());
       case Op.Floor:
-        if (this.ns.length !== 1) {
-          throw new Error('Expected 1 operand for floor');
-        }
-        this.v = ns[0]!.value().floor();
-        this.s = () => `floor(${ns[0]})`;
-        break;
+        assertLength(1, ns);
+        return ns[0]!.value().floor();
       case Op.Pow: {
-        if (this.ns.length !== 2) {
-          throw new Error('Expected 2 operands for exponentiation');
-        }
-        this.v = ns[0]!.value().pow(ns[1]!.value());
-        const [base, power] = this.ns;
-        this.s = () => `{${base!.parenOrUnparen(this.op)}} ^ {${power}}`;
-      } break;
+        assertLength(2, ns);
+        return ns[0]!.value().pow(ns[1]!.value());
+      }
     }
   }
 
@@ -466,7 +450,22 @@ class DerivedNum extends NumBase {
   }
 
   override toString(): string {
-    return this.s();
+    switch (this.op) {
+      case Op.Plus:
+        return this.ns.join(' + ');
+      case Op.Minus:
+        return `${this.ns[0]} - ${this.ns[1]!.parenOrUnparen(this.op)}`;
+      case Op.Mult:
+        return this.ns.map(n => n.parenOrUnparen(this.op)).join(' * ');
+      case Op.Div:
+        return `\\frac{${this.ns[0]}}{${this.ns[1]}}`;
+      case Op.Floor:
+        return `floor(${this.ns[0]})`;
+      case Op.Pow: {
+        const [base, power] = this.ns;
+        return `{${base!.parenOrUnparen(this.op)}} ^ {${power}}`;
+      }
+    }
   }
 
   override simplifyOne(rule: SimplificationRule): NumBase|null {
