@@ -130,6 +130,33 @@ function multiplicationByFraction(root: NumBase): NumBase|null {
   return null;
 }
 
+function negatedLiteral(root: NumBase): NumBase|null {
+  if (root instanceof DerivedNum && root.op === Op.Mult) {
+    const negativeOneIdx =
+        root.ns.findIndex(n => n.value().eq(-1) && n instanceof Literal);
+    if (negativeOneIdx === -1) {
+      return null;
+    }
+    const literalIdx = root.ns.findIndex(
+        (n, i) => n instanceof Literal && i !== negativeOneIdx);
+    if (literalIdx === -1) {
+      return null;
+    }
+    const literal = root.ns[literalIdx]!;
+
+    const factors = root.ns.slice();
+    factors.splice(negativeOneIdx, 1);
+    factors.splice(
+        literalIdx - (negativeOneIdx > literalIdx ? 0 : 1),
+        1,
+        Num.literal(-1 * literal.value().toNumber()),
+    );
+
+    return Num.product(...factors);
+  }
+  return null;
+}
+
 function divisionIdentity(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Div) {
     const divisor = root.ns[1]!;
@@ -206,6 +233,7 @@ const simplifications = [
   multiplicationIdentity,
   multiplicationCollapse,
   multiplicationByFraction,
+  negatedLiteral,
   divisionIdentity,
   divisionCollapse,
   denominatorIsFraction,
