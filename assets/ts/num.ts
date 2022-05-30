@@ -8,7 +8,7 @@ function toNumBase(x: AnyNumber): NumBase {
   if (x instanceof Num) {
     throw new Error('unreachable');
   }
-  return NumBase.literal(x);
+  return Num.literal(x);
 }
 
 function valueOf(x: AnyNumber): Decimal {
@@ -66,7 +66,7 @@ function additionIdentity(root: NumBase): NumBase|null {
     } else if (nontrivials.length) {
       return Num.sum(...nontrivials);
     } else {
-      return new Literal(0);
+      return Num.literal(0);
     }
   }
   return null;
@@ -93,7 +93,7 @@ function multiplicationIdentity(root: NumBase): NumBase|null {
     } else if (nontrivials.length) {
       return Num.product(...nontrivials);
     } else {
-      return new Literal(1);
+      return Num.literal(1);
     }
   }
   return null;
@@ -102,7 +102,7 @@ function multiplicationIdentity(root: NumBase): NumBase|null {
 function multiplicationCollapse(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Mult &&
       root.ns.some(n => n.value().eq(0) && isConstantOrLiteral(n))) {
-    return new Literal(0);
+    return Num.literal(0);
   }
   return null;
 }
@@ -134,7 +134,7 @@ function divisionCollapse(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Div) {
     const numerator = root.ns[0]!;
     if (numerator.value().eq(0) && isConstantOrLiteral(numerator)) {
-      return new Literal(0);
+      return Num.literal(0);
     }
   }
   return null;
@@ -177,13 +177,13 @@ function powerCollapse(root: NumBase): NumBase|null {
     const power = root.ns[1]!;
     if (power.eq(0) && isConstantOrLiteral(power)) {
       // X ^ 0 == 1
-      return new Literal(1);
+      return Num.literal(1);
     } else if (base.eq(0) && isConstantOrLiteral(base)) {
       // 0 ^ X == 0
-      return new Literal(0);
+      return Num.literal(0);
     } else if (base.eq(1) && isConstantOrLiteral(base)) {
       // 1 ^ X == 1
-      return new Literal(1);
+      return Num.literal(1);
     }
   }
   return null;
@@ -224,8 +224,8 @@ export abstract class Num {
     return this.value().toNumber();
   }
 
-  static literal(x: number|Decimal): Num {
-    return NumBase.literal(x);
+  static literal(x: number|Decimal): NumBase {
+    return new Literal(x);
   }
 
   static max(a: AnyNumber, b: AnyNumber): Num {
@@ -353,10 +353,6 @@ function runFixedPoint<T>(initial: T, action: (t: T) => T | null): T|null {
 abstract class NumBase extends Num {
   constructor() {
     super();
-  }
-
-  static literal(x: number|Decimal): NumBase {
-    return new Literal(x);
   }
 
   // Implementation detail used in simplifying the expression tree when
