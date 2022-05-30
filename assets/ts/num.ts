@@ -153,11 +153,8 @@ function negatedLiteral(root: NumBase): NumBase|null {
 
     const factors = root.ns.slice();
     factors.splice(negativeOneIdx, 1);
-    factors.splice(
-        literalIdx - (negativeOneIdx > literalIdx ? 0 : 1),
-        1,
-        Num.literal(-1 * literal.value().toNumber()),
-    );
+    factors[literalIdx - (negativeOneIdx > literalIdx ? 0 : 1)] =
+        Num.literal(-1 * literal.value().toNumber());
 
     return Num.product(...factors);
   }
