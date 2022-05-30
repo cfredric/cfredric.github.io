@@ -55,6 +55,7 @@ function isConstantOrLiteral(n: NumBase): boolean {
 // typical approach taken by computer algebra systems.
 type SimplificationRule = (root: NumBase) => NumBase|null;
 
+/** Rewrites `x + 0` or `0 + x` into `0`. */
 function additionIdentity(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Plus) {
     const nontrivials =
@@ -72,6 +73,7 @@ function additionIdentity(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrites `x - 0` into `x`. */
 function subtractionIdentity(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Minus) {
     const subtrahend = root.ns[1]!;
@@ -82,6 +84,7 @@ function subtractionIdentity(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrites `0 - x` into `-1 * x`. */
 function subtractionFromZero(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Minus) {
     const minuend = root.ns[0]!;
@@ -92,6 +95,7 @@ function subtractionFromZero(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrites `1 * x` or `x * 1` into `x`. */
 function multiplicationIdentity(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Mult) {
     const nontrivials =
@@ -109,6 +113,7 @@ function multiplicationIdentity(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrites `0 * x` or `x * 0` into `0`. */
 function multiplicationCollapse(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Mult &&
       root.ns.some(n => n.value().eq(0) && isConstantOrLiteral(n))) {
@@ -117,6 +122,7 @@ function multiplicationCollapse(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrites `x * y/z` or `y/z * x` into `(x * y)/z`. */
 function multiplicationByFraction(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Mult) {
     for (const [i, n] of root.ns.entries()) {
@@ -130,6 +136,7 @@ function multiplicationByFraction(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Collapses `-1 * x` (where x is a literal) into `-x`. */
 function negatedLiteral(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Mult) {
     const negativeOneIdx =
@@ -157,6 +164,7 @@ function negatedLiteral(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrites `x / 1` into `x`. */
 function divisionIdentity(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Div) {
     const divisor = root.ns[1]!;
@@ -167,6 +175,7 @@ function divisionIdentity(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrites `0 / x` into `0`. */
 function divisionCollapse(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Div) {
     const numerator = root.ns[0]!;
@@ -177,6 +186,7 @@ function divisionCollapse(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrites `x / (y/z)` into `(x*z) / y`. */
 function denominatorIsFraction(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Div) {
     const denominator = root.ns[1]!;
@@ -188,6 +198,7 @@ function denominatorIsFraction(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrites `(x / y) / z` into `x / (y * z)`. */
 function numeratorIsFraction(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Div) {
     const numerator = root.ns[0]!;
@@ -198,6 +209,7 @@ function numeratorIsFraction(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrites `x ^ 1` into `x`. */
 function powerIdentity(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Pow) {
     const power = root.ns[1]!;
@@ -208,6 +220,7 @@ function powerIdentity(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrites `x ^ 0` into `1`, `0 ^ x` to `0`, and `1 ^ x` to `1`. */
 function powerCollapse(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Pow) {
     const base = root.ns[0]!;
