@@ -336,19 +336,19 @@ export abstract class Num {
   add(b: AnyNumber): NumBase {
     return mergeSiblings(toNumBase(this), toNumBase(b), Op.Plus);
   }
-  sub(b: AnyNumber): DerivedNum {
+  sub(b: AnyNumber): NumBase {
     return new DerivedNum(Op.Minus, toNumBase(this), toNumBase(b));
   }
   mul(b: AnyNumber): NumBase {
     return mergeSiblings(toNumBase(this), toNumBase(b), Op.Mult);
   }
-  static div(a: AnyNumber, b: AnyNumber): Num {
+  static div(a: AnyNumber, b: AnyNumber): NumBase {
     return toNumBase(a).div(b);
   }
-  div(b: AnyNumber): DerivedNum {
+  div(b: AnyNumber): NumBase {
     return new DerivedNum(Op.Div, toNumBase(this), toNumBase(b));
   }
-  pow(b: AnyNumber): DerivedNum {
+  pow(b: AnyNumber): NumBase {
     return new DerivedNum(Op.Pow, toNumBase(this), toNumBase(b));
   }
 
