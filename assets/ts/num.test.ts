@@ -118,8 +118,9 @@ test('simplify', () => {
   expectExpression(Num.literal(0).sub(1), '0 - 1', '-1');  // - from zero
   expectExpression(Num.literal(0).sub(2), '0 - 2', '-2');  // - from zero
 
-  expectExpression(Num.literal(-1).mul(2), '-1 * 2', '-2');  // negated literal
-  expectExpression(Num.literal(2).mul(-1), '2 * -1', '-2');  // negated literal
+  expectExpression(Num.literal(-1).mul(2), '-1 * 2', '-2');   // negated literal
+  expectExpression(Num.literal(2).mul(-1), '2 * -1', '-2');   // negated literal
+  expectExpression(Num.literal(-1).mul(-1), '-1 * -1', '1');  // negated literal
 
   expectExpression(Num.literal(2).mul(0), '2 * 0', '0');  // * collapse
   expectExpression(Num.literal(0).mul(2), '0 * 2', '0');  // * collapse
