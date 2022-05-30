@@ -489,7 +489,7 @@ class DerivedNum extends NumBase {
   override toString(): string {
     switch (this.op) {
       case Op.Plus:
-        return this.ns.join(' + ');
+        return this.ns.map(n => n.parenOrUnparen(this.op)).join(' + ');
       case Op.Minus:
         return `${this.ns[0]} - ${this.ns[1]!.parenOrUnparen(this.op)}`;
       case Op.Mult:

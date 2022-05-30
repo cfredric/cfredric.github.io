@@ -20,6 +20,10 @@ test('toString()', () => {
   expectExpression(
       Num.literal(1).sub(Num.literal(2).sub(3)), '1 - {(2 - 3)}',
       '1 - {(2 - 3)}');
+  expectExpression(Num.literal(1).add(2).sub(3), '1 + 2 - 3', '1 + 2 - 3');
+  expectExpression(
+      Num.literal(1).add(Num.literal(2).sub(3)), '1 + {(2 - 3)}',
+      '1 + {(2 - 3)}');
 
   expectExpression(
       Num.literal(1).sub(2).mul(3), '{(1 - 2)} * 3', '{(1 - 2)} * 3');
