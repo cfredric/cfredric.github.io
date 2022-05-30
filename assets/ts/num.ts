@@ -23,6 +23,29 @@ function assertLength<T>(n: number, ts: readonly T[]) {
   }
 }
 
+function computeValue(op: Op, ns: readonly NumBase[]): Decimal {
+  switch (op) {
+    case Op.Plus:
+      return Decimal.sum(...ns.map(n => n.value()));
+    case Op.Minus:
+      assertLength(2, ns);
+      return ns[0]!.value().sub(ns[1]!.value());
+    case Op.Mult:
+      return ns.slice(1).reduce(
+          (acc: Decimal, n: Num) => acc.mul(n.value()), ns[0]!.value());
+    case Op.Div:
+      assertLength(2, ns);
+      return ns[0]!.value().div(ns[1]!.value());
+    case Op.Floor:
+      assertLength(1, ns);
+      return ns[0]!.value().floor();
+    case Op.Pow: {
+      assertLength(2, ns);
+      return ns[0]!.value().pow(ns[1]!.value());
+    }
+  }
+}
+
 function isConstantOrLiteral(n: NumBase): boolean {
   return n instanceof Literal || n instanceof NamedConstant;
 }
@@ -394,30 +417,7 @@ class DerivedNum extends NumBase {
     super();
     this.op = op;
     this.ns = ns;
-    this.v = DerivedNum.computeValue(this.op, this.ns);
-  }
-
-  static computeValue(op: Op, ns: readonly NumBase[]): Decimal {
-    switch (op) {
-      case Op.Plus:
-        return Decimal.sum(...ns.map(n => n.value()));
-      case Op.Minus:
-        assertLength(2, ns);
-        return ns[0]!.value().sub(ns[1]!.value());
-      case Op.Mult:
-        return ns.slice(1).reduce(
-            (acc: Decimal, n: Num) => acc.mul(n.value()), ns[0]!.value());
-      case Op.Div:
-        assertLength(2, ns);
-        return ns[0]!.value().div(ns[1]!.value());
-      case Op.Floor:
-        assertLength(1, ns);
-        return ns[0]!.value().floor();
-      case Op.Pow: {
-        assertLength(2, ns);
-        return ns[0]!.value().pow(ns[1]!.value());
-      }
-    }
+    this.v = computeValue(this.op, this.ns);
   }
 
   override value(): Decimal {
