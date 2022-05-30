@@ -46,7 +46,8 @@ export class Formatter {
   formatCurrencyWithDerivation(n: Num): FormatResult {
     const value = this.formatCurrency(n);
     if (this.showDerivations) {
-      return new FormatResult(value, n.prettyPrint(this.simplifyDerivations));
+      const exp = this.simplifyDerivations ? n.simplify() : n;
+      return new FormatResult(value, exp.prettyPrint());
     }
     return new FormatResult(value);
   }
@@ -57,7 +58,8 @@ export class Formatter {
   formatPercentWithDerivation(p: Num): FormatResult {
     const value = this.formatPercent(p);
     if (this.showDerivations) {
-      return new FormatResult(value, p.prettyPrint(this.simplifyDerivations));
+      const exp = this.simplifyDerivations ? p.simplify() : p;
+      return new FormatResult(value, exp.prettyPrint());
     }
     return new FormatResult(value);
   }
@@ -68,7 +70,8 @@ export class Formatter {
   formatHundredthsPercentWithDerivation(p: Num): FormatResult {
     const value = this.formatHundredthsPercent(p);
     if (this.showDerivations) {
-      return new FormatResult(value, p.prettyPrint(this.simplifyDerivations));
+      const exp = this.simplifyDerivations ? p.simplify() : p;
+      return new FormatResult(value, exp.prettyPrint());
     }
     return new FormatResult(value);
   }

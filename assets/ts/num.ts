@@ -280,10 +280,8 @@ export abstract class Num {
   }
 
   // `prettyPrint` is the top-level call to get the derivation.
-  prettyPrint(simplify: boolean): string {
-    const nb = toNumBase(this);
-    const exp = simplify ? nb.simplify() : nb;
-    return exp.toString();
+  prettyPrint(): string {
+    return this.toString();
   }
 
   // Returns a simplified version of the expression rooted at this node.
@@ -510,10 +508,10 @@ export class NamedOutput extends NumBase {
     return this.name;
   }
 
-  override prettyPrint(simplify: boolean): string {
+  override prettyPrint(): string {
     // If this gets called at top level, we'll print the whole derivation.
     // Otherwise, we only use the name associated with this output.
-    return this.num.prettyPrint(simplify);
+    return this.num.prettyPrint();
   }
 
   override simplifyOne(rule: SimplificationRule): NumBase|null {
