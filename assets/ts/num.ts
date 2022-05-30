@@ -30,9 +30,13 @@ function computeValue(op: Op, ns: readonly NumBase[]): Decimal {
     case Op.Minus:
       assertLength(2, ns);
       return ns[0]!.value().sub(ns[1]!.value());
-    case Op.Mult:
-      return ns.slice(1).reduce(
-          (acc: Decimal, n: Num) => acc.mul(n.value()), ns[0]!.value());
+    case Op.Mult: {
+      let result = ns[0]!.value();
+      for (const n of ns.slice(1)) {
+        result = result.mul(n.value());
+      }
+      return result;
+    }
     case Op.Div:
       assertLength(2, ns);
       return ns[0]!.value().div(ns[1]!.value());
@@ -144,7 +148,7 @@ function negatedLiteral(root: NumBase): NumBase|null {
     if (negativeOneIdx === -1) {
       return null;
     }
-    const literalIdx = root.ns.findIndex(
+    let literalIdx = root.ns.findIndex(
         (n, i) => n instanceof Literal && i !== negativeOneIdx);
     if (literalIdx === -1) {
       return null;
@@ -153,10 +157,15 @@ function negatedLiteral(root: NumBase): NumBase|null {
 
     const factors = root.ns.slice();
     factors.splice(negativeOneIdx, 1);
-    factors[literalIdx - (negativeOneIdx > literalIdx ? 0 : 1)] =
-        Num.literal(-1 * literal.value().toNumber());
+    if (negativeOneIdx < literalIdx) {
+      literalIdx--;
+    }
 
-    return Num.product(...factors);
+    return Num.product(
+        ...factors.slice(0, literalIdx),
+        Num.literal(-1 * literal.toNumber()),
+        ...factors.slice(literalIdx + 1),
+    );
   }
   return null;
 }
@@ -534,9 +543,12 @@ class DerivedNum extends NumBase {
     for (const [i, n] of this.ns.entries()) {
       const s = n.simplifyOne(rule);
       if (s) {
-        const updated = this.ns.slice();
-        updated[i] = s;
-        return new DerivedNum(this.op, ...updated);
+        return new DerivedNum(
+            this.op,
+            ...this.ns.slice(0, i),
+            s,
+            ...this.ns.slice(i + 1),
+        );
       }
     }
 
