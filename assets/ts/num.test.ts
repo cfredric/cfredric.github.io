@@ -114,7 +114,8 @@ test('simplify', () => {
   expectExpression(Num.literal(1).add(0), '1 + 0', '1');  // + identity
   expectExpression(Num.literal(0).add(1), '0 + 1', '1');  // + identity
 
-  expectExpression(Num.literal(1).sub(0), '1 - 0', '1');  // - identity
+  expectExpression(Num.literal(1).sub(0), '1 - 0', '1');   // - identity
+  expectExpression(Num.literal(0).sub(1), '0 - 1', '-1');  // - from zero
 
   expectExpression(Num.literal(2).mul(0), '2 * 0', '0');  // * collapse
   expectExpression(Num.literal(0).mul(2), '0 * 2', '0');  // * collapse
@@ -123,13 +124,15 @@ test('simplify', () => {
 
   expectExpression(Num.literal(2).div(1), '\\frac{2}{1}', '2');  // / identity
   expectExpression(Num.literal(0).div(2), '\\frac{0}{2}', '0');  // / collapse
+
+  // division by fraction
   expectExpression(
       Num.literal(2).div(Num.literal(3).div(5)), '\\frac{2}{\\frac{3}{5}}',
-      '\\frac{2 * 5}{3}');  // division by fraction
+      '\\frac{2 * 5}{3}');
+  // division by product involving a fraction
   expectExpression(
       Num.literal(2).div(Num.literal(3).mul(Num.literal(5).div(7))),
-      '\\frac{2}{3 * \\frac{5}{7}}',
-      '\\frac{2 * 7}{3 * 5}');  // division by product involving a fraction
+      '\\frac{2}{3 * \\frac{5}{7}}', '\\frac{2 * 7}{3 * 5}');
 
   expectExpression(Num.literal(2).pow(1), '{2} ^ {1}', '2');  // ^ identity
   expectExpression(Num.literal(0).pow(2), '{0} ^ {2}', '0');  // ^ collapse

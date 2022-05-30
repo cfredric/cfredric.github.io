@@ -82,6 +82,16 @@ function subtractionIdentity(root: NumBase): NumBase|null {
   return null;
 }
 
+function subtractionFromZero(root: NumBase): NumBase|null {
+  if (root instanceof DerivedNum && root.op === Op.Minus) {
+    const minuend = root.ns[0]!;
+    if (minuend.value().eq(0) && isConstantOrLiteral(minuend)) {
+      return Num.literal(-1).mul(root.ns[1]!);
+    }
+  }
+  return null;
+}
+
 function multiplicationIdentity(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Mult) {
     const nontrivials =
@@ -192,6 +202,7 @@ function powerCollapse(root: NumBase): NumBase|null {
 const simplifications = [
   additionIdentity,
   subtractionIdentity,
+  subtractionFromZero,
   multiplicationIdentity,
   multiplicationCollapse,
   multiplicationByFraction,
