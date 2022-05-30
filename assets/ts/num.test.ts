@@ -30,10 +30,9 @@ test('toString()', () => {
       Num.sum(1, 2, 3).div(4), '\\frac{1 + 2 + 3}{4}', '\\frac{1 + 2 + 3}{4}');
 
   expectExpression(
-      Num.literal(1).pow(Num.literal(2).add(3)), '{1} ^ {2 + 3}', '1');
+      Num.literal(1).pow(Num.literal(2).add(3)), '1 ^ {2 + 3}', '1');
   expectExpression(
-      Num.literal(1).add(Num.literal(2).pow(3)), '1 + {2} ^ {3}',
-      '1 + {2} ^ {3}');
+      Num.literal(1).add(Num.literal(2).pow(3)), '1 + 2 ^ {3}', '1 + 2 ^ {3}');
 
   expectExpression(Num.floor(1.2), 'floor(1.2)', 'floor(1.2)');
   expectExpression(
@@ -108,6 +107,15 @@ test('toString()', () => {
   expectExpression(
       Num.literal(1).div(Num.literal(2).div(3)), '\\frac{1}{\\frac{2}{3}}',
       '\\frac{3}{2}');
+
+  expectExpression(
+      Num.literal(2).add(3).pow(4), '{(2 + 3)} ^ {4}', '{(2 + 3)} ^ {4}');
+  expectExpression(
+      Num.literal(2).mul(3).pow(4), '{(2 * 3)} ^ {4}', '{(2 * 3)} ^ {4}');
+  expectExpression(
+      Num.literal(2).pow(Num.literal(3).add(4)), '2 ^ {3 + 4}', '2 ^ {3 + 4}');
+  expectExpression(
+      Num.literal(2).pow(Num.literal(3).mul(4)), '2 ^ {3 * 4}', '2 ^ {3 * 4}');
 });
 
 test('simplify', () => {
@@ -139,11 +147,11 @@ test('simplify', () => {
       Num.literal(2).div(Num.literal(3).mul(Num.literal(5).div(7))),
       '\\frac{2}{3 * \\frac{5}{7}}', '\\frac{2 * 7}{3 * 5}');
 
-  expectExpression(Num.literal(2).pow(1), '{2} ^ {1}', '2');  // ^ identity
-  expectExpression(Num.literal(0).pow(2), '{0} ^ {2}', '0');  // ^ collapse
-  expectExpression(Num.literal(2).pow(0), '{2} ^ {0}', '1');  // ^ collapse
-  expectExpression(Num.literal(0).pow(0), '{0} ^ {0}', '1');  // ^ collapse
-  expectExpression(Num.literal(1).pow(2), '{1} ^ {2}', '1');  // ^ collapse
+  expectExpression(Num.literal(2).pow(1), '2 ^ {1}', '2');  // ^ identity
+  expectExpression(Num.literal(0).pow(2), '0 ^ {2}', '0');  // ^ collapse
+  expectExpression(Num.literal(2).pow(0), '2 ^ {0}', '1');  // ^ collapse
+  expectExpression(Num.literal(0).pow(0), '0 ^ {0}', '1');  // ^ collapse
+  expectExpression(Num.literal(1).pow(2), '1 ^ {2}', '1');  // ^ collapse
 });
 
 test('Sum', () => {

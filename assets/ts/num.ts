@@ -500,7 +500,7 @@ class DerivedNum extends NumBase {
         return `floor(${this.ns[0]})`;
       case Op.Pow: {
         const [base, power] = this.ns;
-        return `{${base!.parenOrUnparen(this.op)}} ^ {${power}}`;
+        return `${base!.parenOrUnparen(this.op)} ^ {${power}}`;
       }
     }
   }
