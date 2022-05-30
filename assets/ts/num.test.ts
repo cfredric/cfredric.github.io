@@ -1,36 +1,49 @@
 import {NamedConstant, NamedOutput, Num} from './num';
 
+function expectExpression(n: Num, unsimplified: string, simplified: string) {
+  expect(n.toString()).toEqual(unsimplified);
+  expect(n.simplify().toString()).toEqual(simplified);
+}
+
 test('toString()', () => {
-  expect(Num.literal(1).toString()).toEqual('1');
+  expectExpression(Num.literal(1), '1', '1');
 
-  expect(Num.literal(1).add(2).mul(3).toString()).toEqual('{(1 + 2)} * 3');
-  expect(Num.literal(1).add(Num.literal(2).mul(3)).toString())
-      .toEqual('1 + 2 * 3');
+  expectExpression(
+      Num.literal(1).add(2).mul(3), '{(1 + 2)} * 3', '{(1 + 2)} * 3');
+  expectExpression(
+      Num.literal(1).add(Num.literal(2).mul(3)), '1 + 2 * 3', '1 + 2 * 3');
 
-  expect(Num.literal(1).add(2).add(3).toString()).toEqual('1 + 2 + 3');
-  expect(Num.literal(1).mul(2).mul(3).toString()).toEqual('1 * 2 * 3');
+  expectExpression(Num.literal(1).add(2).add(3), '1 + 2 + 3', '1 + 2 + 3');
+  expectExpression(Num.literal(1).mul(2).mul(3), '1 * 2 * 3', '2 * 3');
 
-  expect(Num.literal(1).sub(2).sub(3).toString()).toEqual('1 - 2 - 3');
-  expect(Num.literal(1).sub(Num.literal(2).sub(3)).toString())
-      .toEqual('1 - {(2 - 3)}');
+  expectExpression(Num.literal(1).sub(2).sub(3), '1 - 2 - 3', '1 - 2 - 3');
+  expectExpression(
+      Num.literal(1).sub(Num.literal(2).sub(3)), '1 - {(2 - 3)}',
+      '1 - {(2 - 3)}');
 
-  expect(Num.literal(1).sub(2).mul(3).toString()).toEqual('{(1 - 2)} * 3');
-  expect(Num.literal(1).sub(Num.literal(2).mul(3)).toString())
-      .toEqual('1 - 2 * 3');
+  expectExpression(
+      Num.literal(1).sub(2).mul(3), '{(1 - 2)} * 3', '{(1 - 2)} * 3');
+  expectExpression(
+      Num.literal(1).sub(Num.literal(2).mul(3)), '1 - 2 * 3', '1 - 2 * 3');
 
-  expect(Num.sum(1, 2, 3).div(4).toString()).toEqual('\\frac{1 + 2 + 3}{4}');
+  expectExpression(
+      Num.sum(1, 2, 3).div(4), '\\frac{1 + 2 + 3}{4}', '\\frac{1 + 2 + 3}{4}');
 
-  expect(Num.literal(1).pow(Num.literal(2).add(3)).toString())
-      .toEqual('{1} ^ {2 + 3}');
-  expect(Num.literal(1).add(Num.literal(2).pow(3)).toString())
-      .toEqual('1 + {2} ^ {3}');
+  expectExpression(
+      Num.literal(1).pow(Num.literal(2).add(3)), '{1} ^ {2 + 3}', '1');
+  expectExpression(
+      Num.literal(1).add(Num.literal(2).pow(3)), '1 + {2} ^ {3}',
+      '1 + {2} ^ {3}');
 
-  expect(Num.floor(1.2).toString()).toEqual('floor(1.2)');
-  expect(Num.floor(Num.literal(1).add(2)).toString()).toEqual('floor(1 + 2)');
+  expectExpression(Num.floor(1.2), 'floor(1.2)', 'floor(1.2)');
+  expectExpression(
+      Num.floor(Num.literal(1).add(2)), 'floor(1 + 2)', 'floor(1 + 2)');
 
-  expect(Num.literal(1).div(2).div(3).toString())
-      .toEqual('\\frac{\\frac{1}{2}}{3}');
-  expect(Num.literal(1).mul(2).div(3).toString()).toEqual('\\frac{1 * 2}{3}');
+  expectExpression(
+      Num.literal(1).div(2).div(3), '\\frac{\\frac{1}{2}}{3}',
+      '\\frac{1}{3 * 2}');
+  expectExpression(
+      Num.literal(1).mul(2).div(3), '\\frac{1 * 2}{3}', '\\frac{2}{3}');
 
   const out = new NamedOutput('outName', Num.literal(1).add(2).add(3));
   expect(out.prettyPrint()).toEqual('1 + 2 + 3');
@@ -38,125 +51,91 @@ test('toString()', () => {
 
   // Simplifying:
 
-  expect(Num.literal(0).add(2).mul(3).simplify().prettyPrint())
-      .toEqual('2 * 3');
-  expect(Num.literal(0).add(Num.literal(2).mul(3)).simplify().prettyPrint())
-      .toEqual('2 * 3');
+  expectExpression(Num.literal(0).add(2).mul(3), '{(0 + 2)} * 3', '2 * 3');
+  expectExpression(
+      Num.literal(0).add(Num.literal(2).mul(3)), '0 + 2 * 3', '2 * 3');
 
-  expect(Num.literal(1).add(2).mul(1).simplify().prettyPrint())
-      .toEqual('1 + 2');
-  expect(Num.literal(1).add(Num.literal(2).mul(1)).simplify().prettyPrint())
-      .toEqual('1 + 2');
+  expectExpression(Num.literal(1).add(2).mul(1), '{(1 + 2)} * 1', '1 + 2');
+  expectExpression(
+      Num.literal(1).add(Num.literal(2).mul(1)), '1 + 2 * 1', '1 + 2');
 
   const zero = new NamedConstant('zero', 0);
-  expect(zero.add(1).prettyPrint()).toEqual('zero + 1');
-  expect(zero.add(1).simplify().prettyPrint()).toEqual('1');
+  expectExpression(zero.add(1), 'zero + 1', '1');
 
   const one = new NamedConstant('one', 1);
-  expect(one.mul(2).prettyPrint()).toEqual('one * 2');
-  expect(one.mul(2).simplify().prettyPrint()).toEqual('2');
+  expectExpression(one.mul(2), 'one * 2', '2');
 
-  expect(Num.literal(0).add(0).prettyPrint()).toEqual('0 + 0');
-  expect(Num.literal(0).add(0).simplify().prettyPrint()).toEqual('0');
-  expect(Num.literal(1).mul(1).prettyPrint()).toEqual('1 * 1');
-  expect(Num.literal(1).mul(1).simplify().prettyPrint()).toEqual('1');
+  expectExpression(Num.literal(0).add(0), '0 + 0', '0');
+  expectExpression(Num.literal(1).mul(1), '1 * 1', '1');
 
   const a = new NamedConstant('a', 2);
   const b = new NamedConstant('b', 3);
   const c = new NamedConstant('c', 5);
   const d = new NamedConstant('d', 7);
   // Denominator is a fraction: a / (c/d) == (a*d) / c
-  expect(a.div(c.div(d)).prettyPrint()).toEqual('\\frac{a}{\\frac{c}{d}}');
-  expect(a.div(c.div(d)).simplify().prettyPrint()).toEqual('\\frac{a * d}{c}');
+  expectExpression(
+      a.div(c.div(d)), '\\frac{a}{\\frac{c}{d}}', '\\frac{a * d}{c}');
   // Numerator is a fraction: (a/b) / d == a / (b * d).
-  expect(a.div(b).div(d).prettyPrint()).toEqual('\\frac{\\frac{a}{b}}{d}');
-  expect(a.div(b).div(d).simplify().prettyPrint()).toEqual('\\frac{a}{d * b}');
+  expectExpression(
+      a.div(b).div(d), '\\frac{\\frac{a}{b}}{d}', '\\frac{a}{d * b}');
   // Both numerator and denominator are fractions: (a/b) / (c/d) == (a*d) /
   // (b*c).
-  expect(a.div(b).div(c.div(d)).prettyPrint())
-      .toEqual('\\frac{\\frac{a}{b}}{\\frac{c}{d}}');
-  expect(a.div(b).div(c.div(d)).simplify().prettyPrint())
-      .toEqual('\\frac{a * d}{c * b}');
+  expectExpression(
+      a.div(b).div(c.div(d)), '\\frac{\\frac{a}{b}}{\\frac{c}{d}}',
+      '\\frac{a * d}{c * b}');
 
   // Multiplication is merged into the numerators/denominators.
-  expect(a.mul(c.div(d)).prettyPrint()).toEqual('a * \\frac{c}{d}');
-  expect(a.mul(c.div(d)).simplify().prettyPrint()).toEqual('\\frac{a * c}{d}');
-  expect(a.div(b).mul(c.div(d)).prettyPrint())
-      .toEqual('\\frac{a}{b} * \\frac{c}{d}');
-  expect(a.div(b).mul(c.div(d)).simplify().prettyPrint())
-      .toEqual('\\frac{a * c}{b * d}');
+  expectExpression(a.mul(c.div(d)), 'a * \\frac{c}{d}', '\\frac{a * c}{d}');
+  expectExpression(
+      a.div(b).mul(c.div(d)), '\\frac{a}{b} * \\frac{c}{d}',
+      '\\frac{a * c}{b * d}');
 
 
   // Elide useless subtrees.
-  expect(Num.literal(1).add(zero).prettyPrint()).toEqual('1 + zero');
-  expect(Num.literal(1).add(zero).simplify().prettyPrint()).toEqual('1');
-  expect(Num.literal(1).add(Num.literal(1).mul(Num.literal(1))).prettyPrint())
-      .toEqual('1 + 1 * 1');
-  expect(Num.literal(1)
-             .add(Num.literal(1).mul(Num.literal(1)))
-             .simplify()
-             .prettyPrint())
-      .toEqual('1 + 1');
-  expect(Num.literal(1).add(Num.literal(1).div(Num.literal(1))).prettyPrint())
-      .toEqual('1 + \\frac{1}{1}');
-  expect(Num.literal(1)
-             .add(Num.literal(1).div(Num.literal(1)))
-             .simplify()
-             .prettyPrint())
-      .toEqual('1 + 1');
-  expect(Num.sum(zero, Num.literal(0), Num.literal(1)).simplify().prettyPrint())
-      .toEqual('1');
-  expect(Num.literal(3)
-             .mul(Num.sum(zero, Num.literal(0), Num.literal(1)))
-             .simplify()
-             .prettyPrint())
-      .toEqual('3');
+  expectExpression(Num.literal(1).add(zero), '1 + zero', '1');
+  expectExpression(
+      Num.literal(1).add(Num.literal(1).mul(Num.literal(1))), '1 + 1 * 1',
+      '1 + 1');
+  expectExpression(
+      Num.literal(1).add(Num.literal(1).div(Num.literal(1))),
+      '1 + \\frac{1}{1}', '1 + 1');
+  expectExpression(
+      Num.sum(zero, Num.literal(0), Num.literal(1)), 'zero + 0 + 1', '1');
+  expectExpression(
+      Num.literal(3).mul(Num.sum(zero, Num.literal(0), Num.literal(1))),
+      '3 * {(zero + 0 + 1)}', '3');
 
-  expect(Num.literal(1).div(Num.literal(2).div(3)).prettyPrint())
-      .toEqual('\\frac{1}{\\frac{2}{3}}');
-  expect(Num.literal(1).div(Num.literal(2).div(3)).simplify().prettyPrint())
-      .toEqual('\\frac{3}{2}');
+  expectExpression(
+      Num.literal(1).div(Num.literal(2).div(3)), '\\frac{1}{\\frac{2}{3}}',
+      '\\frac{3}{2}');
 });
 
 test('simplify', () => {
-  expect(Num.literal(1).add(0).simplify().toString())
-      .toEqual('1');  // + identity
-  expect(Num.literal(0).add(1).simplify().toString())
-      .toEqual('1');  // + identity
+  expectExpression(Num.literal(1).add(0), '1 + 0', '1');  // + identity
+  expectExpression(Num.literal(0).add(1), '0 + 1', '1');  // + identity
 
-  expect(Num.literal(1).sub(0).simplify().toString())
-      .toEqual('1');  // - identity
+  expectExpression(Num.literal(1).sub(0), '1 - 0', '1');  // - identity
 
-  expect(Num.literal(2).mul(0).simplify().toString())
-      .toEqual('0');  // * identity
-  expect(Num.literal(0).mul(2).simplify().toString())
-      .toEqual('0');  // * identity
-  expect(Num.literal(1).mul(2).simplify().toString())
-      .toEqual('2');  // * collapse
+  expectExpression(Num.literal(2).mul(0), '2 * 0', '0');  // * collapse
+  expectExpression(Num.literal(0).mul(2), '0 * 2', '0');  // * collapse
+  expectExpression(Num.literal(1).mul(2), '1 * 2', '2');  // * identity
+  expectExpression(Num.literal(2).mul(1), '2 * 1', '2');  // * identity
 
-  expect(Num.literal(2).div(1).simplify().toString())
-      .toEqual('2');  // / identity
-  expect(Num.literal(0).div(2).simplify().toString())
-      .toEqual('0');  // / collapse
-  expect(Num.literal(2).div(Num.literal(3).div(5)).simplify().toString())
-      .toEqual('\\frac{2 * 5}{3}');  // division by fraction
-  expect(Num.literal(2)
-             .div(Num.literal(3).mul(Num.literal(5).div(7)))
-             .simplify()
-             .toString())
-      .toEqual(
-          '\\frac{2 * 7}{3 * 5}');  // division by product involving a fraction
+  expectExpression(Num.literal(2).div(1), '\\frac{2}{1}', '2');  // / identity
+  expectExpression(Num.literal(0).div(2), '\\frac{0}{2}', '0');  // / collapse
+  expectExpression(
+      Num.literal(2).div(Num.literal(3).div(5)), '\\frac{2}{\\frac{3}{5}}',
+      '\\frac{2 * 5}{3}');  // division by fraction
+  expectExpression(
+      Num.literal(2).div(Num.literal(3).mul(Num.literal(5).div(7))),
+      '\\frac{2}{3 * \\frac{5}{7}}',
+      '\\frac{2 * 7}{3 * 5}');  // division by product involving a fraction
 
-  expect(Num.literal(2).pow(1).simplify().toString())
-      .toEqual('2');  // ^ identity
-  expect(Num.literal(0).pow(2).simplify().toString())
-      .toEqual('0');  // ^ collapse
-  expect(Num.literal(2).pow(0).simplify().toString())
-      .toEqual('1');  // ^ collapse
-  expect(Num.literal(0).pow(0).simplify().toString())
-      .toEqual('1');  // ^ collapse
-  expect(Num.literal(1).pow(2).simplify().toString())
-      .toEqual('1');  // ^ collapse
+  expectExpression(Num.literal(2).pow(1), '{2} ^ {1}', '2');  // ^ identity
+  expectExpression(Num.literal(0).pow(2), '{0} ^ {2}', '0');  // ^ collapse
+  expectExpression(Num.literal(2).pow(0), '{2} ^ {0}', '1');  // ^ collapse
+  expectExpression(Num.literal(0).pow(0), '{0} ^ {0}', '1');  // ^ collapse
+  expectExpression(Num.literal(1).pow(2), '{1} ^ {2}', '1');  // ^ collapse
 });
 
 test('Sum', () => {
