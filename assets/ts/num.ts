@@ -261,6 +261,15 @@ const simplifications = [
   powerCollapse,
 ];
 
+/**
+ * Given subtrees `a` and `b` and an operation `op`, returns a new tree with
+ * top-level operation `op`, with `a` and `b` merged as needed. I.e., if `op` is
+ * associative, and one or more of `a` and `b` uses the same op, then those
+ * operands will be merged into the same level of the tree.
+ *
+ * This takes advantage of associativity to keep the tree flat. Operands are not
+ * reordered (i.e. we don't care about commutativity).
+ */
 function mergeSiblings(a: NumBase, b: NumBase, op: Op): NumBase {
   if (a instanceof DerivedNum && a.op === op && b instanceof DerivedNum &&
       b.op === op) {
