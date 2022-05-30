@@ -337,8 +337,10 @@ abstract class NumBase extends Num {
   }
 
   // Implementation detail used in simplifying the expression tree when
-  // stringifying.
-  abstract parenOrUnparen(op: Op): string;
+  // stringifying. Default behavior is to delegate to `toString`.
+  parenOrUnparen(_op: Op): string {
+    return this.toString();
+  }
 
   // Runs a single simplification rule on this subtree. Returns a new subtree if
   // simplification was successful, or null if it was a no-op.
@@ -359,10 +361,6 @@ class Literal extends NumBase {
     return this.v;
   }
 
-  override parenOrUnparen(_op: Op): string {
-    return this.toString();
-  }
-
   override toString(): string {
     return this.v.toString();
   }
@@ -380,10 +378,6 @@ export class NamedConstant extends NumBase {
 
   override value(): Decimal {
     return this.v;
-  }
-
-  override parenOrUnparen(_op: Op): string {
-    return this.name;
   }
 
   override toString(): string {
@@ -502,10 +496,6 @@ export class NamedOutput extends NumBase {
 
   override value(): Decimal {
     return this.num.value();
-  }
-
-  override parenOrUnparen(_op: Op): string {
-    return this.name;
   }
 
   override prettyPrint(): string {
