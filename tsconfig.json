@@ -2,7 +2,7 @@
   "compilerOptions": {
     "allowUnreachableCode": false,
     "downlevelIteration": true,
-    "lib": ["ES2016", "DOM"],
+    "lib": ["ES2016", "DOM", "ESNext"],
     "noEmit": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,

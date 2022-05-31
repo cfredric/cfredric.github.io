@@ -25,6 +25,9 @@
     "test": "jest",
     "format": "clang-format -style=Google -i assets/ts/*"
   },
+  "engines" : {
+    "node" : ">=14.6.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cfredric/cfredric.github.io.git"

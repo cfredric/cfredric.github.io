@@ -2,6 +2,7 @@ import * as d3 from 'd3';
 
 import {Context} from './context';
 import {Formatter} from './formatter';
+import {Num} from './num';
 import {Elements, hidableContainerMap, HidableOutputType, HintType, InputEntry, Inputs, OutputType, TemplateType} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
@@ -228,6 +229,8 @@ function setContents(ctx: Context, elts: Elements): void {
     utils.fillTemplateElts(t as TemplateType, v);
   }
   viz.setChartsAndButtonsContent(ctx, fmt, schedules);
+
+  Num.prune();
 }
 
 // Reads fields from the URL and from cookies, and populates the UI

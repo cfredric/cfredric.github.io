@@ -1,4 +1,3 @@
-
 import Decimal from 'decimal.js';
 
 export type AnyNumber = number|Num|Decimal;
@@ -8,6 +7,7 @@ function toNumBase(x: AnyNumber): NumBase {
   if (x instanceof Num) {
     throw new Error('unreachable');
   }
+  if (x instanceof Decimal) return Num.literal(x.toNumber());
   return Num.literal(x);
 }
 
@@ -283,6 +283,8 @@ function mergeSiblings(a: NumBase, b: NumBase, op: Op): NumBase {
 }
 
 export abstract class Num {
+  private static literals: Map<number, WeakRef<Literal>> = new Map();
+
   constructor() {}
 
   abstract value(): Decimal;
@@ -291,8 +293,27 @@ export abstract class Num {
     return this.value().toNumber();
   }
 
-  static literal(x: number|Decimal): NumBase {
-    return new Literal(x);
+  static literal(x: number): NumBase {
+    const ref = Num.literals.get(x);
+    if (ref) {
+      const lit = ref.deref();
+      if (lit) return lit;
+    }
+    const lit = new Literal(x);
+    Num.literals.set(x, new WeakRef(lit));
+    return lit;
+  }
+
+  static prune(): void {
+    const toRemove = new Set<number>();
+    for (const [key, ref] of Num.literals.entries()) {
+      if (!ref.deref()) {
+        toRemove.add(key);
+      }
+    }
+    for (const key of toRemove) {
+      Num.literals.delete(key);
+    }
   }
 
   static max(a: AnyNumber, b: AnyNumber): Num {
