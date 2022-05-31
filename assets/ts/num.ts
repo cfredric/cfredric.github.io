@@ -433,8 +433,13 @@ abstract class NumBase extends Num {
   // use `_op` to decide whether to return `(${this})` or `${this}`, depending
   // on the relative precedences of the operations (as well as their
   // associativities).
-  parenOrUnparen(_op: Op): string {
+  parenOrUnparen(op: Op): string {
+    if (this.shouldParenthesize(op)) return `{(${this})}`;
     return this.toString();
+  }
+
+  shouldParenthesize(_op: Op): boolean {
+    return false;
   }
 
   // Runs a single simplification rule on this subtree. Returns a new subtree if
@@ -482,7 +487,8 @@ export class NamedConstant extends NumBase {
   }
 }
 
-/** A number whose value is derived from other numbers. I.e., at least one other
+/**
+ * A number whose value is derived from other numbers. I.e., at least one other
  * number, combined with an operation of some sort, to give a result.
  */
 class DerivedNum extends NumBase {
@@ -501,11 +507,11 @@ class DerivedNum extends NumBase {
     return this.v;
   }
 
-  override parenOrUnparen(op: Op): string {
+  override shouldParenthesize(op: Op): boolean {
     if (this.op === Op.Div) {
       // If the child subexpression is a fraction, we don't need to add extra
       // parens, since LaTeX already represents fractions in an unambiguous way.
-      return this.toString();
+      return false;
     }
 
     const pp = precedence(op);
@@ -513,12 +519,12 @@ class DerivedNum extends NumBase {
     if (pp < pc) {
       // The parent's precedence is lower than ours, so ours binds more
       // tightly and we don't need parens.
-      return this.toString();
+      return false;
     }
     if (pp > pc) {
       // The parent op binds more tightly than ours, so we need parens for the
       // child node.
-      return `{(${this})}`;
+      return true;
     }
 
     // The parent op is the same precedence but it isn't associative, so we need
@@ -531,7 +537,7 @@ class DerivedNum extends NumBase {
       throw new Error('unreachable');
     }
 
-    return `{(${this})}`;
+    return true;
   }
 
   override toString(): string {
@@ -585,8 +591,10 @@ class DerivedNum extends NumBase {
   }
 }
 
-/** A number that is derived from other numbers, but is meaningful/important
- * enough to give a name. */
+/**
+ * A number that is derived from other numbers, but is meaningful/important
+ * enough to give a name.
+ */
 export class NamedOutput extends NumBase {
   private readonly name: string;
   private readonly num: NumBase;

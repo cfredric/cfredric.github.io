@@ -6,6 +6,7 @@
     "noEmit": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
+    "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
