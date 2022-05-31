@@ -428,7 +428,11 @@ abstract class NumBase extends Num {
   }
 
   // Implementation detail used in simplifying the expression tree when
-  // stringifying. Default behavior is to delegate to `toString`.
+  // stringifying. Default behavior is to delegate to `toString`. Subclasses
+  // that represent an expression tree (rather than a single leaf node) should
+  // use `_op` to decide whether to return `(${this})` or `${this}`, depending
+  // on the relative precedences of the operations (as well as their
+  // associativities).
   parenOrUnparen(_op: Op): string {
     return this.toString();
   }
@@ -440,6 +444,7 @@ abstract class NumBase extends Num {
   }
 }
 
+/** A numeric literal in a mathematical expression. */
 class Literal extends NumBase {
   private readonly v: Decimal;
 
@@ -457,6 +462,7 @@ class Literal extends NumBase {
   }
 }
 
+/** A numeric constant (with an associated name) in some expression. */
 export class NamedConstant extends NumBase {
   private readonly v: Decimal;
   private readonly name: string;
@@ -476,6 +482,9 @@ export class NamedConstant extends NumBase {
   }
 }
 
+/** A number whose value is derived from other numbers. I.e., at least one other
+ * number, combined with an operation of some sort, to give a result.
+ */
 class DerivedNum extends NumBase {
   readonly op: Op;
   private readonly v: Decimal;
@@ -530,6 +539,11 @@ class DerivedNum extends NumBase {
       case Op.Plus:
         return this.ns.map(n => n.parenOrUnparen(this.op)).join(' + ');
       case Op.Minus:
+        // Note: we don't have to call parenOrUnparen for the left operand,
+        // because expressions whose ops bind more tightly than - don't need
+        // parens; and - itself is left-associative, as is +, so neither need
+        // parens when they're the left operand; and there are no operations
+        // that bind more loosely than -.
         return `${this.ns[0]} - ${this.ns[1]!.parenOrUnparen(this.op)}`;
       case Op.Mult:
         return this.ns.map(n => n.parenOrUnparen(this.op)).join(' * ');
@@ -571,6 +585,8 @@ class DerivedNum extends NumBase {
   }
 }
 
+/** A number that is derived from other numbers, but is meaningful/important
+ * enough to give a name. */
 export class NamedOutput extends NumBase {
   private readonly name: string;
   private readonly num: NumBase;
