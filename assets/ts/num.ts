@@ -508,36 +508,14 @@ class DerivedNum extends NumBase {
   }
 
   override shouldParenthesize(op: Op): boolean {
-    if (this.op === Op.Div) {
-      // If the child subexpression is a fraction, we don't need to add extra
-      // parens, since LaTeX already represents fractions in an unambiguous way.
-      return false;
-    }
-
-    const pp = precedence(op);
-    const pc = precedence(this.op);
-    if (pp < pc) {
-      // The parent's precedence is lower than ours, so ours binds more
-      // tightly and we don't need parens.
-      return false;
-    }
-    if (pp > pc) {
-      // The parent op binds more tightly than ours, so we need parens for the
-      // child node.
-      return true;
-    }
-
-    // The parent op is the same precedence but it isn't associative, so we need
-    // parens. (Note: we've already merged adjacent associated ops into a single
-    // common node via `mergeSiblings`, so if we're here, then the operations
-    // are either different, or they're the same *and* non-associative.
-    // Therefore it is an error if the operations are both the same associative
-    // op.)
     if (this.op === op && (op === Op.Mult || op === Op.Plus)) {
+      // We've already merged associative ops (i.e. addition and
+      // multiplication).
       throw new Error('unreachable');
     }
-
-    return true;
+    // NB: LaTeX's syntax for a fraction is unambiguous, so we don't bother with
+    // parens for fractions.
+    return this.op !== Op.Div && precedence(op) >= precedence(this.op);
   }
 
   override toString(): string {
