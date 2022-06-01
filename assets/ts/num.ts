@@ -433,13 +433,8 @@ abstract class NumBase extends Num {
   // use `_op` to decide whether to return `(${this})` or `${this}`, depending
   // on the relative precedences of the operations (as well as their
   // associativities).
-  parenOrUnparen(op: Op): string {
-    if (this.shouldParenthesize(op)) return `{(${this})}`;
+  parenOrUnparen(_op: Op): string {
     return this.toString();
-  }
-
-  shouldParenthesize(_op: Op): boolean {
-    return false;
   }
 
   // Runs a single simplification rule on this subtree. Returns a new subtree if
@@ -507,7 +502,7 @@ class DerivedNum extends NumBase {
     return this.v;
   }
 
-  override shouldParenthesize(op: Op): boolean {
+  override parenOrUnparen(op: Op): string {
     if (this.op === op && (op === Op.Mult || op === Op.Plus)) {
       // We've already merged associative ops (i.e. addition and
       // multiplication).
@@ -515,7 +510,9 @@ class DerivedNum extends NumBase {
     }
     // NB: LaTeX's syntax for a fraction is unambiguous, so we don't bother with
     // parens for fractions.
-    return this.op !== Op.Div && precedence(op) >= precedence(this.op);
+    return this.op !== Op.Div && precedence(op) >= precedence(this.op) ?
+        `{(${this})}` :
+        `${this}`;
   }
 
   override toString(): string {
