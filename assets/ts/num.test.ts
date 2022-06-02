@@ -10,14 +10,13 @@ function expectExpression(
 test('toString()', () => {
   expectExpression(Num.literal(1), 1, '1', '1');
 
-  expectExpression(
-      Num.literal(1).add(2).mul(3), 9, '{(1 + 2)} * 3', '{(1 + 2)} * 3');
+  expectExpression(Num.literal(1).add(2).mul(3), 9, '{(1 + 2)} * 3', '3 * 3');
   expectExpression(
       Num.literal(1).add(Num.literal(2).mul(3)), 7, '1 + 2 * 3', '1 + 2 * 3');
 
-  expectExpression(Num.literal(1).add(2).add(3), 6, '1 + 2 + 3', '1 + 2 + 3');
+  expectExpression(Num.literal(1).add(2).add(3), 6, '1 + 2 + 3', '6');
   expectExpression(
-      Num.literal(1).add(Num.literal(2).add(3)), 6, '1 + 2 + 3', '1 + 2 + 3');
+      Num.literal(1).add(Num.literal(2).add(3)), 6, '1 + 2 + 3', '6');
   expectExpression(Num.literal(1).mul(2).mul(3), 6, '1 * 2 * 3', '2 * 3');
   expectExpression(
       Num.literal(1).mul(Num.literal(2).mul(3)), 6, '1 * 2 * 3', '2 * 3');
@@ -26,7 +25,7 @@ test('toString()', () => {
   expectExpression(
       Num.literal(1).sub(Num.literal(2).sub(3)), 2, '1 - {(2 - 3)}',
       '1 - {(2 - 3)}');
-  expectExpression(Num.literal(1).add(2).sub(3), 0, '1 + 2 - 3', '1 + 2 - 3');
+  expectExpression(Num.literal(1).add(2).sub(3), 0, '1 + 2 - 3', '0');
   expectExpression(
       Num.literal(1).add(Num.literal(2).sub(3)), 0, '1 + {(2 - 3)}',
       '1 + {(2 - 3)}');
@@ -37,8 +36,7 @@ test('toString()', () => {
       Num.literal(1).sub(Num.literal(2).mul(3)), -5, '1 - 2 * 3', '1 - 2 * 3');
 
   expectExpression(
-      Num.sum(1, 2, 3).div(4), 6 / 4, '\\frac{1 + 2 + 3}{4}',
-      '\\frac{1 + 2 + 3}{4}');
+      Num.sum(1, 2, 3).div(4), 6 / 4, '\\frac{1 + 2 + 3}{4}', '\\frac{6}{4}');
 
   expectExpression(
       Num.literal(1).pow(Num.literal(2).add(3)), 1, '1 ^ {2 + 3}', '1');
@@ -48,7 +46,7 @@ test('toString()', () => {
 
   expectExpression(Num.floor(1.2), 1, 'floor(1.2)', 'floor(1.2)');
   expectExpression(
-      Num.floor(Num.literal(1).add(2)), 3, 'floor(1 + 2)', 'floor(1 + 2)');
+      Num.floor(Num.literal(1).add(2)), 3, 'floor(1 + 2)', 'floor(3)');
 
   expectExpression(
       Num.literal(1).div(2).div(3), 1 / 6, '\\frac{\\frac{1}{2}}{3}',
@@ -66,9 +64,9 @@ test('toString()', () => {
   expectExpression(
       Num.literal(0).add(Num.literal(2).mul(3)), 6, '0 + 2 * 3', '2 * 3');
 
-  expectExpression(Num.literal(1).add(2).mul(1), 3, '{(1 + 2)} * 1', '1 + 2');
+  expectExpression(Num.literal(1).add(2).mul(1), 3, '{(1 + 2)} * 1', '3');
   expectExpression(
-      Num.literal(1).add(Num.literal(2).mul(1)), 3, '1 + 2 * 1', '1 + 2');
+      Num.literal(1).add(Num.literal(2).mul(1)), 3, '1 + 2 * 1', '3');
 
   const zero = new NamedConstant('zero', 0);
   expectExpression(zero.add(1), 1, 'zero + 1', '1');
@@ -108,10 +106,10 @@ test('toString()', () => {
   expectExpression(Num.literal(1).add(zero), 1, '1 + zero', '1');
   expectExpression(
       Num.literal(1).add(Num.literal(1).mul(Num.literal(1))), 2, '1 + 1 * 1',
-      '1 + 1');
+      '2');
   expectExpression(
       Num.literal(1).add(Num.literal(1).div(Num.literal(1))), 2,
-      '1 + \\frac{1}{1}', '1 + 1');
+      '1 + \\frac{1}{1}', '2');
   expectExpression(
       Num.sum(zero, Num.literal(0), Num.literal(1)), 1, 'zero + 0 + 1', '1');
   expectExpression(
@@ -123,12 +121,11 @@ test('toString()', () => {
       '\\frac{1}{\\frac{2}{3}}', '\\frac{3}{2}');
 
   expectExpression(
-      Num.literal(2).add(3).pow(4), 625, '{(2 + 3)} ^ {4}', '{(2 + 3)} ^ {4}');
+      Num.literal(2).add(3).pow(4), 625, '{(2 + 3)} ^ {4}', '5 ^ {4}');
   expectExpression(
       Num.literal(2).mul(3).pow(4), 1296, '{(2 * 3)} ^ {4}', '{(2 * 3)} ^ {4}');
   expectExpression(
-      Num.literal(2).pow(Num.literal(3).add(4)), 128, '2 ^ {3 + 4}',
-      '2 ^ {3 + 4}');
+      Num.literal(2).pow(Num.literal(3).add(4)), 128, '2 ^ {3 + 4}', '2 ^ {7}');
   expectExpression(
       Num.literal(2).pow(Num.literal(3).mul(4)), 4096, '2 ^ {3 * 4}',
       '2 ^ {3 * 4}');
@@ -191,7 +188,7 @@ test('simplify', () => {
   expectExpression(Num.literal(1).pow(2), 1, '1 ^ {2}', '1');  // ^ collapse
   expectExpression(
       Num.literal(2).pow(3).mul(Num.literal(2).pow(2)), 32, '2 ^ {3} * 2 ^ {2}',
-      '2 ^ {3 + 2}');  // ^ condensing
+      '2 ^ {5}');  // ^ condensing
 });
 
 test('Sum', () => {

@@ -73,6 +73,23 @@ function additionIdentity(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrite `a + b` into `c`, where a, b, and c are all literals. */
+function literalAddition(root: NumBase): NumBase|null {
+  if (!(root instanceof DerivedNum) || root.op !== Op.Plus) return null;
+
+  const firstLiteralIndex = root.ns.findIndex(n => n instanceof Literal);
+  if (firstLiteralIndex === -1) return null;
+  const l1 = root.ns[firstLiteralIndex]! as Literal;
+  const secondLiteralIndex = root.ns.findIndex(
+      (n, i) => i !== firstLiteralIndex && n instanceof Literal);
+  if (secondLiteralIndex === -1) return null;
+  const l2 = root.ns[secondLiteralIndex]! as Literal;
+  const terms = root.ns.slice();
+  terms[firstLiteralIndex] = Num.literal(l1.toNumber() + l2.toNumber());
+  terms.splice(secondLiteralIndex, 1);
+  return Num.sum(...terms);
+}
+
 /** Rewrites `x - 0` into `x`. */
 function subtractionIdentity(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Minus) {
@@ -313,6 +330,7 @@ function powerCondense(root: NumBase): NumBase|null {
 
 const simplifications = [
   additionIdentity,
+  literalAddition,
   subtractionIdentity,
   subtractionFromZero,
   subtractionFromSelf,
