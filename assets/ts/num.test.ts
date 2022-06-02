@@ -187,6 +187,9 @@ test('simplify', () => {
   expectExpression(Num.literal(2).pow(0), 1, '2 ^ {0}', '1');  // ^ collapse
   expectExpression(Num.literal(0).pow(0), 1, '0 ^ {0}', '1');  // ^ collapse
   expectExpression(Num.literal(1).pow(2), 1, '1 ^ {2}', '1');  // ^ collapse
+  expectExpression(
+      Num.literal(2).pow(3).mul(Num.literal(2).pow(2)), 32, '2 ^ {3} * 2 ^ {2}',
+      '2 ^ {3 + 2}');  // ^ condensing
 });
 
 test('Sum', () => {

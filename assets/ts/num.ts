@@ -305,6 +305,29 @@ function powerCollapse(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrites `x ^ y * x ^ z` into `x ^ {y + z}`. */
+function powerCondense(root: NumBase): NumBase|null {
+  if (!(root instanceof DerivedNum) || root.op !== Op.Mult) {
+    return null;
+  }
+
+  for (const [i, be1] of root.ns.entries()) {
+    for (const [j, be2] of root.ns.entries()) {
+      if (i === j) continue;
+      if (be1 instanceof DerivedNum && be1.op === Op.Pow &&
+          be2 instanceof DerivedNum && be2.op === Op.Pow &&
+          be1.ns[0]!.eqSubtree(be2.ns[0]!)) {
+        const factors = root.ns.slice();
+        factors[i] = be1.ns[0]!.pow(be1.ns[1]!.add(be2.ns[1]!));
+        factors.splice(j, 1);
+        return Num.product(...factors);
+      }
+    }
+  }
+
+  return null;
+}
+
 const simplifications = [
   additionIdentity,
   subtractionIdentity,
@@ -321,6 +344,7 @@ const simplifications = [
   reduceFraction,
   powerIdentity,
   powerCollapse,
+  powerCondense,
 ];
 
 /**
