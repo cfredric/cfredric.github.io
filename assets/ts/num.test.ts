@@ -135,6 +135,7 @@ test('toString()', () => {
 });
 
 test('simplify', () => {
+  expectExpression(Num.literal(0).add(0), 0, '0 + 0', '0');  // + identity
   expectExpression(Num.literal(1).add(0), 1, '1 + 0', '1');  // + identity
   expectExpression(Num.literal(0).add(1), 1, '0 + 1', '1');  // + identity
 
@@ -153,6 +154,7 @@ test('simplify', () => {
   expectExpression(Num.literal(2).mul(0), 0, '2 * 0', '0');  // * collapse
   expectExpression(Num.literal(0).mul(2), 0, '0 * 2', '0');  // * collapse
   expectExpression(Num.literal(1).mul(2), 2, '1 * 2', '2');  // * identity
+  expectExpression(Num.literal(1).mul(1), 1, '1 * 1', '1');  // * identity
   expectExpression(Num.literal(2).mul(1), 2, '2 * 1', '2');  // * identity
 
   expectExpression(

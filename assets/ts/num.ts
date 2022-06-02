@@ -67,13 +67,8 @@ function additionIdentity(root: NumBase): NumBase|null {
         root.ns.filter(n => !n.value().eq(0) || !isConstantOrLiteral(n));
     if (nontrivials.length === root.ns.length) {
       return null;
-    } else if (nontrivials.length === 1) {
-      return nontrivials[0]!;
-    } else if (nontrivials.length) {
-      return Num.sum(...nontrivials);
-    } else {
-      return Num.literal(0);
     }
+    return Num.sum(...nontrivials);
   }
   return null;
 }
@@ -115,13 +110,8 @@ function multiplicationIdentity(root: NumBase): NumBase|null {
         root.ns.filter(n => !n.value().eq(1) || !isConstantOrLiteral(n));
     if (nontrivials.length === root.ns.length) {
       return null;
-    } else if (nontrivials.length === 1) {
-      return nontrivials[0]!;
-    } else if (nontrivials.length) {
-      return Num.product(...nontrivials);
-    } else {
-      return Num.literal(1);
     }
+    return Num.product(...nontrivials);
   }
   return null;
 }
@@ -244,18 +234,11 @@ function reduceFraction(root: NumBase): NumBase|null {
       [denominator];
   for (const [i, nf] of nFactors.entries()) {
     for (const [j, df] of dFactors.entries()) {
-      if (nf.eqSubtree(df)) {
+      if (nf.eqSubtree(df) && !nf.eqSubtree(Num.literal(1))) {
         nFactors.splice(i, 1);
         dFactors.splice(j, 1);
-        if (dFactors.length === 0) {
-          if (nFactors.length === 0) {
-            return Num.literal(1);
-          } else {
-            return Num.product(...nFactors);
-          }
-        }
         return Num.div(
-            nFactors.length === 0 ? Num.literal(1) : Num.product(...nFactors),
+            Num.product(...nFactors),
             Num.product(...dFactors),
         );
       }
@@ -460,6 +443,7 @@ export abstract class Num {
   }
 
   static sum(...xs: readonly AnyNumber[]): NumBase {
+    if (!xs.length) return Num.literal(0);
     const ns = xs.map(x => toNumBase(x));
     let result = ns[0]!;
     for (const n of ns.slice(1)) {
@@ -468,6 +452,7 @@ export abstract class Num {
     return result;
   }
   static product(...xs: readonly AnyNumber[]): NumBase {
+    if (!xs.length) return Num.literal(1);
     const ns = xs.map(x => toNumBase(x));
     let result = ns[0]!;
     for (const n of ns.slice(1)) {
