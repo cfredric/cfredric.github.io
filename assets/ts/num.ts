@@ -651,6 +651,7 @@ class DerivedNum extends NumBase {
     if (!(other instanceof DerivedNum)) {
       return false;
     }
+    if (this.op !== other.op) return false;
     if (other.ns.length !== this.ns.length) {
       return false;
     }
