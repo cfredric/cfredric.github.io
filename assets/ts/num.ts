@@ -648,6 +648,7 @@ class DerivedNum extends NumBase {
   }
 
   eqSubtree(other: NumBase): boolean {
+    if (other === this) return true;
     if (!(other instanceof DerivedNum)) {
       return false;
     }
