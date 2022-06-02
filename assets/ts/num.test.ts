@@ -21,17 +21,14 @@ test('toString()', () => {
   expectExpression(
       Num.literal(1).mul(Num.literal(2).mul(3)), 6, '1 * 2 * 3', '2 * 3');
 
-  expectExpression(Num.literal(1).sub(2).sub(3), -4, '1 - 2 - 3', '1 - 2 - 3');
+  expectExpression(Num.literal(1).sub(2).sub(3), -4, '1 - 2 - 3', '-4');
   expectExpression(
-      Num.literal(1).sub(Num.literal(2).sub(3)), 2, '1 - {(2 - 3)}',
-      '1 - {(2 - 3)}');
+      Num.literal(1).sub(Num.literal(2).sub(3)), 2, '1 - {(2 - 3)}', '2');
   expectExpression(Num.literal(1).add(2).sub(3), 0, '1 + 2 - 3', '0');
   expectExpression(
-      Num.literal(1).add(Num.literal(2).sub(3)), 0, '1 + {(2 - 3)}',
-      '1 + {(2 - 3)}');
+      Num.literal(1).add(Num.literal(2).sub(3)), 0, '1 + {(2 - 3)}', '0');
 
-  expectExpression(
-      Num.literal(1).sub(2).mul(3), -3, '{(1 - 2)} * 3', '{(1 - 2)} * 3');
+  expectExpression(Num.literal(1).sub(2).mul(3), -3, '{(1 - 2)} * 3', '-3');
   expectExpression(
       Num.literal(1).sub(Num.literal(2).mul(3)), -5, '1 - 2 * 3', '1 - 2 * 3');
 

@@ -120,6 +120,14 @@ function subtractionFromSelf(root: NumBase): NumBase|null {
   return root.ns[0]!.eqSubtree(root.ns[1]!) ? Num.literal(0) : null;
 }
 
+/** Rewrite `a - b` into `c`, where a, b, and c are all literals. */
+function literalSubtraction(root: NumBase): NumBase|null {
+  if (!(root instanceof DerivedNum) || root.op !== Op.Minus) return null;
+  if (!(root.ns[0] instanceof Literal) || !(root.ns[1] instanceof Literal))
+    return null;
+  return Num.literal(root.ns[0].toNumber() - root.ns[1].toNumber());
+}
+
 /** Rewrites `1 * x` or `x * 1` into `x`. */
 function multiplicationIdentity(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Mult) {
@@ -334,6 +342,7 @@ const simplifications = [
   subtractionIdentity,
   subtractionFromZero,
   subtractionFromSelf,
+  literalSubtraction,
   multiplicationIdentity,
   multiplicationCollapse,
   multiplicationByFraction,
