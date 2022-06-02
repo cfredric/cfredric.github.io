@@ -141,6 +141,7 @@ test('simplify', () => {
   expectExpression(Num.literal(1).sub(0), 1, '1 - 0', '1');    // - identity
   expectExpression(Num.literal(0).sub(1), -1, '0 - 1', '-1');  // - from zero
   expectExpression(Num.literal(0).sub(2), -2, '0 - 2', '-2');  // - from zero
+  expectExpression(Num.literal(2).sub(2), 0, '2 - 2', '0');    // - from self
 
   expectExpression(
       Num.literal(-1).mul(2), -2, '-1 * 2', '-2');  // negated literal
@@ -158,6 +159,19 @@ test('simplify', () => {
       Num.literal(2).div(1), 2, '\\frac{2}{1}', '2');  // / identity
   expectExpression(
       Num.literal(0).div(2), 0, '\\frac{0}{2}', '0');  // / collapse
+  expectExpression(
+      Num.literal(2).div(2), 1, '\\frac{2}{2}',
+      '1');  // / reduction: completely reduce both numerator and denominator.
+  expectExpression(
+      Num.literal(2).mul(3).div(2), 3, '\\frac{2 * 3}{2}',
+      '3');  // / reduction: completely reduce the denominator.
+  expectExpression(
+      Num.literal(2).div(Num.literal(4).mul(2)), 1 / 4, '\\frac{2}{4 * 2}',
+      '\\frac{1}{4}');  // completely reduce the numerator.
+  expectExpression(
+      Num.literal(2).mul(3).div(Num.literal(4).mul(2)), 3 / 4,
+      '\\frac{2 * 3}{4 * 2}',
+      '\\frac{3}{4}');  // some of both numerator and denominator remain.
 
   // division by fraction
   expectExpression(

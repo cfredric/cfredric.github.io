@@ -1,3 +1,4 @@
+import * as d3 from 'd3';
 import Decimal from 'decimal.js';
 
 export type AnyNumber = number|Num|Decimal;
@@ -97,6 +98,14 @@ function subtractionFromZero(root: NumBase): NumBase|null {
     }
   }
   return null;
+}
+
+/** Rewrites `x - x` into `0`. */
+function subtractionFromSelf(root: NumBase): NumBase|null {
+  if (!(root instanceof DerivedNum) || root.op !== Op.Minus) {
+    return null;
+  }
+  return root.ns[0]!.eqSubtree(root.ns[1]!) ? Num.literal(0) : null;
 }
 
 /** Rewrites `1 * x` or `x * 1` into `x`. */
@@ -219,6 +228,42 @@ function denominatorIsFraction(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Reduces fractions. */
+function reduceFraction(root: NumBase): NumBase|null {
+  if (!(root instanceof DerivedNum) || root.op !== Op.Div) {
+    return null;
+  }
+  const numerator = root.ns[0]!;
+  const denominator = root.ns[1]!;
+  const nFactors = numerator instanceof DerivedNum && numerator.op === Op.Mult ?
+      numerator.ns.slice() :
+      [numerator];
+  const dFactors =
+      denominator instanceof DerivedNum && denominator.op === Op.Mult ?
+      denominator.ns.slice() :
+      [denominator];
+  for (const [i, nf] of nFactors.entries()) {
+    for (const [j, df] of dFactors.entries()) {
+      if (nf.eqSubtree(df)) {
+        nFactors.splice(i, 1);
+        dFactors.splice(j, 1);
+        if (dFactors.length === 0) {
+          if (nFactors.length === 0) {
+            return Num.literal(1);
+          } else {
+            return Num.product(...nFactors);
+          }
+        }
+        return Num.div(
+            nFactors.length === 0 ? Num.literal(1) : Num.product(...nFactors),
+            Num.product(...dFactors),
+        );
+      }
+    }
+  }
+  return null;
+}
+
 /** Rewrites `(x / y) / z` into `x / (y * z)`. */
 function numeratorIsFraction(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Div) {
@@ -264,6 +309,7 @@ const simplifications = [
   additionIdentity,
   subtractionIdentity,
   subtractionFromZero,
+  subtractionFromSelf,
   multiplicationIdentity,
   multiplicationCollapse,
   multiplicationByFraction,
@@ -272,6 +318,7 @@ const simplifications = [
   divisionCollapse,
   denominatorIsFraction,
   numeratorIsFraction,
+  reduceFraction,
   powerIdentity,
   powerCollapse,
 ];
@@ -457,6 +504,8 @@ abstract class NumBase extends Num {
   simplifyOne(rule: SimplificationRule): NumBase|null {
     return rule(this);
   }
+
+  abstract eqSubtree(other: NumBase): boolean;
 }
 
 /** A numeric literal in a mathematical expression. */
@@ -474,6 +523,11 @@ class Literal extends NumBase {
 
   override toString(): string {
     return this.v.toString();
+  }
+
+  eqSubtree(other: NumBase): boolean {
+    // Literal instances are interned, so we can just test for equality.
+    return other === this;
   }
 }
 
@@ -494,6 +548,10 @@ export class NamedConstant extends NumBase {
 
   override toString(): string {
     return this.name;
+  }
+
+  eqSubtree(other: NumBase): boolean {
+    return other === this;
   }
 }
 
@@ -579,6 +637,16 @@ class DerivedNum extends NumBase {
     // If there's no match, we indicate by returning null.
     return null;
   }
+
+  eqSubtree(other: NumBase): boolean {
+    if (!(other instanceof DerivedNum)) {
+      return false;
+    }
+    if (other.ns.length !== this.ns.length) {
+      return false;
+    }
+    return d3.zip(this.ns, other.ns).every(([n, m]) => n?.eqSubtree(m!));
+  }
 }
 
 /**
@@ -616,6 +684,10 @@ export class NamedOutput extends NumBase {
 
   override toString(): string {
     return this.name;
+  }
+
+  eqSubtree(other: NumBase): boolean {
+    return other === this;
   }
 }
 
