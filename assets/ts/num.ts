@@ -126,16 +126,31 @@ function multiplicationCollapse(root: NumBase): NumBase|null {
   return null;
 }
 
-/** Rewrites `x * y/z` or `y/z * x` into `(x * y)/z`. */
+/**
+ * Rewrites products of fractions. Specifically:
+ * `w/x * y/z` into `(w*y) / (x*z)`.
+ * `x * y/z` or `y/z * x` into `(x * y)/z`.
+ */
 function multiplicationByFraction(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Mult) {
-    for (const [i, n] of root.ns.entries()) {
-      if (n instanceof DerivedNum && n.op === Op.Div) {
-        return Num
-            .product(...root.ns.slice(0, i), n.ns[0]!, ...root.ns.slice(i + 1))
-            .div(n.ns[1]!);
-      }
+    const firstFractionIndex =
+        root.ns.findIndex(n => n instanceof DerivedNum && n.op === Op.Div);
+    if (firstFractionIndex === -1) {
+      return null;
     }
+    const f1 = root.ns[firstFractionIndex]! as DerivedNum;
+    const factors = root.ns.slice();
+    factors[firstFractionIndex] = f1.ns[0]!;
+    let denominator = f1.ns[1]!;
+    const secondFractionIndex = root.ns.findIndex(
+        (n, i) => i !== firstFractionIndex && n instanceof DerivedNum &&
+            n.op === Op.Div);
+    if (secondFractionIndex !== -1) {
+      const f2 = root.ns[secondFractionIndex]! as DerivedNum;
+      factors[secondFractionIndex] = f2.ns[0]!;
+      denominator = denominator.mul(f2.ns[1]!);
+    }
+    return Num.product(...factors).div(denominator);
   }
   return null;
 }
@@ -209,7 +224,7 @@ function numeratorIsFraction(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Div) {
     const numerator = root.ns[0]!;
     if (numerator instanceof DerivedNum && numerator.op === Op.Div) {
-      return numerator.ns[0]!.div(Num.product(root.ns[1]!, numerator.ns[1]!));
+      return numerator.ns[0]!.div(Num.product(numerator.ns[1]!, root.ns[1]!));
     }
   }
   return null;

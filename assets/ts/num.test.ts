@@ -52,7 +52,7 @@ test('toString()', () => {
 
   expectExpression(
       Num.literal(1).div(2).div(3), 1 / 6, '\\frac{\\frac{1}{2}}{3}',
-      '\\frac{1}{3 * 2}');
+      '\\frac{1}{2 * 3}');
   expectExpression(
       Num.literal(1).mul(2).div(3), 2 / 3, '\\frac{1 * 2}{3}', '\\frac{2}{3}');
 
@@ -83,24 +83,25 @@ test('toString()', () => {
   const b = new NamedConstant('b', 3);
   const c = new NamedConstant('c', 5);
   const d = new NamedConstant('d', 7);
+  const e = new NamedConstant('e', 11);
   // Denominator is a fraction: a / (c/d) == (a*d) / c
   expectExpression(
       a.div(c.div(d)), 14 / 5, '\\frac{a}{\\frac{c}{d}}', '\\frac{a * d}{c}');
   // Numerator is a fraction: (a/b) / d == a / (b * d).
   expectExpression(
-      a.div(b).div(d), 2 / 21, '\\frac{\\frac{a}{b}}{d}', '\\frac{a}{d * b}');
+      a.div(b).div(d), 2 / 21, '\\frac{\\frac{a}{b}}{d}', '\\frac{a}{b * d}');
   // Both numerator and denominator are fractions: (a/b) / (c/d) == (a*d) /
   // (b*c).
   expectExpression(
       a.div(b).div(c.div(d)), 14 / 15, '\\frac{\\frac{a}{b}}{\\frac{c}{d}}',
-      '\\frac{a * d}{c * b}');
+      '\\frac{a * d}{b * c}');
 
   // Multiplication is merged into the numerators/denominators.
   expectExpression(
       a.mul(c.div(d)), 10 / 7, 'a * \\frac{c}{d}', '\\frac{a * c}{d}');
   expectExpression(
-      a.div(b).mul(c.div(d)), 10 / 21, '\\frac{a}{b} * \\frac{c}{d}',
-      '\\frac{a * c}{b * d}');
+      a.div(b).mul(e).mul(c.div(d)), 110 / 21,
+      '\\frac{a}{b} * e * \\frac{c}{d}', '\\frac{a * e * c}{b * d}');
 
 
   // Elide useless subtrees.
