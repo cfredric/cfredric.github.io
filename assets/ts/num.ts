@@ -380,6 +380,14 @@ function powerCondense(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrite `a ^ b` into `c`, where a, b, and c are all literals. */
+function literalExponentiation(root: NumBase): NumBase|null {
+  if (!(root instanceof DerivedNum) || root.op !== Op.Pow) return null;
+  if (!(root.ns[0] instanceof Literal) || !(root.ns[1] instanceof Literal))
+    return null;
+  return Num.literal(Math.pow(root.ns[0].toNumber(), root.ns[1].toNumber()));
+}
+
 const simplifications = [
   additionIdentity,       literalAddition,        subtractionIdentity,
   subtractionFromZero,    subtractionFromSelf,    literalSubtraction,
@@ -387,7 +395,7 @@ const simplifications = [
   negatedLiteral,         literalMultiplication,  divisionIdentity,
   divisionCollapse,       denominatorIsFraction,  numeratorIsFraction,
   reduceFraction,         powerIdentity,          powerCollapse,
-  powerCondense,
+  powerCondense,          literalExponentiation,
 ];
 
 /**

@@ -38,8 +38,7 @@ test('toString()', () => {
   expectExpression(
       Num.literal(1).pow(Num.literal(2).add(3)), 1, '1 ^ {2 + 3}', '1');
   expectExpression(
-      Num.literal(1).add(Num.literal(2).pow(3)), 9, '1 + 2 ^ {3}',
-      '1 + 2 ^ {3}');
+      Num.literal(1).add(Num.literal(2).pow(3)), 9, '1 + 2 ^ {3}', '9');
 
   expectExpression(Num.floor(1.2), 1, 'floor(1.2)', 'floor(1.2)');
   expectExpression(
@@ -117,15 +116,13 @@ test('toString()', () => {
       Num.literal(1).div(Num.literal(2).div(3)), 3 / 2,
       '\\frac{1}{\\frac{2}{3}}', '\\frac{3}{2}');
 
+  expectExpression(Num.literal(2).add(3).pow(4), 625, '{(2 + 3)} ^ {4}', '625');
   expectExpression(
-      Num.literal(2).add(3).pow(4), 625, '{(2 + 3)} ^ {4}', '5 ^ {4}');
+      Num.literal(2).mul(3).pow(4), 1296, '{(2 * 3)} ^ {4}', '1296');
   expectExpression(
-      Num.literal(2).mul(3).pow(4), 1296, '{(2 * 3)} ^ {4}', '6 ^ {4}');
+      Num.literal(2).pow(Num.literal(3).add(4)), 128, '2 ^ {3 + 4}', '128');
   expectExpression(
-      Num.literal(2).pow(Num.literal(3).add(4)), 128, '2 ^ {3 + 4}', '2 ^ {7}');
-  expectExpression(
-      Num.literal(2).pow(Num.literal(3).mul(4)), 4096, '2 ^ {3 * 4}',
-      '2 ^ {12}');
+      Num.literal(2).pow(Num.literal(3).mul(4)), 4096, '2 ^ {3 * 4}', '4096');
 });
 
 test('simplify', () => {
@@ -185,7 +182,7 @@ test('simplify', () => {
   expectExpression(Num.literal(1).pow(2), 1, '1 ^ {2}', '1');  // ^ collapse
   expectExpression(
       Num.literal(2).pow(3).mul(Num.literal(2).pow(2)), 32, '2 ^ {3} * 2 ^ {2}',
-      '2 ^ {5}');  // ^ condensing
+      '32');  // ^ condensing
 });
 
 test('Sum', () => {
