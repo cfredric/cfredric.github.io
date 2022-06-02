@@ -179,6 +179,23 @@ function multiplicationByFraction(root: NumBase): NumBase|null {
   return null;
 }
 
+/** Rewrite `a * b` into `c`, where a, b, and c are all literals. */
+function literalMultiplication(root: NumBase): NumBase|null {
+  if (!(root instanceof DerivedNum) || root.op !== Op.Mult) return null;
+
+  const firstLiteralIndex = root.ns.findIndex(n => n instanceof Literal);
+  if (firstLiteralIndex === -1) return null;
+  const l1 = root.ns[firstLiteralIndex]! as Literal;
+  const secondLiteralIndex = root.ns.findIndex(
+      (n, i) => i !== firstLiteralIndex && n instanceof Literal);
+  if (secondLiteralIndex === -1) return null;
+  const l2 = root.ns[secondLiteralIndex]! as Literal;
+  const factors = root.ns.slice();
+  factors[firstLiteralIndex] = Num.literal(l1.toNumber() * l2.toNumber());
+  factors.splice(secondLiteralIndex, 1);
+  return Num.product(...factors);
+}
+
 /** Collapses `-1 * x` (where x is a literal) into `-x`. */
 function negatedLiteral(root: NumBase): NumBase|null {
   if (root instanceof DerivedNum && root.op === Op.Mult) {
@@ -266,10 +283,37 @@ function reduceFraction(root: NumBase): NumBase|null {
             Num.product(...nFactors),
             Num.product(...dFactors),
         );
+      } else if (nf instanceof Literal && df instanceof Literal) {
+        const gcf = gcd(nf.toNumber(), df.toNumber());
+        if (gcf !== 1) {
+          nFactors[i] = Num.literal(nf.toNumber() / gcf);
+          dFactors[i] = Num.literal(df.toNumber() / gcf);
+          return Num.div(
+              Num.product(...nFactors),
+              Num.product(...dFactors),
+          );
+        }
       }
     }
   }
+
   return null;
+}
+
+function gcd(a: number, b: number): number {
+  a = Math.abs(a);
+  b = Math.abs(b);
+  if (b > a) {
+    var temp = a;
+    a = b;
+    b = temp;
+  }
+  while (true) {
+    if (b == 0) return a;
+    a %= b;
+    if (a == 0) return b;
+    b %= a;
+  }
 }
 
 /** Rewrites `(x / y) / z` into `x / (y * z)`. */
@@ -337,23 +381,12 @@ function powerCondense(root: NumBase): NumBase|null {
 }
 
 const simplifications = [
-  additionIdentity,
-  literalAddition,
-  subtractionIdentity,
-  subtractionFromZero,
-  subtractionFromSelf,
-  literalSubtraction,
-  multiplicationIdentity,
-  multiplicationCollapse,
-  multiplicationByFraction,
-  negatedLiteral,
-  divisionIdentity,
-  divisionCollapse,
-  denominatorIsFraction,
-  numeratorIsFraction,
-  reduceFraction,
-  powerIdentity,
-  powerCollapse,
+  additionIdentity,       literalAddition,        subtractionIdentity,
+  subtractionFromZero,    subtractionFromSelf,    literalSubtraction,
+  multiplicationIdentity, multiplicationCollapse, multiplicationByFraction,
+  negatedLiteral,         literalMultiplication,  divisionIdentity,
+  divisionCollapse,       denominatorIsFraction,  numeratorIsFraction,
+  reduceFraction,         powerIdentity,          powerCollapse,
   powerCondense,
 ];
 
