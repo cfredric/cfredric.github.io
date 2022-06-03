@@ -246,8 +246,10 @@ function reduceFraction(root: NumBase): NumBase|null {
       denominator.ns.slice() :
       [denominator];
   for (const [i, nf] of nFactors.entries()) {
+    if (nf.eqSubtree(Num.literal(1))) continue;
     for (const [j, df] of dFactors.entries()) {
-      if (nf.eqSubtree(df) && !nf.eqSubtree(Num.literal(1))) {
+      if (df.eqSubtree(Num.literal(1))) continue;
+      if (nf.eqSubtree(df)) {
         nFactors.splice(i, 1);
         dFactors.splice(j, 1);
         return Num.div(
@@ -331,11 +333,10 @@ function powerCondense(root: NumBase): NumBase|null {
   }
 
   for (const [i, be1] of root.ns.entries()) {
+    if (!(be1 instanceof DerivedNum) || be1.op !== Op.Pow) continue;
     for (const [j, be2] of root.ns.entries()) {
-      if (i === j) continue;
-      if (be1 instanceof DerivedNum && be1.op === Op.Pow &&
-          be2 instanceof DerivedNum && be2.op === Op.Pow &&
-          be1.ns[0]!.eqSubtree(be2.ns[0]!)) {
+      if (i === j || !(be2 instanceof DerivedNum) || be2.op != Op.Pow) continue;
+      if (be1.ns[0]!.eqSubtree(be2.ns[0]!)) {
         const factors = root.ns.slice();
         factors[i] = be1.ns[0]!.pow(be1.ns[1]!.add(be2.ns[1]!));
         factors.splice(j, 1);
