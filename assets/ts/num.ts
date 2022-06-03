@@ -277,7 +277,7 @@ function gcd(a: number, b: number): number {
   a = Math.abs(a);
   b = Math.abs(b);
   if (b > a) {
-    var temp = a;
+    const temp = a;
     a = b;
     b = temp;
   }
