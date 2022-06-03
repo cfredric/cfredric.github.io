@@ -256,7 +256,9 @@ function reduceFraction(root: NumBase): NumBase|null {
             Num.product(...nFactors),
             Num.product(...dFactors),
         );
-      } else if (nf instanceof Literal && df instanceof Literal) {
+      } else if (
+          nf instanceof Literal && Number.isInteger(nf.toNumber()) &&
+          df instanceof Literal && Number.isInteger(df.toNumber())) {
         const gcf = gcd(nf.toNumber(), df.toNumber());
         if (gcf !== 1) {
           nFactors[i] = Num.literal(nf.toNumber() / gcf);
