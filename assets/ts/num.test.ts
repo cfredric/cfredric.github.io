@@ -36,8 +36,6 @@ test('toString()', () => {
       Num.sum(1, 2, 3).div(4), 6 / 4, '\\frac{1 + 2 + 3}{4}', '\\frac{3}{2}');
 
   expectExpression(
-      Num.literal(1).pow(Num.literal(2).add(3)), 1, '1 ^ {2 + 3}', '1');
-  expectExpression(
       Num.literal(1).add(Num.literal(2).pow(3)), 9, '1 + 2 ^ {3}', '9');
 
   expectExpression(Num.floor(1.2), 1, 'floor(1.2)', 'floor(1.2)');
