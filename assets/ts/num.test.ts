@@ -185,6 +185,57 @@ test('simplify', () => {
       '32');  // ^ condensing
 });
 
+test('simplifyWithNamedConstants', () => {
+  const a = new NamedConstant('a', 2);
+  const b = new NamedConstant('b', 4);
+  const c = new NamedConstant('c', 8);
+  const d = new NamedConstant('d', 16);
+  expectExpression(a.add(0), 2, 'a + 0', 'a');               // + identity
+  expectExpression(Num.literal(0).add(a), 2, '0 + a', 'a');  // + identity
+
+  expectExpression(a.sub(0), 2, 'a - 0', 'a');  // - identity
+  expectExpression(
+      Num.literal(0).sub(a), -2, '0 - a', '-1 * a');  // - from zero
+  expectExpression(a.sub(a), 0, 'a - a', '0');        // - from self
+
+  expectExpression(a.mul(0), 0, 'a * 0', '0');               // * collapse
+  expectExpression(Num.literal(0).mul(a), 0, '0 * a', '0');  // * collapse
+  expectExpression(Num.literal(1).mul(a), 2, '1 * a', 'a');  // * identity
+  expectExpression(a.mul(1), 2, 'a * 1', 'a');               // * identity
+
+  expectExpression(a.div(1), 2, '\\frac{a}{1}', 'a');  // / identity
+  expectExpression(
+      Num.literal(0).div(a), 0, '\\frac{0}{a}', '0');  // / collapse
+  expectExpression(
+      a.div(a), 1, '\\frac{a}{a}',
+      '1');  // / reduction: completely reduce both numerator and denominator.
+  expectExpression(
+      a.mul(b).div(a), 4, '\\frac{a * b}{a}',
+      'b');  // / reduction: completely reduce the denominator.
+  expectExpression(
+      a.div(b.mul(a)), 1 / 4, '\\frac{a}{b * a}',
+      '\\frac{1}{b}');  // completely reduce the numerator.
+  expectExpression(
+      a.mul(b).div(c.mul(a)), 1 / 2, '\\frac{a * b}{c * a}',
+      '\\frac{b}{c}');  // some of both numerator and denominator remain.
+
+  // division by fraction
+  expectExpression(
+      a.div(b.div(c)), 4, '\\frac{a}{\\frac{b}{c}}', '\\frac{a * c}{b}');
+  // division by product involving a fraction
+  expectExpression(
+      a.div(b.mul(c.div(d))), 1, '\\frac{a}{b * \\frac{c}{d}}',
+      '\\frac{a * d}{b * c}');
+
+  expectExpression(a.pow(1), 2, 'a ^ {1}', 'a');               // ^ identity
+  expectExpression(Num.literal(0).pow(a), 0, '0 ^ {a}', '0');  // ^ collapse
+  expectExpression(a.pow(0), 1, 'a ^ {0}', '1');               // ^ collapse
+  expectExpression(Num.literal(1).pow(a), 1, '1 ^ {a}', '1');  // ^ collapse
+  expectExpression(
+      a.pow(3).mul(a.pow(2)), 32, 'a ^ {3} * a ^ {2}',
+      'a ^ {5}');  // ^ condensing
+});
+
 test('Sum', () => {
   expect(Num.sum(1, 2, 4).toNumber()).toEqual(7);
 });
