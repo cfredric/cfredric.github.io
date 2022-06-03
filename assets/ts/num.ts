@@ -77,7 +77,7 @@ function literalAddition(root: NumBase): NumBase|null {
   if (firstLiteralIndex === -1) return null;
   const l1 = root.ns[firstLiteralIndex]! as Literal;
   const secondLiteralIndex = root.ns.findIndex(
-      (n, i) => i !== firstLiteralIndex && n instanceof Literal);
+      (n, i) => i > firstLiteralIndex && n instanceof Literal);
   if (secondLiteralIndex === -1) return null;
   const l2 = root.ns[secondLiteralIndex]! as Literal;
   const terms = root.ns.slice();
@@ -151,8 +151,8 @@ function multiplicationByFraction(root: NumBase): NumBase|null {
   factors[firstFractionIndex] = f1.ns[0]!;
   let denominator = f1.ns[1]!;
   const secondFractionIndex = root.ns.findIndex(
-      (n, i) => i !== firstFractionIndex && n instanceof DerivedNum &&
-          n.op === Op.Div);
+      (n, i) =>
+          i > firstFractionIndex && n instanceof DerivedNum && n.op === Op.Div);
   if (secondFractionIndex !== -1) {
     const f2 = root.ns[secondFractionIndex]! as DerivedNum;
     factors[secondFractionIndex] = f2.ns[0]!;
@@ -169,7 +169,7 @@ function literalMultiplication(root: NumBase): NumBase|null {
   if (firstLiteralIndex === -1) return null;
   const l1 = root.ns[firstLiteralIndex]! as Literal;
   const secondLiteralIndex = root.ns.findIndex(
-      (n, i) => i !== firstLiteralIndex && n instanceof Literal);
+      (n, i) => i > firstLiteralIndex && n instanceof Literal);
   if (secondLiteralIndex === -1) return null;
   const l2 = root.ns[secondLiteralIndex]! as Literal;
   const factors = root.ns.slice();
@@ -185,7 +185,7 @@ function negatedLiteral(root: NumBase): NumBase|null {
       root.ns.findIndex(n => n.value().eq(-1) && n instanceof Literal);
   if (negativeOneIdx === -1) return null;
   let literalIdx =
-      root.ns.findIndex((n, i) => n instanceof Literal && i !== negativeOneIdx);
+      root.ns.findIndex((n, i) => i > negativeOneIdx && n instanceof Literal);
   if (literalIdx === -1) return null;
   const literal = root.ns[literalIdx]!;
 
@@ -335,7 +335,7 @@ function powerCondense(root: NumBase): NumBase|null {
   for (const [i, be1] of root.ns.entries()) {
     if (!(be1 instanceof DerivedNum) || be1.op !== Op.Pow) continue;
     for (const [j, be2] of root.ns.entries()) {
-      if (i === j || !(be2 instanceof DerivedNum) || be2.op != Op.Pow) continue;
+      if (i >= j || !(be2 instanceof DerivedNum) || be2.op != Op.Pow) continue;
       if (be1.ns[0]!.eqSubtree(be2.ns[0]!)) {
         const factors = root.ns.slice();
         factors[i] = be1.ns[0]!.pow(be1.ns[1]!.add(be2.ns[1]!));
