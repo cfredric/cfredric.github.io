@@ -100,7 +100,7 @@ function subtractionFromZero(root: NumBase): NumBase|null {
   if (!(root instanceof DerivedNum) || root.op !== Op.Minus) return null;
   const minuend = root.ns[0]!;
   return minuend.value().eq(0) && isConstantOrLiteral(minuend) ?
-      Num.literal(-1).mul(root.ns[1]!) :
+      Num.mul(-1, root.ns[1]!) :
       null;
 }
 
@@ -459,11 +459,20 @@ export abstract class Num {
     return this.value().cmp(toNumBase(b).value());
   }
 
+  static add(a: AnyNumber, b: AnyNumber): NumBase {
+    return toNumBase(a).add(b);
+  }
   add(b: AnyNumber): NumBase {
     return mergeSiblings(toNumBase(this), toNumBase(b), Op.Plus);
   }
+  static sub(a: AnyNumber, b: AnyNumber): NumBase {
+    return toNumBase(a).sub(b);
+  }
   sub(b: AnyNumber): NumBase {
     return new DerivedNum(Op.Minus, toNumBase(this), toNumBase(b));
+  }
+  static mul(a: AnyNumber, b: AnyNumber): NumBase {
+    return toNumBase(a).mul(b);
   }
   mul(b: AnyNumber): NumBase {
     return mergeSiblings(toNumBase(this), toNumBase(b), Op.Mult);
@@ -473,6 +482,9 @@ export abstract class Num {
   }
   div(b: AnyNumber): NumBase {
     return new DerivedNum(Op.Div, toNumBase(this), toNumBase(b));
+  }
+  static pow(a: AnyNumber, b: AnyNumber): NumBase {
+    return toNumBase(a).pow(b);
   }
   pow(b: AnyNumber): NumBase {
     return new DerivedNum(Op.Pow, toNumBase(this), toNumBase(b));

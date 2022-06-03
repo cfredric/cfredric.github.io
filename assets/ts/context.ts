@@ -94,7 +94,7 @@ export class Context {
         new NamedConstant(
             'pmiEquityCutoff', input.pmiEquityPercent.clamp(0, 100))
             .div(100),
-        new NamedOutput('pmiEquityCutoff', Num.literal(22).div(100)));
+        new NamedOutput('pmiEquityCutoff', Num.div(22, 100)));
     {
       const rawMonthlyAbsolute = new NamedConstant(
           'propertyTaxAbsolute', Decimal.max(0, input.propertyTaxAbsolute));
