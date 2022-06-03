@@ -230,8 +230,8 @@ test('simplifyWithNamedConstants', () => {
   expectExpression(a.pow(0), 1, 'a ^ {0}', '1');               // ^ collapse
   expectExpression(Num.literal(1).pow(a), 1, '1 ^ {a}', '1');  // ^ collapse
   expectExpression(
-      a.pow(3).mul(a.pow(2)), 32, 'a ^ {3} * a ^ {2}',
-      'a ^ {5}');  // ^ condensing
+      a.pow(b).mul(a.pow(c)), 4096, 'a ^ {b} * a ^ {c}',
+      'a ^ {b + c}');  // ^ condensing
 });
 
 test('Sum', () => {
