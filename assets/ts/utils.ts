@@ -6,7 +6,7 @@ import {Context} from './context';
 import {FormatResult, Formatter} from './formatter';
 import {HidableOutput} from './hidable_output';
 import {AnyNumber, Num} from './num';
-import {HidableContainer, hidableContainers, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType, templateTypes} from './types';
+import {HidableContainer, hidableContainers, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType} from './types';
 
 // Returns the numeric value of the input element, or 0 if the input was empty.
 export function orZeroN(elt: HTMLInputElement): number {
@@ -243,7 +243,8 @@ export function computeAmortizedPaymentAmount(P: Num, r: Num, n: Num): Num {
 export function calculatePaymentSchedule(ctx: Context):
     PaymentRecordWithMonth[] {
   let equityOwned = ctx.downPayment;
-  const schedule: PaymentRecordWithMonth[] = [];
+  const schedule: PaymentRecordWithMonth[] =
+      new Array(ctx.n.value().toNumber());
   for (const month of d3.range(ctx.n.value().toNumber())) {
     const principalRemaining = ctx.price.sub(equityOwned);
     const interestPayment = ctx.interestRate.div(12).mul(principalRemaining);
@@ -253,7 +254,7 @@ export function calculatePaymentSchedule(ctx: Context):
     const principalPaidThisMonth = ctx.monthlyLoanPayment.sub(interestPayment)
                                        .clamp(0, principalRemaining);
     equityOwned = equityOwned.add(principalPaidThisMonth);
-    schedule.push({
+    schedule[month] = {
       month: month + 1,
       data: {
         interest: interestPayment,
@@ -263,7 +264,7 @@ export function calculatePaymentSchedule(ctx: Context):
         property_tax: ctx.propertyTax,
         homeowners_insurance: ctx.homeownersInsurance,
       },
-    });
+    };
   }
   return schedule;
 }
@@ -647,7 +648,11 @@ export function computeTemplates(
       'prepay-amount': fmt.formatCurrency(ctx.prepayment),
     };
   }
-  return mkRecord(templateTypes, () => '');
+
+  return {
+    'mortgage-term': '',
+    'prepay-amount': '',
+  };
 }
 
 // Updates the "hints"/previews displayed alongside the input fields.
