@@ -172,11 +172,6 @@ export interface Elements {
   clearInputsButton: HTMLElement;
 }
 
-export interface Schedules {
-  pointwise: readonly PaymentRecordWithMonth[];
-  cumulative: readonly PaymentRecordWithMonth[];
-}
-
 export interface Margin {
   top: number;
   bottom: number;

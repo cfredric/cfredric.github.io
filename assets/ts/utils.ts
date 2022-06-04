@@ -6,7 +6,8 @@ import {Context} from './context';
 import {FormatResult, Formatter} from './formatter';
 import {HidableOutput} from './hidable_output';
 import {AnyNumber, Num} from './num';
-import {HidableContainer, hidableContainers, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules, TemplateType} from './types';
+import {Schedules} from './schedules';
+import {HidableContainer, hidableContainers, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType} from './types';
 
 // Returns the numeric value of the input element, or 0 if the input was empty.
 export function orZeroN(elt: HTMLInputElement): number {

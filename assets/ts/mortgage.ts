@@ -347,6 +347,12 @@ function clearInputs(
   setContents(contextFromInputs(elts.inputs), elts);
 }
 
+export function timeIt(action: () => void) {
+  const start = Date.now();
+  action();
+  console.log(Date.now() - start);
+}
+
 export function main(): void {
   const elts: Elements = {
     inputs: getInputs(),

@@ -4,7 +4,8 @@ import {Context} from './context';
 import {ExpandableElement} from './expandable_element';
 import {Formatter} from './formatter';
 import {Num} from './num';
-import {loanPaymentTypes, Margin, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, Schedules} from './types';
+import {Schedules} from './schedules';
+import {loanPaymentTypes, Margin, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes} from './types';
 import * as utils from './utils';
 
 const textColor = '#f0e7d5';
