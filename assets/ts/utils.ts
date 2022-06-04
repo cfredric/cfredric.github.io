@@ -466,10 +466,7 @@ export function computeSchedules(ctx: Context): Schedules|undefined {
   if (!ctx.showMonthlySchedule) return undefined;
 
   const pointwise = calculatePaymentSchedule(ctx);
-  return {
-    pointwise,
-    cumulative: cumulativeSum(pointwise),
-  };
+  return new Schedules(pointwise, cumulativeSum(pointwise));
 }
 
 // Compute hint strings and set output strings.
@@ -500,23 +497,22 @@ export function computeContents(
     };
   }
 
-  const {pointwise, cumulative} = schedules;
-
   return {
     loanAmount,
     purchasePayment,
     lifetimeOfLoan: ctx.m.eq(0) ?
         '' :
         fmt.formatMonthNum(
-            countSatisfying(pointwise, m => m.data.principal.gt(0)),
+            countSatisfying(schedules.pointwise(), m => m.data.principal.gt(0)),
             ctx.closingDate),
     lifetimePayment: ctx.m.eq(0) ?
         fmt.formatCurrency(Num.literal(0)) :
         fmt.formatCurrency(sumOfKeys(
-            cumulative[cumulative.length - 1]!.data, loanPaymentTypes)),
+            schedules.cumulative()[schedules.cumulative().length - 1]!.data,
+            loanPaymentTypes)),
     prepayComparison: showPrepaymentComparison ?
         fmt.formatCurrency(computeStockAssets(
-            pointwise
+            schedules.pointwise()
                 .map(
                     m => ctx.monthlyLoanPayment.sub(
                         Num.sum(m.data.interest, m.data.principal)))
@@ -539,7 +535,6 @@ export function computeHidables(
     schedules: Schedules|undefined): Record<HidableContainer, HidableOutput> {
   if (!schedules)
     return mkRecord(hidableContainers, (k) => new HidableOutput(k));
-  const {pointwise, cumulative} = schedules;
   let monthlyExpensesPmi;
   let monthsOfPmi;
   if (ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct)) {
@@ -548,8 +543,8 @@ export function computeHidables(
         fmt.formatCurrencyWithDerivation(Num.sum(
             ctx.monthlyLoanPayment, ctx.monthlyNonLoanPayment, ctx.pmi)),
     );
-    const pmiMonths =
-        countSatisfying(pointwise, payment => !payment.data.pmi.eq(0));
+    const pmiMonths = countSatisfying(
+        schedules.pointwise(), payment => !payment.data.pmi.eq(0));
     monthsOfPmi = new HidableOutput(
         'months-of-pmi-div',
         `${fmt.formatMonthNum(pmiMonths)} (${
@@ -568,7 +563,9 @@ export function computeHidables(
                 ctx.totalAssets.sub(
                     (ctx.alreadyClosed ? Num.literal(0) :
                                          ctx.downPayment.add(ctx.closingCost))),
-                pointwise.slice(ctx.paymentsAlreadyMade).map(d => d.data),
+                schedules.pointwise()
+                    .slice(ctx.paymentsAlreadyMade)
+                    .map(d => d.data),
                 ctx.monthlyDebt),
             maxNonEmptyDate(ctx.closingDate, d3.timeMonth.floor(new Date()))));
   } else {
@@ -582,7 +579,8 @@ export function computeHidables(
   if (!!ctx.paymentsAlreadyMade || ctx.alreadyClosed) {
     const absoluteEquityOwned =
         (ctx.alreadyClosed ? ctx.downPayment : Num.literal(0))
-            .add(cumulative[ctx.paymentsAlreadyMade]!.data.principal);
+            .add(schedules.cumulative()[ctx.paymentsAlreadyMade]!.data
+                     .principal);
 
     totalPaidSoFar = new HidableOutput(
         'total-paid-so-far-div',
@@ -590,15 +588,18 @@ export function computeHidables(
             (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
                                  Num.literal(0))
                 .add(sumOfKeys(
-                    cumulative[ctx.paymentsAlreadyMade]!.data, paymentTypes))));
+                    schedules.cumulative()[ctx.paymentsAlreadyMade]!.data,
+                    paymentTypes))));
     equityOwnedSoFar = new HidableOutput(
         'equity-owned-so-far-div',
         `${fmt.formatPercent(absoluteEquityOwned.div(ctx.homeValue))} (${
             fmt.formatCurrency(absoluteEquityOwned)})`);
-    const totalPrincipalAndInterestPaid =
-        sumOfKeys(cumulative[ctx.paymentsAlreadyMade]!.data, loanPaymentTypes);
-    const totalPrincipalAndInterestToPay =
-        sumOfKeys(cumulative[cumulative.length - 1]!.data, loanPaymentTypes);
+    const totalPrincipalAndInterestPaid = sumOfKeys(
+        schedules.cumulative()[ctx.paymentsAlreadyMade]!.data,
+        loanPaymentTypes);
+    const totalPrincipalAndInterestToPay = sumOfKeys(
+        schedules.cumulative()[schedules.cumulative().length - 1]!.data,
+        loanPaymentTypes);
     totalLoanOwed = new HidableOutput(
         'total-loan-owed-div',
         fmt.formatCurrency(

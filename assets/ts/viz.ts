@@ -336,22 +336,22 @@ export function setChartsAndButtonsContent(
     return;
   }
 
-  const {pointwise, cumulative} = schedules;
-
-  buildPaymentScheduleChart(ctx, pointwise, fmt, paymentTypes);
+  buildPaymentScheduleChart(ctx, schedules.pointwise(), fmt, paymentTypes);
   if (ctx.m.eq(0)) {
     clearCumulativeChart();
     return;
   }
 
-  buildCumulativeChart(ctx, cumulative, fmt, loanPaymentTypes);
+  buildCumulativeChart(ctx, schedules.cumulative(), fmt, loanPaymentTypes);
 
   new ExpandableElement(
       utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
-      () => utils.makeMonthlyTable(ctx, fmt, paymentTypes, pointwise));
+      () => utils.makeMonthlyTable(
+          ctx, fmt, paymentTypes, schedules.pointwise()));
   new ExpandableElement(
       utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
-      () => utils.makeMonthlyTable(ctx, fmt, loanPaymentTypes, cumulative));
+      () => utils.makeMonthlyTable(
+          ctx, fmt, loanPaymentTypes, schedules.cumulative()));
 
   if (ctx.closingDate) {
     const closingDate = ctx.closingDate;
@@ -359,7 +359,8 @@ export function setChartsAndButtonsContent(
         utils.getHtmlElt('tax_year_tab'), 'Moneys Paid by Tax Year', () => {
           const columnValueTypes = ['interest', 'property_tax'] as const;
           return utils.makeYearlyTable(
-              closingDate, columnValueTypes, pointwise, (year, payments) => {
+              closingDate, columnValueTypes, schedules.pointwise(),
+              (year, payments) => {
                 const sums = utils.sumByFields(
                     payments.map((d) => d.data), columnValueTypes);
                 return [
