@@ -184,7 +184,7 @@ function attachListeners(
       () => void clearInputs(
           elts, urlParamMap, privateValueMap, existingCookies));
   for (const elt of [...urlParamMap.keys(), ...privateValueMap.keys()]) {
-    elt.addEventListener('input', () => {
+    elt.addEventListener('change', () => {
       utils.saveFields(urlParamMap, privateValueMap, elt);
       setContents(contextFromInputs(elts.inputs), elts);
     });
