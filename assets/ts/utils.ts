@@ -81,18 +81,33 @@ export function sumOfKeys<T extends string>(
 
 // Returns an array where the ith element is an object with the amount paid of
 // each type before (and excluding) the ith month.
-export function cumulativeSumByFields(
-    data: readonly PaymentRecordWithMonth[],
-    fields: readonly PaymentType[]): PaymentRecordWithMonth[] {
+export function cumulativeSum(data: readonly PaymentRecordWithMonth[]):
+    PaymentRecordWithMonth[] {
   const results = new Array<PaymentRecordWithMonth>(data.length + 1);
   results[0] = {
     month: 0,
-    data: mkRecord(fields, () => Num.literal(0)),
+    data: {
+      principal: Num.literal(0),
+      interest: Num.literal(0),
+      hoa: Num.literal(0),
+      homeowners_insurance: Num.literal(0),
+      pmi: Num.literal(0),
+      property_tax: Num.literal(0),
+    },
   };
   for (const [idx, datum] of data.entries()) {
+    const previous = results[idx]!;
     results[idx + 1] = {
-      data: mkRecord(fields, (f) => datum.data[f].add(results[idx]!.data[f])),
       month: datum.month,
+      data: {
+        principal: datum.data.principal.add(previous.data.principal),
+        interest: datum.data.interest.add(previous.data.interest),
+        hoa: datum.data.hoa.add(previous.data.hoa),
+        homeowners_insurance: datum.data.homeowners_insurance.add(
+            previous.data.homeowners_insurance),
+        pmi: datum.data.pmi.add(previous.data.pmi),
+        property_tax: datum.data.property_tax.add(previous.data.property_tax),
+      },
     };
   }
   return results;
@@ -451,7 +466,7 @@ export function computeSchedules(ctx: Context): Schedules|undefined {
   const pointwise = calculatePaymentSchedule(ctx);
   return {
     pointwise,
-    cumulative: cumulativeSumByFields(pointwise, paymentTypes),
+    cumulative: cumulativeSum(pointwise),
   };
 }
 

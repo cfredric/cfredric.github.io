@@ -6,7 +6,6 @@ import * as d3 from 'd3';
 import {Decimal} from 'decimal.js';
 
 import {Num} from './num';
-import {PaymentType} from './types';
 import * as utils from './utils';
 
 test('countSatisfying no matches', () => {
@@ -59,49 +58,48 @@ test('monthDiff', () => {
       .toBe(12);
 });
 
-test('cumulativeSumByFields', () => {
-  const keys: readonly PaymentType[] = ['principal'];
+test('cumulativeSum', () => {
   expect(utils
-             .cumulativeSumByFields(
-                 [
-                   {
-                     month: 1,
-                     data: {
-                       'principal': Num.literal(1),
-                       'interest': Num.literal(0),
-                       'hoa': Num.literal(0),
-                       'property_tax': Num.literal(0),
-                       'pmi': Num.literal(0),
-                       'homeowners_insurance': Num.literal(0),
-                     },
-                   },
-                   {
-                     month: 2,
-                     data: {
-                       'principal': Num.literal(2),
-                       'interest': Num.literal(0),
-                       'hoa': Num.literal(0),
-                       'property_tax': Num.literal(0),
-                       'pmi': Num.literal(0),
-                       'homeowners_insurance': Num.literal(0),
-                     },
-                   },
-                   {
-                     month: 3,
-                     data: {
-                       'principal': Num.literal(4),
-                       'interest': Num.literal(0),
-                       'hoa': Num.literal(0),
-                       'property_tax': Num.literal(0),
-                       'pmi': Num.literal(0),
-                       'homeowners_insurance': Num.literal(0),
-                     },
-                   },
-                 ],
-                 keys)
+             .cumulativeSum([
+               {
+                 month: 1,
+                 data: {
+                   'principal': Num.literal(1),
+                   'interest': Num.literal(0),
+                   'hoa': Num.literal(0),
+                   'property_tax': Num.literal(0),
+                   'pmi': Num.literal(0),
+                   'homeowners_insurance': Num.literal(0),
+                 },
+               },
+               {
+                 month: 2,
+                 data: {
+                   'principal': Num.literal(2),
+                   'interest': Num.literal(0),
+                   'hoa': Num.literal(0),
+                   'property_tax': Num.literal(0),
+                   'pmi': Num.literal(0),
+                   'homeowners_insurance': Num.literal(0),
+                 },
+               },
+               {
+                 month: 3,
+                 data: {
+                   'principal': Num.literal(4),
+                   'interest': Num.literal(0),
+                   'hoa': Num.literal(0),
+                   'property_tax': Num.literal(0),
+                   'pmi': Num.literal(0),
+                   'homeowners_insurance': Num.literal(0),
+                 },
+               },
+             ])
              .map(v => ({
                     month: v.month,
-                    data: utils.mkRecord(keys, (k) => v.data[k].value()),
+                    data: {
+                      principal: v.data.principal.value(),
+                    },
                   })))
       .toMatchObject([
         {
