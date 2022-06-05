@@ -178,30 +178,6 @@ function literalMultiplication(root: NumBase): NumBase|null {
   return Num.product(...factors);
 }
 
-/** Collapses `-1 * x` (where x is a literal) into `-x`. */
-function negatedLiteral(root: NumBase): NumBase|null {
-  if (!(root instanceof DerivedNum) || root.op !== Op.Mult) return null;
-  const negativeOneIdx =
-      root.ns.findIndex(n => n.value().eq(-1) && n instanceof Literal);
-  if (negativeOneIdx === -1) return null;
-  let literalIdx =
-      root.ns.findIndex((n, i) => i > negativeOneIdx && n instanceof Literal);
-  if (literalIdx === -1) return null;
-  const literal = root.ns[literalIdx]!;
-
-  const factors = root.ns.slice();
-  factors.splice(negativeOneIdx, 1);
-  if (negativeOneIdx < literalIdx) {
-    literalIdx--;
-  }
-
-  return Num.product(
-      ...factors.slice(0, literalIdx),
-      Num.literal(-1 * literal.toNumber()),
-      ...factors.slice(literalIdx + 1),
-  );
-}
-
 /** Rewrites `x / 1` into `x`. */
 function divisionIdentity(root: NumBase): NumBase|null {
   if (!(root instanceof DerivedNum) || root.op !== Op.Div) return null;
@@ -362,10 +338,10 @@ const simplifications = [
   additionIdentity,       literalAddition,        subtractionIdentity,
   subtractionFromZero,    subtractionFromSelf,    literalSubtraction,
   multiplicationIdentity, multiplicationCollapse, multiplicationByFraction,
-  negatedLiteral,         literalMultiplication,  divisionIdentity,
-  divisionCollapse,       denominatorIsFraction,  numeratorIsFraction,
-  reduceFraction,         powerIdentity,          powerCollapse,
-  powerCondense,          literalExponentiation,
+  literalMultiplication,  divisionIdentity,       divisionCollapse,
+  denominatorIsFraction,  numeratorIsFraction,    reduceFraction,
+  powerIdentity,          powerCollapse,          powerCondense,
+  literalExponentiation,
 ];
 
 /**
