@@ -262,7 +262,7 @@ function reduceFraction(root: NumBase): NumBase|null {
         const gcf = gcd(nf.toNumber(), df.toNumber());
         if (gcf !== 1) {
           nFactors[i] = Num.literal(nf.toNumber() / gcf);
-          dFactors[i] = Num.literal(df.toNumber() / gcf);
+          dFactors[j] = Num.literal(df.toNumber() / gcf);
           return Num.div(
               Num.product(...nFactors),
               Num.product(...dFactors),
