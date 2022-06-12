@@ -162,17 +162,21 @@ test('simplifyWithNamedConstants', () => {
   const b = new NamedConstant('b', 4);
   const c = new NamedConstant('c', 8);
   const d = new NamedConstant('d', 16);
-  expectExpression(a.add(0), 2, 'a + 0', 'a');       // + identity
-  expectExpression(Num.add(0, a), 2, '0 + a', 'a');  // + identity
+  expectExpression(a.add(0), 2, 'a + 0', 'a');           // + identity
+  expectExpression(Num.add(0, a), 2, '0 + a', 'a');      // + identity
+  expectExpression(Num.sum(2, a), 4, '2 + a', 'a + 2');  // * ordering
+  expectExpression(Num.sum(a, 2), 4, 'a + 2', 'a + 2');  // * ordering
 
   expectExpression(a.sub(0), 2, 'a - 0', 'a');             // - identity
   expectExpression(Num.sub(0, a), -2, '0 - a', '-1 * a');  // - from zero
   expectExpression(a.sub(a), 0, 'a - a', '0');             // - from self
 
-  expectExpression(a.mul(0), 0, 'a * 0', '0');       // * collapse
-  expectExpression(Num.mul(0, a), 0, '0 * a', '0');  // * collapse
-  expectExpression(Num.mul(1, a), 2, '1 * a', 'a');  // * identity
-  expectExpression(a.mul(1), 2, 'a * 1', 'a');       // * identity
+  expectExpression(a.mul(0), 0, 'a * 0', '0');               // * collapse
+  expectExpression(Num.mul(0, a), 0, '0 * a', '0');          // * collapse
+  expectExpression(Num.mul(1, a), 2, '1 * a', 'a');          // * identity
+  expectExpression(a.mul(1), 2, 'a * 1', 'a');               // * identity
+  expectExpression(Num.product(2, a), 4, '2 * a', '2 * a');  // * ordering
+  expectExpression(Num.product(a, 2), 4, 'a * 2', '2 * a');  // * ordering
 
   expectExpression(a.div(1), 2, '\\frac{a}{1}', 'a');       // / identity
   expectExpression(Num.div(0, a), 0, '\\frac{0}{a}', '0');  // / collapse

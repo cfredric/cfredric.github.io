@@ -3,6 +3,14 @@ import Decimal from 'decimal.js';
 
 export type AnyNumber = number|Num|Decimal;
 
+function findIndexRight<T>(
+    array: readonly T[], predicate: (t: T) => boolean): number {
+  for (let i = array.length - 1; i >= 0; i--) {
+    if (predicate(array[i]!)) return i;
+  }
+  return -1;
+}
+
 function toNumBase(x: AnyNumber): NumBase {
   if (x instanceof NumBase) return x;
   if (x instanceof Num) {
@@ -84,6 +92,21 @@ function literalAddition(root: NumBase): NumBase|null {
   terms[firstLiteralIndex] = Num.literal(l1.toNumber() + l2.toNumber());
   terms.splice(secondLiteralIndex, 1);
   return Num.sum(...terms);
+}
+
+/** Rewrite terms so that they end with a literal (if any). */
+function reorderTerms(root: NumBase): NumBase|null {
+  if (!(root instanceof DerivedNum) || root.op !== Op.Plus) return null;
+
+  const lastLiteralIdx = findIndexRight(root.ns, n => n instanceof Literal);
+  if (lastLiteralIdx === -1 || lastLiteralIdx === root.ns.length - 1)
+    return null;
+
+  const lit = root.ns[lastLiteralIdx]!;
+  const terms = root.ns.slice();
+  terms.splice(lastLiteralIdx, 1);
+  terms.push(lit);
+  return new DerivedNum(Op.Plus, ...terms);
 }
 
 /** Rewrites `x - 0` into `x`. */
@@ -176,6 +199,20 @@ function literalMultiplication(root: NumBase): NumBase|null {
   factors[firstLiteralIndex] = Num.literal(l1.toNumber() * l2.toNumber());
   factors.splice(secondLiteralIndex, 1);
   return Num.product(...factors);
+}
+
+/** Rewrite factors so that they start with a literal (if any). */
+function reorderFactors(root: NumBase): NumBase|null {
+  if (!(root instanceof DerivedNum) || root.op !== Op.Mult) return null;
+
+  const firstLiteralIdx = root.ns.findIndex(n => n instanceof Literal);
+  if (firstLiteralIdx < 1) return null;
+
+  const lit = root.ns[firstLiteralIdx]!;
+  const factors = root.ns.slice();
+  factors.splice(firstLiteralIdx, 1);
+  factors.unshift(lit);
+  return new DerivedNum(Op.Mult, ...factors);
 }
 
 /** Rewrites `x / 1` into `x`. */
@@ -335,12 +372,16 @@ function literalExponentiation(root: NumBase): NumBase|null {
 }
 
 const simplifications = [
-  additionIdentity,       literalAddition,        subtractionIdentity,
-  subtractionFromZero,    subtractionFromSelf,    literalSubtraction,
-  multiplicationIdentity, multiplicationCollapse, multiplicationByFraction,
-  literalMultiplication,  divisionIdentity,       divisionCollapse,
-  denominatorIsFraction,  numeratorIsFraction,    reduceFraction,
-  powerIdentity,          powerCollapse,          powerCondense,
+  additionIdentity,       literalAddition,
+  reorderTerms,           subtractionIdentity,
+  subtractionFromZero,    subtractionFromSelf,
+  literalSubtraction,     multiplicationIdentity,
+  multiplicationCollapse, multiplicationByFraction,
+  literalMultiplication,  reorderFactors,
+  divisionIdentity,       divisionCollapse,
+  denominatorIsFraction,  numeratorIsFraction,
+  reduceFraction,         powerIdentity,
+  powerCollapse,          powerCondense,
   literalExponentiation,
 ];
 
