@@ -589,6 +589,8 @@ export function computeTemplates(
 // Updates the "hints"/previews displayed alongside the input fields.
 export function computeAmountHints(
     ctx: Context, fmt: Formatter): Record<HintType, FormatResult|string> {
+  const quarterlyPropertyTax = ctx.propertyTax.mul(3);
+  const quarterlyResidentialExemption = ctx.residentialExemptionPerMonth.mul(3);
   return {
     homeValue:
         fmt.formatCurrencyWithDerivation(ctx.homeValue).map((v) => `(${v})`),
@@ -598,14 +600,14 @@ export function computeAmountHints(
     pointValue: `(${fmt.formatHundredthsPercent(ctx.pointValue)})`,
     pmiEquityPercentage:
         fmt.formatPercentWithDerivation(ctx.pmiEquityPct).map((v) => `(${v})`),
-    propertyTax: `(Effective ${
+    propertyTax: `(${
         fmt.formatCurrency(
-            ctx.propertyTax.mul(12).div(ctx.homeValue).mul(1000) ||
-            Num.literal(
-                0))} / $1000; ${fmt.formatCurrency(ctx.propertyTax)}/mo)`,
+            quarterlyPropertyTax.add(quarterlyResidentialExemption))} - ${
+        fmt.formatCurrency(quarterlyResidentialExemption)} = ${
+        fmt.formatCurrency(quarterlyPropertyTax)}/quarter)`,
     residentialExemption:
-        fmt.formatCurrencyWithDerivation(ctx.residentialExemptionPerMonth)
-            .map((v) => `(${v}/mo)`),
+        fmt.formatCurrencyWithDerivation(quarterlyResidentialExemption)
+            .map((v) => `(${v}/quarter)`),
     mortgageTerm: `(${ctx.mortgageTerm.toNumber()} yrs)`,
     paymentsAlreadyMade: `(${ctx.paymentsAlreadyMade} payments)`,
     stocksReturnRate: `(${fmt.formatHundredthsPercent(ctx.stocksReturnRate)})`,
