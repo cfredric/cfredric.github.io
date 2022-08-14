@@ -209,20 +209,21 @@ test('property taxes', () => {
   input = defaultInput();
   input.propertyTaxAbsolute = new Decimal(100);
   input.residentialExemptionAnnualSavings = new Decimal(36);
-  // tax = (12 * 100 - 36) / 12
-  expect(new Context(input).propertyTax.toNumber()).toEqual(97);
-  // monthly exemption = 36 / 12
-  expect(new Context(input).residentialExemptionPerMonth.toNumber()).toEqual(3);
+  // tax = (4 * 100 - 36) / 4
+  expect(new Context(input).propertyTaxQuarterly.toNumber()).toEqual(91);
+  // quarterly exemption = 36 / 4
+  expect(new Context(input).residentialExemptionQuarterly.toNumber())
+      .toEqual(9);
 
   // Monthly amount, amount deducted from home value.
   input = defaultInput();
   input.price = new Decimal(4000);
   input.propertyTaxAbsolute = new Decimal(100);
   input.residentialExemptionDeduction = new Decimal(400);
-  // tax = (100 * 12 / 4000) * (4000 - 400) / 12
-  expect(new Context(input).propertyTax.toNumber()).toEqual(90);
-  // monthly exemption = (100 * 12 / 4000) * 400 / 12
-  expect(new Context(input).residentialExemptionPerMonth.toNumber())
+  // tax = (100 * 4 / 4000) * (4000 - 400) / 4
+  expect(new Context(input).propertyTaxQuarterly.toNumber()).toEqual(90);
+  // quarterly exemption = (100 * 4 / 4000) * 400 / 4
+  expect(new Context(input).residentialExemptionQuarterly.toNumber())
       .toEqual(10);
 
   // annual % rate, raw savings /yr.
@@ -230,20 +231,22 @@ test('property taxes', () => {
   input.price = new Decimal(4000);
   input.propertyTaxPercent = new Decimal(15);
   input.residentialExemptionAnnualSavings = new Decimal(36);
-  // tax = (0.15 * 4000 / 12) - (36 / 12)
-  expect(new Context(input).propertyTax.toNumber()).toEqual(47);
-  // monthly exemption = 36 / 12
-  expect(new Context(input).residentialExemptionPerMonth.toNumber()).toEqual(3);
+  // tax = (0.15 * 4000 / 4) - (36 / 4)
+  expect(new Context(input).propertyTaxQuarterly.toNumber()).toEqual(141);
+  // quarterly exemption = 36 / 4
+  expect(new Context(input).residentialExemptionQuarterly.toNumber())
+      .toEqual(9);
 
   // annual % rate, amount deducted from home value.
   input = defaultInput();
   input.price = new Decimal(4000);
   input.propertyTaxPercent = new Decimal(15);
   input.residentialExemptionDeduction = new Decimal(400);
-  // tax = 0.15 * (4000 - 400) / 12
-  expect(new Context(input).propertyTax.toNumber()).toEqual(45);
-  // monthly exemption = 0.15 * 400 / 12
-  expect(new Context(input).residentialExemptionPerMonth.toNumber()).toEqual(5);
+  // tax = 0.15 * (4000 - 400) / 4
+  expect(new Context(input).propertyTaxQuarterly.toNumber()).toEqual(135);
+  // quarterly exemption = 0.15 * 400 / 4
+  expect(new Context(input).residentialExemptionQuarterly.toNumber())
+      .toEqual(15);
 });
 
 test('homeownersInsurace', () => {
@@ -459,14 +462,15 @@ test('monthlyNonLoanPayment', () => {
   const input = defaultInput();
 
   // Unspecified:
-  expect(new Context(input).propertyTax.toNumber()).toEqual(0);
-  expect(new Context(input).propertyTax.value().isNaN()).toEqual(false);
+  expect(new Context(input).propertyTaxQuarterly.toNumber()).toEqual(0);
+  expect(new Context(input).propertyTaxQuarterly.value().isNaN())
+      .toEqual(false);
   expect(new Context(input).monthlyNonLoanPayment.toNumber()).toEqual(0);
 
   input.hoa = new Decimal(1);
   // Property tax doesn't get counted, since we didn't provide enough to compute
   // the annual rate.
-  input.propertyTaxAbsolute = new Decimal(2);
+  input.propertyTaxAbsolute = new Decimal(6);
   input.homeownersInsurance = new Decimal(4);
   expect(new Context(input).monthlyNonLoanPayment.toNumber()).toEqual(5);
 

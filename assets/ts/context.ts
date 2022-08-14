@@ -28,8 +28,8 @@ export class Context {
   readonly pointValue: Num;
   readonly pmi: Num;
   readonly pmiEquityPct: Num;
-  readonly propertyTax: Num;
-  readonly residentialExemptionPerMonth: Num;
+  readonly propertyTaxQuarterly: Num;
+  readonly residentialExemptionQuarterly: Num;
   readonly homeownersInsurance: Num;
   readonly closingCost: Num;
   readonly mortgageTerm: Num;
@@ -96,7 +96,7 @@ export class Context {
             .div(100),
         new NamedOutput('pmiEquityCutoff', Num.div(22, 100)));
     {
-      const rawMonthlyAbsolute = new NamedConstant(
+      const rawQuarterlyAbsolute = new NamedConstant(
           'propertyTaxAbsolute', Decimal.max(0, input.propertyTaxAbsolute));
       const rawAnnualRate =
           new NamedConstant(
@@ -111,18 +111,18 @@ export class Context {
           input.residentialExemptionDeduction.clamp(0, this.price.value()));
 
       if (!rawExemptionAnnualSavings.eq(0)) {
-        const monthlyAbsolute = utils.chooseNonzero(
-            rawMonthlyAbsolute, rawAnnualRate.mul(this.homeValue).div(12));
-        this.propertyTax =
-            monthlyAbsolute.sub(rawExemptionAnnualSavings.div(12));
-        this.residentialExemptionPerMonth = rawExemptionAnnualSavings.div(12);
+        const quarterlyAbsolute = utils.chooseNonzero(
+            rawQuarterlyAbsolute, rawAnnualRate.mul(this.homeValue).div(4));
+        this.propertyTaxQuarterly =
+            quarterlyAbsolute.sub(rawExemptionAnnualSavings.div(4));
+        this.residentialExemptionQuarterly = rawExemptionAnnualSavings.div(4);
       } else {
         const annualRate = utils.chooseNonzero(
-            rawMonthlyAbsolute.mul(12).div(this.homeValue), rawAnnualRate);
-        this.propertyTax =
-            annualRate.mul(this.homeValue.sub(rawAnnualDeduction)).div(12);
-        this.residentialExemptionPerMonth =
-            annualRate.mul(rawAnnualDeduction).div(12);
+            rawQuarterlyAbsolute.mul(4).div(this.homeValue), rawAnnualRate);
+        this.propertyTaxQuarterly =
+            annualRate.mul(this.homeValue.sub(rawAnnualDeduction)).div(4);
+        this.residentialExemptionQuarterly =
+            annualRate.mul(rawAnnualDeduction).div(4);
       }
     }
     this.homeownersInsurance = new NamedConstant(
@@ -177,8 +177,8 @@ export class Context {
     }
     this.prepayment = prepayment;
     this.monthlyLoanPayment = this.m.add(this.prepayment);
-    this.monthlyNonLoanPayment =
-        Num.sum(this.hoa, this.propertyTax, this.homeownersInsurance);
+    this.monthlyNonLoanPayment = Num.sum(
+        this.hoa, this.propertyTaxQuarterly.div(3), this.homeownersInsurance);
 
     this.showDerivations = input.showDerivations;
     this.simplifyDerivations =
