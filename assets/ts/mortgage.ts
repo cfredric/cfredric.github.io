@@ -1,7 +1,7 @@
 import * as d3 from 'd3';
 
 import {Context} from './context';
-import {FormatResult, Formatter} from './formatter';
+import {Formatter} from './formatter';
 import {Num} from './num';
 import {Schedules} from './schedules';
 import {Elements, hidableContainerMap, HidableOutputType, HintType, InputEntry, Inputs, OutputType, TemplateType} from './types';
@@ -198,17 +198,6 @@ function attachListeners(
       void populateFields(elts, urlParamMap, privateValueMap);
 }
 
-function setContentOfElement(e: HTMLElement, v: string|FormatResult) {
-  if (typeof v === 'string') {
-    e.innerText = v;
-  } else {
-    e.innerText = v.value;
-    if (v.derivation) {
-      utils.showDerivation(e, v.derivation);
-    }
-  }
-}
-
 // Set the contents of all the outputs based on the `ctx`.
 function setContents(ctx: Context, elts: Elements): void {
   utils.setEltVisibility(
@@ -220,11 +209,11 @@ function setContents(ctx: Context, elts: Elements): void {
   const schedules = ctx.showMonthlySchedule ? new Schedules(ctx) : undefined;
 
   for (const [h, v] of Object.entries(utils.computeAmountHints(ctx, fmt))) {
-    setContentOfElement(elts.hints[h as HintType], v);
+    utils.setEltContent(elts.hints[h as HintType], v);
   }
   for (const [o, v] of Object.entries(
            utils.computeContents(ctx, fmt, schedules))) {
-    setContentOfElement(elts.outputs[o as OutputType], v);
+    utils.setEltContent(elts.outputs[o as OutputType], v);
   }
   for (const v of Object.values(utils.computeHidables(ctx, fmt, schedules))) {
     v.display(c => elts.hidables[hidableContainerMap[c]]);

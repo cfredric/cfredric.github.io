@@ -55,6 +55,20 @@ export function setEltVisibility(elt: HTMLElement, visible: boolean) {
   elt.style.display = value;
 }
 
+export function setEltContent(e: HTMLElement, v: string|FormatResult) {
+  if (typeof v === 'string') {
+    e.innerText = v;
+  } else {
+    e.innerText = v.value;
+    if (v.derivation) {
+      const elt = document.createElement('span');
+      elt.classList.add('derivation-elt');
+      katex.render(` = ${v.derivation}`, elt);
+      e.parentNode?.insertBefore(elt, e.nextSibling);
+    }
+  }
+}
+
 // Counts the number of elements of `data` which satisfy `predicate`.
 export function countSatisfying<T>(
     data: readonly T[], predicate: (t: T) => boolean): number {
@@ -298,13 +312,6 @@ export function removeClass(className: string) {
   while (elements.length > 0) {
     elements[0]!.parentNode!.removeChild(elements[0]!);
   }
-}
-
-export function showDerivation(sibling: Element, derivation: string) {
-  const elt = document.createElement('span');
-  elt.classList.add('derivation-elt');
-  katex.render(` = ${derivation}`, elt);
-  sibling.parentNode?.insertBefore(elt, sibling.nextSibling);
 }
 
 function makePaymentTableHeader(

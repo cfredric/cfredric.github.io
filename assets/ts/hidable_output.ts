@@ -21,12 +21,7 @@ export class HidableOutput {
   }
 
   display(elt: (c: HidableContainer) => HTMLElement): void {
-    getHtmlElt(this.container).style.display = this.output() ? '' : 'none';
-    const e = elt(this.container);
-    e.innerText = this.output();
-    if (typeof this.formattedOrStr !== 'string' &&
-        this.formattedOrStr.derivation) {
-      utils.showDerivation(e, this.formattedOrStr.derivation);
-    }
+    utils.setEltVisibility(getHtmlElt(this.container), !!this.output());
+    utils.setEltContent(elt(this.container), this.formattedOrStr);
   }
 }
