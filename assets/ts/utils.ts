@@ -305,7 +305,6 @@ export function maybeShowDerivation(sibling: Element, derivation?: string) {
     const elt = document.createElement('span');
     elt.classList.add('derivation-elt');
     katex.render(` = ${derivation}`, elt);
-    // elt.innerText = ` = ${derivation}`;
     sibling.parentNode?.insertBefore(elt, sibling.nextSibling);
   }
 }
