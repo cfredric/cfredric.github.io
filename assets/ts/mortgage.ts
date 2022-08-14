@@ -199,14 +199,14 @@ function attachListeners(
 }
 
 function setContentOfElement(e: HTMLElement, v: string|FormatResult) {
-    if (typeof v === 'string') {
-      e.innerText = v;
-    } else {
-      e.innerText = v.value;
-      if (v.derivation) {
-        utils.showDerivation(e, v.derivation);
-      }
+  if (typeof v === 'string') {
+    e.innerText = v;
+  } else {
+    e.innerText = v.value;
+    if (v.derivation) {
+      utils.showDerivation(e, v.derivation);
     }
+  }
 }
 
 // Set the contents of all the outputs based on the `ctx`.

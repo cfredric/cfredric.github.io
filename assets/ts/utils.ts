@@ -457,7 +457,7 @@ export function computeHidables(
     ctx: Context, fmt: Formatter,
     schedules: Schedules|undefined): Record<HidableContainer, HidableOutput> {
   if (!schedules)
-    return mkRecord(hidableContainers, (k) => new HidableOutput(k));
+    return mkRecord(hidableContainers, (k) => new HidableOutput(k, ''));
   let monthlyExpensesPmi;
   let monthsOfPmi;
   if (ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct)) {
@@ -473,8 +473,8 @@ export function computeHidables(
         `${fmt.formatMonthNum(pmiMonths)} (${
             fmt.formatCurrency(ctx.pmi.mul(pmiMonths))} total)`);
   } else {
-    monthlyExpensesPmi = new HidableOutput('monthly-expenses-pmi-div');
-    monthsOfPmi = new HidableOutput('months-of-pmi-div');
+    monthlyExpensesPmi = new HidableOutput('monthly-expenses-pmi-div', '');
+    monthsOfPmi = new HidableOutput('months-of-pmi-div', '');
   }
 
   let firedTomorrowCountdown;
@@ -492,7 +492,8 @@ export function computeHidables(
                 ctx.monthlyDebt),
             maxNonEmptyDate(ctx.closingDate, d3.timeMonth.floor(new Date()))));
   } else {
-    firedTomorrowCountdown = new HidableOutput('fired-tomorrow-countdown-div');
+    firedTomorrowCountdown =
+        new HidableOutput('fired-tomorrow-countdown-div', '');
   }
 
   let totalPaidSoFar;
@@ -531,11 +532,11 @@ export function computeHidables(
         'remaining-equity-to-pay-for-div',
         fmt.formatCurrency(ctx.price.sub(absoluteEquityOwned)));
   } else {
-    totalPaidSoFar = new HidableOutput('total-paid-so-far-div');
-    equityOwnedSoFar = new HidableOutput('equity-owned-so-far-div');
-    totalLoanOwed = new HidableOutput('total-loan-owed-div');
+    totalPaidSoFar = new HidableOutput('total-paid-so-far-div', '');
+    equityOwnedSoFar = new HidableOutput('equity-owned-so-far-div', '');
+    totalLoanOwed = new HidableOutput('total-loan-owed-div', '');
     remainingEquityToPayFor =
-        new HidableOutput('remaining-equity-to-pay-for-div');
+        new HidableOutput('remaining-equity-to-pay-for-div', '');
   }
 
   let debtToIncomeRatio;
@@ -550,7 +551,7 @@ export function computeHidables(
                 .mul(12)),
     );
   } else {
-    debtToIncomeRatio = new HidableOutput('debt-to-income-ratio-div');
+    debtToIncomeRatio = new HidableOutput('debt-to-income-ratio-div', '');
   }
 
   return {
