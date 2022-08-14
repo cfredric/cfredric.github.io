@@ -300,13 +300,11 @@ export function removeClass(className: string) {
   }
 }
 
-export function maybeShowDerivation(sibling: Element, derivation?: string) {
-  if (derivation) {
-    const elt = document.createElement('span');
-    elt.classList.add('derivation-elt');
-    katex.render(` = ${derivation}`, elt);
-    sibling.parentNode?.insertBefore(elt, sibling.nextSibling);
-  }
+export function showDerivation(sibling: Element, derivation: string) {
+  const elt = document.createElement('span');
+  elt.classList.add('derivation-elt');
+  katex.render(` = ${derivation}`, elt);
+  sibling.parentNode?.insertBefore(elt, sibling.nextSibling);
 }
 
 function makePaymentTableHeader(

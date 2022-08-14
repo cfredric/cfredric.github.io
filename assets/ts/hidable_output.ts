@@ -24,8 +24,9 @@ export class HidableOutput {
     getHtmlElt(this.container).style.display = this.output() ? '' : 'none';
     const e = elt(this.container);
     e.innerText = this.output();
-    if (this.formattedOrStr && typeof this.formattedOrStr !== 'string') {
-      utils.maybeShowDerivation(e, this.formattedOrStr.derivation);
+    if (this.formattedOrStr && typeof this.formattedOrStr !== 'string' &&
+        this.formattedOrStr.derivation) {
+      utils.showDerivation(e, this.formattedOrStr.derivation);
     }
   }
 }
