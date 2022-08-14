@@ -43,6 +43,7 @@ function getInputs(): Inputs {
         utils.getInputElt('residential-exemption-savings-input'),
     residentialExemptionDeduction:
         utils.getInputElt('residential-exemption-deduction-input'),
+    taxCollectionMonthStart: utils.getInputElt('tax-collection-start-input'),
     homeownersInsurance: utils.getInputElt('homeowners-insurance-input'),
     closingCost: utils.getInputElt('closing-cost-input'),
     mortgageTerm: utils.getInputElt('mortgage-term-input'),
@@ -117,6 +118,7 @@ function getUrlParamMap(inputs: Inputs): InputParamMap {
     [inputs.propertyTaxPercentage, {name: 'property_tax_pct'}],
     [inputs.residentialExemptionSavings, {name: 'resi_savings'}],
     [inputs.residentialExemptionDeduction, {name: 'resi_deduction'}],
+    [inputs.taxCollectionMonthStart, {name: 'tax_month'}],
     [inputs.homeownersInsurance, {name: 'hoi'}],
     [inputs.closingCost, {name: 'closing_cost'}],
     [inputs.mortgageTerm, {name: 'mortgage-term'}],
@@ -158,6 +160,8 @@ function contextFromInputs(inputs: Inputs): Context {
         utils.orZero(inputs.residentialExemptionSavings),
     residentialExemptionDeduction:
         utils.orZero(inputs.residentialExemptionDeduction),
+    taxCollectionStartMonth:
+        inputs.taxCollectionMonthStart.valueAsDate?.getUTCMonth() ?? 0,
     homeownersInsurance: utils.orZero(inputs.homeownersInsurance),
     closingCost: utils.orZero(inputs.closingCost),
     mortgageTerm: utils.orZeroN(inputs.mortgageTerm),
@@ -257,6 +261,7 @@ function populateFieldsFromURLParams(
     switch (elt.type) {
       case 'text':
       case 'date':
+      case 'month':
         const value = url.searchParams.get(name);
         hasValue = hasValue || value !== null;
         elt.value = value ? decodeURIComponent(value) : '';

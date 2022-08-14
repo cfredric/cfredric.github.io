@@ -133,6 +133,7 @@ export function updateURLParam(
   switch (elt.type) {
     case 'text':
     case 'date':
+    case 'month':
       value = encodeURIComponent(elt.value);
       hasValue = value !== '';
       break;

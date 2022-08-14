@@ -45,6 +45,7 @@ export interface ContextInput {
   propertyTaxPercent: Decimal;
   residentialExemptionAnnualSavings: Decimal;
   residentialExemptionDeduction: Decimal;
+  taxCollectionStartMonth: number;
   homeownersInsurance: Decimal;
   closingCost: Decimal;
   mortgageTerm: number;
@@ -76,6 +77,7 @@ export interface Inputs {
   propertyTaxPercentage: HTMLInputElement;
   residentialExemptionSavings: HTMLInputElement;
   residentialExemptionDeduction: HTMLInputElement;
+  taxCollectionMonthStart: HTMLInputElement;
   homeownersInsurance: HTMLInputElement;
   closingCost: HTMLInputElement;
   mortgageTerm: HTMLInputElement;

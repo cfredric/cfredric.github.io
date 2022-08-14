@@ -30,6 +30,7 @@ export class Context {
   readonly pmiEquityPct: Num;
   readonly propertyTaxQuarterly: Num;
   readonly residentialExemptionQuarterly: Num;
+  readonly taxCollectionStartMonthOffset: number;
   readonly homeownersInsurance: Num;
   readonly closingCost: Num;
   readonly mortgageTerm: Num;
@@ -125,6 +126,14 @@ export class Context {
             annualRate.mul(rawAnnualDeduction).div(4);
       }
     }
+
+    // The first payment will be one month after the closing date (if provided).
+    const firstPaymentMonth = (input.closingDate?.getMonth() ?? 0) + 1;
+    // JavaScript's % operator is remainder, not modulus, so we have to handle
+    // negatives carefully.
+    this.taxCollectionStartMonthOffset =
+        mod(input.taxCollectionStartMonth - firstPaymentMonth, 3);
+
     this.homeownersInsurance = new NamedConstant(
         'homeownersInsurance', Decimal.max(0, input.homeownersInsurance));
     this.closingCost =
@@ -184,4 +193,11 @@ export class Context {
     this.simplifyDerivations =
         this.showDerivations && input.simplifyDerivations;
   }
+}
+
+function mod(n: number, modulus: number): number {
+  while (n < 0) {
+    n += modulus;
+  }
+  return n % modulus;
 }
