@@ -312,17 +312,7 @@ export function maybeShowDerivation(sibling: Element, derivation?: string) {
 
 function makePaymentTableHeader(
     firstColumnName: string, paymentTypes: readonly PaymentType[]): string[] {
-  return [firstColumnName, ...paymentTypes.map(toCapitalized)];
-}
-
-function makeColumnGeneratorForPaymentRecord(
-    ctx: Context, fmt: Formatter, paymentTypes: readonly PaymentType[]) {
-  return (record: PaymentRecordWithMonth): string[] => {
-    return [
-      fmt.formatMonthNum(record.month, ctx.closingDate),
-      ...paymentTypes.map(ty => fmt.formatCurrency(record.data[ty]))
-    ];
-  };
+  return [firstColumnName, ...paymentTypes.map(toCapitalized), 'Total'];
 }
 
 export function makeMonthlyTable(
@@ -330,7 +320,13 @@ export function makeMonthlyTable(
     data: readonly PaymentRecordWithMonth[]): HTMLTableElement {
   return makeTable(
       makePaymentTableHeader('Month', paymentTypes),
-      data.map(makeColumnGeneratorForPaymentRecord(ctx, fmt, paymentTypes)));
+      data.map(
+          (record: PaymentRecordWithMonth): string[] =>
+              [fmt.formatMonthNum(record.month, ctx.closingDate),
+               ...paymentTypes.map(ty => fmt.formatCurrency(record.data[ty])),
+               fmt.formatCurrency(
+                   Num.sum(...paymentTypes.map(k => record.data[k]))),
+  ]));
 }
 
 export function makeYearlyTable(

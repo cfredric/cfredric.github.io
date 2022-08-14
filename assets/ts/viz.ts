@@ -365,8 +365,9 @@ export function setChartsAndButtonsContent(
                     payments.map((d) => d.data), columnValueTypes);
                 return [
                   year.toString(),
-                  fmt.formatCurrency(sums.interest),
-                  fmt.formatCurrency(sums.property_tax),
+                  ...columnValueTypes.map(k => fmt.formatCurrency(sums[k])),
+                  fmt.formatCurrency(
+                      Num.sum(...columnValueTypes.map(k => sums[k]))),
                 ];
               });
         });
