@@ -21,6 +21,7 @@ function defaultInput(): ContextInput {
     propertyTaxPercent: new Decimal(0),
     residentialExemptionAnnualSavings: new Decimal(0),
     residentialExemptionDeduction: new Decimal(0),
+    taxCollectionStartMonth: 0,
     homeownersInsurance: new Decimal(0),
     closingCost: new Decimal(0),
     mortgageTerm: 0,
