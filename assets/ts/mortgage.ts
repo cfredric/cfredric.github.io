@@ -62,43 +62,46 @@ function getInputs(): Inputs {
 
 function getHints(): Record<HintType, HTMLElement> {
   return {
-    homeValue: utils.getHtmlElt('home-value-hint'),
-    interestRate: utils.getHtmlElt('interest-rate-hint'),
-    pointValue: utils.getHtmlElt('point-value-hint'),
+    homeValue: utils.getHtmlEltWithId('home-value-hint'),
+    interestRate: utils.getHtmlEltWithId('interest-rate-hint'),
+    pointValue: utils.getHtmlEltWithId('point-value-hint'),
     pmiEquityPercentage:
-        utils.getHtmlElt('mortgage-insurance-equity-percent-hint'),
-    propertyTax: utils.getHtmlElt('property-tax-percentage-hint'),
-    residentialExemption: utils.getHtmlElt('residential-exemption-hint'),
-    mortgageTerm: utils.getHtmlElt('mortgage-term-hint'),
-    downPayment: utils.getHtmlElt('down-payment-hint'),
-    paymentsAlreadyMade: utils.getHtmlElt('payments-already-made-hint'),
-    stocksReturnRate: utils.getHtmlElt('stocks-return-rate-hint'),
+        utils.getHtmlEltWithId('mortgage-insurance-equity-percent-hint'),
+    propertyTax: utils.getHtmlEltWithId('property-tax-percentage-hint'),
+    residentialExemption: utils.getHtmlEltWithId('residential-exemption-hint'),
+    mortgageTerm: utils.getHtmlEltWithId('mortgage-term-hint'),
+    downPayment: utils.getHtmlEltWithId('down-payment-hint'),
+    paymentsAlreadyMade: utils.getHtmlEltWithId('payments-already-made-hint'),
+    stocksReturnRate: utils.getHtmlEltWithId('stocks-return-rate-hint'),
   };
 }
 
 function getOutputs(): Record<OutputType, HTMLElement> {
   return {
-    loanAmount: utils.getHtmlElt('loan-amount-output'),
-    principalAndInterest: utils.getHtmlElt('principal-and-interest-output'),
-    monthlyExpensesAmount: utils.getHtmlElt('monthly-expenses-output'),
-    lifetimeOfLoan: utils.getHtmlElt('lifetime-of-loan-output'),
-    lifetimePayment: utils.getHtmlElt('lifetime-payment-output'),
-    purchasePayment: utils.getHtmlElt('purchase-payment-output'),
-    prepayComparison: utils.getHtmlElt('prepay-comparison-output'),
-    stocksComparison: utils.getHtmlElt('stocks-comparison-output'),
+    loanAmount: utils.getHtmlEltWithId('loan-amount-output'),
+    principalAndInterest:
+        utils.getHtmlEltWithId('principal-and-interest-output'),
+    monthlyExpensesAmount: utils.getHtmlEltWithId('monthly-expenses-output'),
+    lifetimeOfLoan: utils.getHtmlEltWithId('lifetime-of-loan-output'),
+    lifetimePayment: utils.getHtmlEltWithId('lifetime-payment-output'),
+    purchasePayment: utils.getHtmlEltWithId('purchase-payment-output'),
+    prepayComparison: utils.getHtmlEltWithId('prepay-comparison-output'),
+    stocksComparison: utils.getHtmlEltWithId('stocks-comparison-output'),
   };
 }
 
 function getHidableOutputs(): Record<HidableOutputType, HTMLElement> {
   return {
-    monthlyExpensesPmi: utils.getHtmlElt('monthly-expenses-pmi-output'),
-    pmiPaymentTimeline: utils.getHtmlElt('pmi-payment-timeline-output'),
-    totalPaidSoFar: utils.getHtmlElt('total-paid-so-far-output'),
-    equityOwnedSoFar: utils.getHtmlElt('equity-owned-so-far-output'),
-    totalLoanOwed: utils.getHtmlElt('total-loan-owed-output'),
-    remainingEquity: utils.getHtmlElt('remaining-equity-to-pay-for-output'),
-    debtToIncome: utils.getHtmlElt('debt-to-income-ratio-output'),
-    firedTomorrowCountdown: utils.getHtmlElt('fired-tomorrow-countdown-output'),
+    monthlyExpensesPmi: utils.getHtmlEltWithId('monthly-expenses-pmi-output'),
+    pmiPaymentTimeline: utils.getHtmlEltWithId('pmi-payment-timeline-output'),
+    totalPaidSoFar: utils.getHtmlEltWithId('total-paid-so-far-output'),
+    equityOwnedSoFar: utils.getHtmlEltWithId('equity-owned-so-far-output'),
+    totalLoanOwed: utils.getHtmlEltWithId('total-loan-owed-output'),
+    remainingEquity:
+        utils.getHtmlEltWithId('remaining-equity-to-pay-for-output'),
+    debtToIncome: utils.getHtmlEltWithId('debt-to-income-ratio-output'),
+    firedTomorrowCountdown:
+        utils.getHtmlEltWithId('fired-tomorrow-countdown-output'),
   };
 }
 
@@ -201,7 +204,7 @@ function attachListeners(
 // Set the contents of all the outputs based on the `ctx`.
 function setContents(ctx: Context, elts: Elements): void {
   utils.setEltVisibility(
-      utils.getHtmlElt('simplify-derivations-span'), ctx.showDerivations);
+      utils.getHtmlEltWithId('simplify-derivations-span'), ctx.showDerivations);
   fmt.setDerivationParams(ctx.showDerivations, ctx.simplifyDerivations);
 
   utils.removeClass('derivation-elt');
@@ -355,7 +358,7 @@ export function main(): void {
     outputs: getOutputs(),
     hints: getHints(),
     hidables: getHidableOutputs(),
-    clearInputsButton: utils.getHtmlElt('clear-inputs-button'),
+    clearInputsButton: utils.getHtmlEltWithId('clear-inputs-button'),
   };
   const urlParamMap = getUrlParamMap(elts.inputs);
   const privateValueMap = getPrivateValueMap(elts.inputs);

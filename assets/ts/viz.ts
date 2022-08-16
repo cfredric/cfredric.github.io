@@ -50,9 +50,9 @@ function clearCumulativeChart() {
 }
 
 function clearTables() {
-  utils.removeChildren(utils.getHtmlElt('schedule_tab'));
-  utils.removeChildren(utils.getHtmlElt('cumulative_tab'));
-  utils.removeChildren(utils.getHtmlElt('tax_year_tab'));
+  utils.removeChildren(utils.getHtmlEltWithId('schedule_tab'));
+  utils.removeChildren(utils.getHtmlEltWithId('cumulative_tab'));
+  utils.removeChildren(utils.getHtmlEltWithId('tax_year_tab'));
 }
 
 // Builds the chart of monthly payments over time.
@@ -345,18 +345,19 @@ export function setChartsAndButtonsContent(
   buildCumulativeChart(ctx, schedules.cumulative(), fmt, loanPaymentTypes);
 
   new ExpandableElement(
-      utils.getHtmlElt('schedule_tab'), 'Monthly payment table',
+      utils.getHtmlEltWithId('schedule_tab'), 'Monthly payment table',
       () => utils.makeMonthlyTable(
           ctx, fmt, paymentTypes, schedules.pointwise()));
   new ExpandableElement(
-      utils.getHtmlElt('cumulative_tab'), 'Cumulative payments table',
+      utils.getHtmlEltWithId('cumulative_tab'), 'Cumulative payments table',
       () => utils.makeMonthlyTable(
           ctx, fmt, loanPaymentTypes, schedules.cumulative()));
 
   if (ctx.closingDate) {
     const closingDate = ctx.closingDate;
     new ExpandableElement(
-        utils.getHtmlElt('tax_year_tab'), 'Moneys Paid by Tax Year', () => {
+        utils.getHtmlEltWithId('tax_year_tab'), 'Moneys Paid by Tax Year',
+        () => {
           const columnValueTypes = ['interest', 'property_tax'] as const;
           return utils.makeYearlyTable(
               closingDate, columnValueTypes, schedules.pointwise(),

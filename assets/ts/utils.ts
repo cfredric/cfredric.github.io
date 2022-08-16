@@ -35,7 +35,7 @@ export function getInputElt(id: string): HTMLInputElement {
   return elt;
 }
 // Returns the HTMLElement with the given ID, or throws an informative error.
-export function getHtmlElt(id: string): HTMLElement {
+export function getHtmlEltWithId(id: string): HTMLElement {
   const elt = document.getElementById(id);
   if (!(elt instanceof HTMLElement))
     throw new Error(`${id} element is not an HTMLElement`);

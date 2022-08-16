@@ -1,7 +1,7 @@
 import {FormatResult} from './formatter';
 import {HidableContainer} from './types';
 import * as utils from './utils';
-import {getHtmlElt} from './utils';
+import {getHtmlEltWithId} from './utils';
 
 export class HidableOutput {
   private readonly formattedOrStr: FormatResult|string;
@@ -18,7 +18,7 @@ export class HidableOutput {
   }
 
   display(c: HidableContainer, elt: HTMLElement): void {
-    utils.setEltVisibility(getHtmlElt(c), !!this.output());
+    utils.setEltVisibility(getHtmlEltWithId(c), !!this.output());
     utils.setEltContent(elt, this.formattedOrStr);
   }
 }
