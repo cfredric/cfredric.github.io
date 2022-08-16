@@ -390,7 +390,7 @@ export function toCapitalized(paymentType: PaymentType): string {
 }
 
 // Creates a record with a specific value for each key.
-export function mkRecord<K extends string, V>(
+function mkRecord<K extends string, V>(
     ks: readonly K[], v: (k: K) => V): Record<K, V> {
   const record = {} as Record<K, V>;
   for (const k of ks) {
