@@ -5,7 +5,7 @@ import katex from 'katex';
 import {Context} from './context';
 import {FormatResult, Formatter} from './formatter';
 import {HidableOutput} from './hidable_output';
-import {AnyNumber, Num} from './num';
+import {Num} from './num';
 import {Schedules} from './schedules';
 import {HidableContainer, hidableContainers, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType} from './types';
 
@@ -92,20 +92,6 @@ export function computeMonthDiff(from: Date, to: Date) {
 export function sumOfKeys<T extends string>(
     data: Record<T, Num>, keys: readonly T[]) {
   return Num.sum(...keys.map(key => data[key]));
-}
-
-// Returns a Record where the value of each key is the sum of the values of that
-// key in `data`.
-export function sumByFields<K extends string>(
-    data: readonly Record<K, AnyNumber>[],
-    fields: readonly K[]): Record<K, Num> {
-  const result = mkRecord(fields, () => Num.literal(0));
-  for (const datum of data.values()) {
-    for (const f of fields) {
-      result[f] = result[f].add(datum[f]);
-    }
-  }
-  return result;
 }
 
 // Returns the number of payments that can be made with the given total assets,

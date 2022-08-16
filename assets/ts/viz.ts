@@ -361,8 +361,15 @@ export function setChartsAndButtonsContent(
           return utils.makeYearlyTable(
               closingDate, columnValueTypes, schedules.pointwise(),
               (year, payments) => {
-                const sums = utils.sumByFields(
-                    payments.map((d) => d.data), columnValueTypes);
+                const sums: Record<typeof columnValueTypes[number], Num> = {
+                  'interest': Num.literal(0),
+                  'property_tax': Num.literal(0),
+                };
+                for (const payment of payments) {
+                  for (const k of columnValueTypes) {
+                    sums[k] = sums[k].add(payment.data[k]);
+                  }
+                }
                 return [
                   year.toString(),
                   ...columnValueTypes.map(k => fmt.formatCurrency(sums[k])),
