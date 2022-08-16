@@ -10,15 +10,11 @@ export class HidableOutput {
     this.formattedOrStr = formattedOrStr;
   }
 
-  output(): string {
-    if (typeof this.formattedOrStr === 'string') {
-      return this.formattedOrStr;
-    }
-    return this.formattedOrStr.value;
-  }
-
   display(c: HidableContainer, elt: HTMLElement): void {
-    utils.setEltVisibility(getHtmlEltWithId(c), !!this.output());
+    const visible =
+        !!(typeof this.formattedOrStr === 'string' ? this.formattedOrStr :
+                                                     this.formattedOrStr.value);
+    utils.setEltVisibility(getHtmlEltWithId(c), visible);
     utils.setEltContent(elt, this.formattedOrStr);
   }
 }
