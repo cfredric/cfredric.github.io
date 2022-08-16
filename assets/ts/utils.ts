@@ -7,7 +7,7 @@ import {FormatResult, Formatter} from './formatter';
 import {HidableOutput} from './hidable_output';
 import {Num} from './num';
 import {Schedules} from './schedules';
-import {HidableContainer, hidableContainers, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType} from './types';
+import {HidableContainer, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType} from './types';
 
 // Returns the numeric value of the input element, or 0 if the input was empty.
 export function orZeroN(elt: HTMLInputElement): number {
@@ -375,16 +375,6 @@ export function toCapitalized(paymentType: PaymentType): string {
   }
 }
 
-// Creates a record with a specific value for each key.
-function mkRecord<K extends string, V>(
-    ks: readonly K[], v: (k: K) => V): Record<K, V> {
-  const record = {} as Record<K, V>;
-  for (const k of ks) {
-    record[k] = v(k);
-  }
-  return record;
-}
-
 // Compute hint strings and set output strings.
 export function computeContents(
     ctx: Context, fmt: Formatter,
@@ -449,8 +439,18 @@ export function computeContents(
 export function computeHidables(
     ctx: Context, fmt: Formatter,
     schedules: Schedules|undefined): Record<HidableContainer, HidableOutput> {
-  if (!schedules)
-    return mkRecord(hidableContainers, () => new HidableOutput(''));
+  if (!schedules) {
+    return {
+      ['monthly-expenses-pmi-div']: new HidableOutput(''),
+      ['months-of-pmi-div']: new HidableOutput(''),
+      ['fired-tomorrow-countdown-div']: new HidableOutput(''),
+      ['total-paid-so-far-div']: new HidableOutput(''),
+      ['equity-owned-so-far-div']: new HidableOutput(''),
+      ['total-loan-owed-div']: new HidableOutput(''),
+      ['remaining-equity-to-pay-for-div']: new HidableOutput(''),
+      ['debt-to-income-ratio-div']: new HidableOutput(''),
+    };
+  }
   let monthlyExpensesPmi;
   let monthsOfPmi;
   if (ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct)) {
