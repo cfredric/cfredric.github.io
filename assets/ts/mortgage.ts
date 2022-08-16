@@ -4,7 +4,7 @@ import {Context} from './context';
 import {Formatter} from './formatter';
 import {Num} from './num';
 import {Schedules} from './schedules';
-import {Elements, hidableContainerMap, HidableOutputType, HintType, InputEntry, Inputs, OutputType, TemplateType} from './types';
+import {Elements, HidableContainer, hidableContainerMap, HidableOutputType, HintType, InputEntry, Inputs, OutputType, TemplateType} from './types';
 import * as utils from './utils';
 import * as viz from './viz';
 
@@ -215,8 +215,10 @@ function setContents(ctx: Context, elts: Elements): void {
            utils.computeContents(ctx, fmt, schedules))) {
     utils.setEltContent(elts.outputs[o as OutputType], v);
   }
-  for (const v of Object.values(utils.computeHidables(ctx, fmt, schedules))) {
-    v.display(c => elts.hidables[hidableContainerMap[c]]);
+  for (const [h, v] of Object.entries(
+           utils.computeHidables(ctx, fmt, schedules))) {
+    const hc = h as HidableContainer;
+    v.display(hc, elts.hidables[hidableContainerMap[hc]]);
   }
   for (const [t, v] of Object.entries(utils.computeTemplates(ctx, fmt))) {
     utils.fillTemplateElts(t as TemplateType, v);

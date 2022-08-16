@@ -450,43 +450,37 @@ export function computeHidables(
     ctx: Context, fmt: Formatter,
     schedules: Schedules|undefined): Record<HidableContainer, HidableOutput> {
   if (!schedules)
-    return mkRecord(hidableContainers, (k) => new HidableOutput(k, ''));
+    return mkRecord(hidableContainers, () => new HidableOutput(''));
   let monthlyExpensesPmi;
   let monthsOfPmi;
   if (ctx.pmi.gt(0) && ctx.downPaymentPct.lt(ctx.pmiEquityPct)) {
     monthlyExpensesPmi = new HidableOutput(
-        'monthly-expenses-pmi-div',
         fmt.formatCurrencyWithDerivation(Num.sum(
             ctx.monthlyLoanPayment, ctx.monthlyNonLoanPayment, ctx.pmi)),
     );
     const pmiMonths = countSatisfying(
         schedules.pointwise(), payment => !payment.data.pmi.eq(0));
-    monthsOfPmi = new HidableOutput(
-        'months-of-pmi-div',
-        `${fmt.formatMonthNum(pmiMonths)} (${
-            fmt.formatCurrency(ctx.pmi.mul(pmiMonths))} total)`);
+    monthsOfPmi = new HidableOutput(`${fmt.formatMonthNum(pmiMonths)} (${
+        fmt.formatCurrency(ctx.pmi.mul(pmiMonths))} total)`);
   } else {
-    monthlyExpensesPmi = new HidableOutput('monthly-expenses-pmi-div', '');
-    monthsOfPmi = new HidableOutput('months-of-pmi-div', '');
+    monthlyExpensesPmi = new HidableOutput('');
+    monthsOfPmi = new HidableOutput('');
   }
 
   let firedTomorrowCountdown;
   if (!ctx.totalAssets.eq(0)) {
-    firedTomorrowCountdown = new HidableOutput(
-        'fired-tomorrow-countdown-div',
-        fmt.formatMonthNum(
-            countBurndownMonths(
-                ctx.totalAssets.sub(
-                    (ctx.alreadyClosed ? Num.literal(0) :
-                                         ctx.downPayment.add(ctx.closingCost))),
-                schedules.pointwise()
-                    .slice(ctx.paymentsAlreadyMade)
-                    .map(d => d.data),
-                ctx.monthlyDebt),
-            maxNonEmptyDate(ctx.closingDate, d3.timeMonth.floor(new Date()))));
+    firedTomorrowCountdown = new HidableOutput(fmt.formatMonthNum(
+        countBurndownMonths(
+            ctx.totalAssets.sub(
+                (ctx.alreadyClosed ? Num.literal(0) :
+                                     ctx.downPayment.add(ctx.closingCost))),
+            schedules.pointwise()
+                .slice(ctx.paymentsAlreadyMade)
+                .map(d => d.data),
+            ctx.monthlyDebt),
+        maxNonEmptyDate(ctx.closingDate, d3.timeMonth.floor(new Date()))));
   } else {
-    firedTomorrowCountdown =
-        new HidableOutput('fired-tomorrow-countdown-div', '');
+    firedTomorrowCountdown = new HidableOutput('');
   }
 
   let totalPaidSoFar;
@@ -499,16 +493,13 @@ export function computeHidables(
             .add(schedules.cumulative()[ctx.paymentsAlreadyMade]!.data
                      .principal);
 
-    totalPaidSoFar = new HidableOutput(
-        'total-paid-so-far-div',
-        fmt.formatCurrency(
-            (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
-                                 Num.literal(0))
-                .add(sumOfKeys(
-                    schedules.cumulative()[ctx.paymentsAlreadyMade]!.data,
-                    paymentTypes))));
+    totalPaidSoFar = new HidableOutput(fmt.formatCurrency(
+        (ctx.alreadyClosed ? ctx.closingCost.add(ctx.downPayment) :
+                             Num.literal(0))
+            .add(sumOfKeys(
+                schedules.cumulative()[ctx.paymentsAlreadyMade]!.data,
+                paymentTypes))));
     equityOwnedSoFar = new HidableOutput(
-        'equity-owned-so-far-div',
         `${fmt.formatPercent(absoluteEquityOwned.div(ctx.homeValue))} (${
             fmt.formatCurrency(absoluteEquityOwned)})`);
     const totalPrincipalAndInterestPaid = sumOfKeys(
@@ -517,25 +508,20 @@ export function computeHidables(
     const totalPrincipalAndInterestToPay = sumOfKeys(
         schedules.cumulative()[schedules.cumulative().length - 1]!.data,
         loanPaymentTypes);
-    totalLoanOwed = new HidableOutput(
-        'total-loan-owed-div',
-        fmt.formatCurrency(
-            totalPrincipalAndInterestToPay.sub(totalPrincipalAndInterestPaid)));
+    totalLoanOwed = new HidableOutput(fmt.formatCurrency(
+        totalPrincipalAndInterestToPay.sub(totalPrincipalAndInterestPaid)));
     remainingEquityToPayFor = new HidableOutput(
-        'remaining-equity-to-pay-for-div',
         fmt.formatCurrency(ctx.price.sub(absoluteEquityOwned)));
   } else {
-    totalPaidSoFar = new HidableOutput('total-paid-so-far-div', '');
-    equityOwnedSoFar = new HidableOutput('equity-owned-so-far-div', '');
-    totalLoanOwed = new HidableOutput('total-loan-owed-div', '');
-    remainingEquityToPayFor =
-        new HidableOutput('remaining-equity-to-pay-for-div', '');
+    totalPaidSoFar = new HidableOutput('');
+    equityOwnedSoFar = new HidableOutput('');
+    totalLoanOwed = new HidableOutput('');
+    remainingEquityToPayFor = new HidableOutput('');
   }
 
   let debtToIncomeRatio;
   if (ctx.annualIncome.gt(0)) {
     debtToIncomeRatio = new HidableOutput(
-        'debt-to-income-ratio-div',
         fmt.formatPercentWithDerivation(
             Num.sum(
                    ctx.monthlyDebt, ctx.monthlyLoanPayment,
@@ -544,7 +530,7 @@ export function computeHidables(
                 .mul(12)),
     );
   } else {
-    debtToIncomeRatio = new HidableOutput('debt-to-income-ratio-div', '');
+    debtToIncomeRatio = new HidableOutput('');
   }
 
   return {
