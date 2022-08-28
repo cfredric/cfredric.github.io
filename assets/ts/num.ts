@@ -1,4 +1,3 @@
-import * as d3 from 'd3';
 import Decimal from 'decimal.js';
 
 export type AnyNumber = number|Num|Decimal;
@@ -723,7 +722,12 @@ class DerivedNum extends NumBase {
     if (other.ns.length !== this.ns.length) {
       return false;
     }
-    return d3.zip(this.ns, other.ns).every(([n, m]) => n?.eqSubtree(m!));
+    for (let i = 0; i < this.ns.length; ++i) {
+      if (!this.ns[i]!.eqSubtree(other.ns[i]!)) {
+        return false;
+      }
+    }
+    return true;
   }
 }
 
