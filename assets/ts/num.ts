@@ -694,23 +694,25 @@ class DerivedNum extends NumBase {
       return s;
     }
 
-    // Otherwise, we apply the rule to the first matching subtree underneath us,
-    // and return a modified version of the subtree rooted at this node, if
-    // there's a match.
-    for (const [i, n] of this.ns.entries()) {
-      const s = n.simplifyOne(rule);
-      if (s) {
-        return new DerivedNum(
-            this.op,
-            ...this.ns.slice(0, i),
-            s,
-            ...this.ns.slice(i + 1),
-        );
+    // Next, apply the rule to all subtrees underneath us.
+    let anyUpdated = false;
+    const operands = [];
+    for (const n of this.ns) {
+      const u = n.simplifyOne(rule);
+      if (u != null) {
+        operands.push(u);
+        anyUpdated = true;
+      } else {
+        operands.push(n);
       }
     }
+    if (!anyUpdated) {
+      // If no subtree can be updated, return early.
+      return null;
+    }
 
-    // If there's no match, we indicate by returning null.
-    return null;
+    // Otherwise, return a new node with the subtrees, updated as appropriate.
+    return new DerivedNum(this.op, ...operands);
   }
 
   eqSubtree(other: NumBase): boolean {
