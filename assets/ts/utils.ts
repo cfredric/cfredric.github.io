@@ -7,7 +7,7 @@ import {FormatResult, Formatter} from './formatter';
 import {HidableOutput} from './hidable_output';
 import {Num} from './num';
 import {Schedules} from './schedules';
-import {HidableContainer, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType} from './types';
+import {HidableContainer, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType} from './types';
 
 // Returns the numeric value of the input element, or 0 if the input was empty.
 export function orZeroN(elt: HTMLInputElement): number {
@@ -97,17 +97,19 @@ export function sumOfKeys<T extends string>(
 // Returns the number of payments that can be made with the given total assets,
 // taking previously-made payments into account.
 export function countBurndownMonths(
-    startingAssets: Num, schedule: readonly PaymentRecord[],
-    monthlyDebt: Num): number {
+    startingAssets: Num, schedule: readonly PaymentRecordWithMonth[],
+    monthlyDebt: Num, paymentsAlreadyMade: number): number {
   let assets = startingAssets;
-  for (const [i, data] of schedule.entries()) {
-    const due = sumOfKeys(data, paymentTypes).add(monthlyDebt);
+  for (let i = paymentsAlreadyMade; i < schedule.length; ++i) {
+    const due = sumOfKeys(schedule[i]!.data, paymentTypes).add(monthlyDebt);
     if (due.gt(assets)) return i;
     assets = assets.sub(due);
   }
 
   const totalMonthlyExpenses = monthlyDebt.add(
-      schedule.length ? sumOfKeys(schedule[0]!, nonLoanPaymentTypes) : 0);
+      schedule.length ?
+          sumOfKeys(schedule[paymentsAlreadyMade]!.data, nonLoanPaymentTypes) :
+          0);
   return schedule.length +
       Num.floor(assets.div(totalMonthlyExpenses)).toNumber();
 }
@@ -474,10 +476,7 @@ export function computeHidables(
             ctx.totalAssets.sub(
                 (ctx.alreadyClosed ? Num.literal(0) :
                                      ctx.downPayment.add(ctx.closingCost))),
-            schedules.pointwise()
-                .slice(ctx.paymentsAlreadyMade)
-                .map(d => d.data),
-            ctx.monthlyDebt),
+            schedules.pointwise(), ctx.monthlyDebt, ctx.paymentsAlreadyMade),
         maxNonEmptyDate(ctx.closingDate, d3.timeMonth.floor(new Date()))));
   } else {
     firedTomorrowCountdown = new HidableOutput('');

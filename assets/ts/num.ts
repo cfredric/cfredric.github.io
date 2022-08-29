@@ -40,8 +40,8 @@ function computeValue(op: Op, ns: readonly NumBase[]): Decimal {
       return ns[0]!.value().sub(ns[1]!.value());
     case Op.Mult: {
       let result = ns[0]!.value();
-      for (const n of ns.slice(1)) {
-        result = result.mul(n.value());
+      for (let i = 1; i < ns.length; ++i) {
+        result = result.mul(ns[i]!.value());
       }
       return result;
     }
@@ -512,8 +512,8 @@ export abstract class Num {
     if (!xs.length) return Num.literal(0);
     const ns = xs.map(x => toNumBase(x));
     let result = ns[0]!;
-    for (const n of ns.slice(1)) {
-      result = result.add(n);
+    for (let i = 1; i < ns.length; ++i) {
+      result = result.add(ns[i]!);
     }
     return result;
   }
@@ -521,8 +521,8 @@ export abstract class Num {
     if (!xs.length) return Num.literal(1);
     const ns = xs.map(x => toNumBase(x));
     let result = ns[0]!;
-    for (const n of ns.slice(1)) {
-      result = result.mul(n);
+    for (let i = 1; i < ns.length; ++i) {
+      result = result.mul(ns[i]!);
     }
     return result;
   }

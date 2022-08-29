@@ -60,11 +60,11 @@ test('monthDiff', () => {
 
 test('countBurndownMonths', () => {
   // Can handle an empty schedule slice.
-  expect(utils.countBurndownMonths(Num.literal(50), [], Num.literal(10)))
+  expect(utils.countBurndownMonths(Num.literal(50), [], Num.literal(10), 0))
       .toBe(5);
 
   // Can handle an empty schedule slice and no monthly debts.
-  expect(utils.countBurndownMonths(Num.literal(50), [], Num.literal(0)))
+  expect(utils.countBurndownMonths(Num.literal(50), [], Num.literal(0), 0))
       .toBe(Infinity);
 
   // Can pay off full loan, no recurring debts, no non-loan payments.
@@ -72,15 +72,18 @@ test('countBurndownMonths', () => {
              Num.literal(100),
              [
                {
-                 'principal': Num.literal(99),
-                 'interest': Num.literal(0),
-                 'hoa': Num.literal(0),
-                 'property_tax': Num.literal(0),
-                 'pmi': Num.literal(0),
-                 'homeowners_insurance': Num.literal(0),
+                 month: 0,
+                 data: {
+                   'principal': Num.literal(99),
+                   'interest': Num.literal(0),
+                   'hoa': Num.literal(0),
+                   'property_tax': Num.literal(0),
+                   'pmi': Num.literal(0),
+                   'homeowners_insurance': Num.literal(0),
+                 },
                },
              ],
-             Num.literal(0)))
+             Num.literal(0), 0))
       .toBe(Infinity);
 
   // Can pay off full loan, no recurring debts, but some non-loan payments.
@@ -88,15 +91,18 @@ test('countBurndownMonths', () => {
              Num.literal(100),
              [
                {
-                 'principal': Num.literal(95),
-                 'interest': Num.literal(0),
-                 'hoa': Num.literal(1),
-                 'property_tax': Num.literal(0),
-                 'pmi': Num.literal(0),
-                 'homeowners_insurance': Num.literal(0),
+                 month: 0,
+                 data: {
+                   'principal': Num.literal(95),
+                   'interest': Num.literal(0),
+                   'hoa': Num.literal(1),
+                   'property_tax': Num.literal(0),
+                   'pmi': Num.literal(0),
+                   'homeowners_insurance': Num.literal(0),
+                 },
                },
              ],
-             Num.literal(0)))
+             Num.literal(0), 0))
       .toBe(5);
 
   // Can't pay off full loan; no recurring debts; some non-loan payments.
@@ -104,23 +110,29 @@ test('countBurndownMonths', () => {
              Num.literal(100),
              [
                {
-                 'principal': Num.literal(95),
-                 'interest': Num.literal(0),
-                 'hoa': Num.literal(1),
-                 'property_tax': Num.literal(0),
-                 'pmi': Num.literal(0),
-                 'homeowners_insurance': Num.literal(0),
+                 month: 0,
+                 data: {
+                   'principal': Num.literal(95),
+                   'interest': Num.literal(0),
+                   'hoa': Num.literal(1),
+                   'property_tax': Num.literal(0),
+                   'pmi': Num.literal(0),
+                   'homeowners_insurance': Num.literal(0),
+                 },
                },
                {
-                 'principal': Num.literal(95),
-                 'interest': Num.literal(0),
-                 'hoa': Num.literal(1),
-                 'property_tax': Num.literal(0),
-                 'pmi': Num.literal(0),
-                 'homeowners_insurance': Num.literal(0),
+                 month: 1,
+                 data: {
+                   'principal': Num.literal(95),
+                   'interest': Num.literal(0),
+                   'hoa': Num.literal(1),
+                   'property_tax': Num.literal(0),
+                   'pmi': Num.literal(0),
+                   'homeowners_insurance': Num.literal(0),
+                 },
                },
              ],
-             Num.literal(0)))
+             Num.literal(0), 0))
       .toBe(1);
 
   // Can't pay off full loan; some recurring debts; some non-loan payments.
@@ -128,23 +140,29 @@ test('countBurndownMonths', () => {
              Num.literal(100),
              [
                {
-                 'principal': Num.literal(95),
-                 'interest': Num.literal(0),
-                 'hoa': Num.literal(1),
-                 'property_tax': Num.literal(0),
-                 'pmi': Num.literal(0),
-                 'homeowners_insurance': Num.literal(0),
+                 month: 0,
+                 data: {
+                   'principal': Num.literal(95),
+                   'interest': Num.literal(0),
+                   'hoa': Num.literal(1),
+                   'property_tax': Num.literal(0),
+                   'pmi': Num.literal(0),
+                   'homeowners_insurance': Num.literal(0),
+                 },
                },
                {
-                 'principal': Num.literal(95),
-                 'interest': Num.literal(0),
-                 'hoa': Num.literal(1),
-                 'property_tax': Num.literal(0),
-                 'pmi': Num.literal(0),
-                 'homeowners_insurance': Num.literal(0),
+                 month: 1,
+                 data: {
+                   'principal': Num.literal(95),
+                   'interest': Num.literal(0),
+                   'hoa': Num.literal(1),
+                   'property_tax': Num.literal(0),
+                   'pmi': Num.literal(0),
+                   'homeowners_insurance': Num.literal(0),
+                 },
                },
              ],
-             Num.literal(2)))
+             Num.literal(2), 0))
       .toBe(1);
 
   // Can pay off full loan; some recurring debts; some non-loan payments.  At
@@ -154,15 +172,49 @@ test('countBurndownMonths', () => {
              Num.literal(16),
              [
                {
-                 'principal': Num.literal(1),
-                 'interest': Num.literal(0),
-                 'hoa': Num.literal(2),
-                 'property_tax': Num.literal(0),
-                 'pmi': Num.literal(0),
-                 'homeowners_insurance': Num.literal(0),
+                 month: 0,
+                 data: {
+                   'principal': Num.literal(1),
+                   'interest': Num.literal(0),
+                   'hoa': Num.literal(2),
+                   'property_tax': Num.literal(0),
+                   'pmi': Num.literal(0),
+                   'homeowners_insurance': Num.literal(0),
+                 },
                },
              ],
-             Num.literal(4)))
+             Num.literal(4), 0))
+      .toBe(2);
+
+  // Can't pay off full loan; some recurring debts; some non-loan payments; one
+  // of the payments is already made.
+  expect(utils.countBurndownMonths(
+             Num.literal(100),
+             [
+               {
+                 month: 0,
+                 data: {
+                   'principal': Num.literal(95),
+                   'interest': Num.literal(0),
+                   'hoa': Num.literal(1),
+                   'property_tax': Num.literal(0),
+                   'pmi': Num.literal(0),
+                   'homeowners_insurance': Num.literal(0),
+                 },
+               },
+               {
+                 month: 1,
+                 data: {
+                   'principal': Num.literal(95),
+                   'interest': Num.literal(0),
+                   'hoa': Num.literal(1),
+                   'property_tax': Num.literal(0),
+                   'pmi': Num.literal(0),
+                   'homeowners_insurance': Num.literal(0),
+                 },
+               },
+             ],
+             Num.literal(2), 1))
       .toBe(2);
 });
 
