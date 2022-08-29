@@ -565,13 +565,15 @@ abstract class NumBase extends Num {
   }
 
   // Implementation detail used in simplifying the expression tree when
-  // stringifying. Default behavior is to delegate to `toString`. Subclasses
-  // that represent an expression tree (rather than a single leaf node) should
-  // use `_op` to decide whether to return `(${this})` or `${this}`, depending
-  // on the relative precedences of the operations (as well as their
-  // associativities).
-  parenOrUnparen(_op: Op): string {
-    return this.toString();
+  // stringifying.
+  parenOrUnparen(parentOp: Op): string {
+    return this.is_leq_precedence_than(parentOp) ? `{(${this})}` : `${this}`;
+  }
+
+  // Subclasses that represent an expression subtree should compare the parent
+  // op to their own op.
+  is_leq_precedence_than(_parentOp: Op): boolean {
+    return false;
   }
 
   // Runs a single simplification rule on this subtree. Returns a new subtree if
@@ -650,17 +652,10 @@ class DerivedNum extends NumBase {
     return this.v;
   }
 
-  override parenOrUnparen(op: Op): string {
-    if (this.op === op && (op === Op.Mult || op === Op.Plus)) {
-      // We've already merged associative ops (i.e. addition and
-      // multiplication).
-      throw new Error('unreachable');
-    }
+  override is_leq_precedence_than(parentOp: Op): boolean {
     // NB: LaTeX's syntax for a fraction is unambiguous, so we don't bother with
     // parens for fractions.
-    return this.op !== Op.Div && precedence(op) >= precedence(this.op) ?
-        `{(${this})}` :
-        `${this}`;
+    return this.op !== Op.Div && precedence(parentOp) >= precedence(this.op);
   }
 
   override toString(): string {
