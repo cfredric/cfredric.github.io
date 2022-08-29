@@ -662,17 +662,21 @@ class DerivedNum extends NumBase {
     switch (this.op) {
       case Op.Plus:
         return this.ns.map(n => n.parenOrUnparen(this.op)).join(' + ');
-      case Op.Minus:
+      case Op.Minus: {
         // Note: we don't have to call parenOrUnparen for the left operand,
         // because expressions whose ops bind more tightly than - don't need
         // parens; and - itself is left-associative, as is +, so neither need
         // parens when they're the left operand; and there are no operations
         // that bind more loosely than -.
-        return `${this.ns[0]} - ${this.ns[1]!.parenOrUnparen(this.op)}`;
+        const [minuend, subtrahend] = this.ns;
+        return `${minuend} - ${subtrahend!.parenOrUnparen(this.op)}`;
+      }
       case Op.Mult:
         return this.ns.map(n => n.parenOrUnparen(this.op)).join(' * ');
-      case Op.Div:
-        return `\\frac{${this.ns[0]}}{${this.ns[1]}}`;
+      case Op.Div: {
+        const [numerator, denominator] = this.ns;
+        return `\\frac{${numerator}}{${denominator}}`;
+      }
       case Op.Floor:
         return `floor(${this.ns[0]})`;
       case Op.Pow: {
