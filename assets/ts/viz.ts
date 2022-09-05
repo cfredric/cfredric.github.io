@@ -273,7 +273,7 @@ function makeTooltip(
                                 '\n')
                         .join('') +
           `Month: ${fmt.formatMonthNum(datum.month, ctx.closingDate)}`;
-      callout(
+      showHoverCard(
           tooltip.attr(
               'transform', `translate(${x(datum.month)},${pointer[1]})`),
           value, paymentTypeIdx);
@@ -286,7 +286,7 @@ function makeTooltip(
   });
 }
 
-function callout(
+function showHoverCard(
     g: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>, value: string,
     paymentTypeIdx: number) {
   g.style('display', null)
