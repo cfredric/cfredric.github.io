@@ -105,14 +105,12 @@ function buildPaymentScheduleChart(
   }
 
   makeTooltip(ctx, svg, schedule, keys, x, y, fmt, (yTarget, datum) => {
-    let cumulative: Num = Num.literal(0);
+    let sum: Num = Num.literal(0);
     for (const [idx, key] of keys.entries()) {
-      if (cumulative.add(datum[key]).gte(yTarget)) {
-        return idx;
-      }
-      cumulative = cumulative.add(datum[key]);
+      if (sum.add(datum[key]).gte(yTarget)) return idx;
+      sum = sum.add(datum[key]);
     }
-    return -1;
+    return undefined;
   });
 
   makeLegend(svg, width, fieldColor, keys);
@@ -170,16 +168,15 @@ function buildCumulativeChart(
   }
 
   makeTooltip(ctx, svg, data, keys, x, y, fmt, (yTarget, datum) => {
-    const sorted = keys.map(key => ({key, value: datum[key]}))
-                       .sort((a, b) => a.value.cmp(b.value));
-    const elt = sorted.find(
-        (elt, idx, arr) => elt.value.gte(yTarget) &&
-            (idx === arr.length - 1 || arr[idx + 1]!.value.gte(yTarget)),
-    );
+    const elt =
+        keys.map(key => ({key, value: datum[key]}))
+            .sort((a, b) => a.value.cmp(b.value))
+            .find((elt, idx, arr) => {
+              return elt.value.gte(yTarget) &&
+                  (idx === arr.length - 1 || arr[idx + 1]!.value.gte(yTarget));
+            });
 
-    if (elt === undefined) return -1;
-
-    return keys.indexOf(elt.key);
+    return elt !== undefined ? keys.indexOf(elt.key) : undefined;
   });
 
   makeLegend(svg, width, d => transparent(fieldColor(d)), keys);
@@ -257,7 +254,8 @@ function makeTooltip(
     data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[],
     x: d3.ScaleLinear<number, number, never>,
     y: d3.ScaleLinear<number, number, never>, fmt: Formatter,
-    identifyPaymentType: (yCoord: number, d: PaymentRecord) => number): void {
+    identifyPaymentType: (yCoord: number, d: PaymentRecord) =>
+        number | undefined): void {
   const hoverLine =
       svg.append('line').style('stroke', '#fff').attr('y1', 0).attr('y2', y(0));
   const tooltip = svg.append('g');
@@ -268,7 +266,7 @@ function makeTooltip(
     const paymentTypeIdx =
         identifyPaymentType(y.invert(pointer[1]), datum.data);
 
-    if (paymentTypeIdx !== -1) {
+    if (paymentTypeIdx !== undefined) {
       hoverLine.style('display', null)
           .attr('x1', pointer[0])
           .attr('x2', pointer[0]);
