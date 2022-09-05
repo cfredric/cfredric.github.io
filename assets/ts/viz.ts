@@ -98,7 +98,7 @@ function buildPaymentScheduleChart(
   if (ctx.paymentsAlreadyMade > 0) {
     svg.append('line')
         .attr('x1', x(ctx.paymentsAlreadyMade))
-        .attr('x2', x(ctx.paymentsAlreadyMade + 1))
+        .attr('x2', x(ctx.paymentsAlreadyMade))
         .attr('y1', y(0))
         .attr('y2', 0)
         .style('stroke', '#ff0000');
@@ -165,7 +165,7 @@ function buildCumulativeChart(
   if (ctx.paymentsAlreadyMade > 0) {
     svg.append('line')
         .attr('x1', x(ctx.paymentsAlreadyMade))
-        .attr('x2', x(ctx.paymentsAlreadyMade + 1))
+        .attr('x2', x(ctx.paymentsAlreadyMade))
         .attr('y1', y(0))
         .attr('y2', 0)
         .style('stroke', '#ff0000');
