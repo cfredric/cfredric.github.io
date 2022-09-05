@@ -104,9 +104,7 @@ function buildPaymentScheduleChart(
         .style('stroke', '#ff0000');
   }
 
-
-  makeTooltip(ctx, svg, schedule, keys, x, fmt, (mouseY, datum) => {
-    const yTarget = y.invert(mouseY);
+  makeTooltip(ctx, svg, schedule, keys, x, y, fmt, (yTarget, datum) => {
     let cumulative: Num = Num.literal(0);
     for (const [idx, key] of keys.entries()) {
       if (cumulative.add(datum[key]).gte(yTarget)) {
@@ -171,8 +169,7 @@ function buildCumulativeChart(
         .style('stroke', '#ff0000');
   }
 
-  makeTooltip(ctx, svg, data, keys, x, fmt, (mouseY, datum) => {
-    const yTarget = y.invert(mouseY);
+  makeTooltip(ctx, svg, data, keys, x, y, fmt, (yTarget, datum) => {
     const sorted = keys.map(key => ({key, value: datum[key]}))
                        .sort((a, b) => a.value.cmp(b.value));
     const elt = sorted.find(
@@ -258,23 +255,30 @@ function makeAxes(
 function makeTooltip(
     ctx: Context, svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
     data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[],
-    x: d3.ScaleLinear<number, number, never>, fmt: Formatter,
+    x: d3.ScaleLinear<number, number, never>,
+    y: d3.ScaleLinear<number, number, never>, fmt: Formatter,
     identifyPaymentType: (yCoord: number, d: PaymentRecord) => number): void {
+  const hoverLine =
+      svg.append('line').style('stroke', '#fff').attr('y1', 0).attr('y2', y(0));
   const tooltip = svg.append('g');
 
   svg.on('touchmove mousemove', (event) => {
     const pointer = d3.pointer(event);
     const datum = bisectMonth(data, x, pointer[0]);
-    const paymentTypeIdx = identifyPaymentType(pointer[1], datum.data);
-
-    const value = keys.map(
-                          k => `${utils.toCapitalized(k)}: ${
-                                   fmt.formatCurrency(datum.data[k])}` +
-                              '\n')
-                      .join('') +
-        `Month: ${fmt.formatMonthNum(datum.month, ctx.closingDate)}`;
+    const paymentTypeIdx =
+        identifyPaymentType(y.invert(pointer[1]), datum.data);
 
     if (paymentTypeIdx !== -1) {
+      hoverLine.style('display', null)
+          .attr('x1', pointer[0])
+          .attr('x2', pointer[0]);
+
+      const value = keys.map(
+                            k => `${utils.toCapitalized(k)}: ${
+                                     fmt.formatCurrency(datum.data[k])}` +
+                                '\n')
+                        .join('') +
+          `Month: ${fmt.formatMonthNum(datum.month, ctx.closingDate)}`;
       callout(
           tooltip.attr(
               'transform', `translate(${x(datum.month)},${pointer[1]})`),
@@ -282,7 +286,10 @@ function makeTooltip(
     }
   });
 
-  svg.on('touchend mouseleave', () => void tooltip.style('display', 'none'));
+  svg.on('touchend mouseleave', () => {
+    hoverLine.style('display', 'none');
+    tooltip.style('display', 'none');
+  });
 }
 
 function callout(
