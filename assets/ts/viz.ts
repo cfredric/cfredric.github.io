@@ -168,13 +168,9 @@ function buildCumulativeChart(
   }
 
   makeTooltip(ctx, svg, data, keys, x, y, fmt, (yTarget, datum) => {
-    const elt =
-        keys.map(key => ({key, value: datum[key]}))
-            .sort((a, b) => a.value.cmp(b.value))
-            .find((elt, idx, arr) => {
-              return elt.value.gte(yTarget) &&
-                  (idx === arr.length - 1 || arr[idx + 1]!.value.gte(yTarget));
-            });
+    const elt = keys.map(key => ({key, value: datum[key]}))
+                    .sort((a, b) => a.value.cmp(b.value))
+                    .find((elt) => elt.value.gte(yTarget));
 
     return elt !== undefined ? keys.indexOf(elt.key) : undefined;
   });
