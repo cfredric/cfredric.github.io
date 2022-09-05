@@ -274,9 +274,12 @@ function makeTooltip(
                       .join('') +
         `Month: ${fmt.formatMonthNum(datum.month, ctx.closingDate)}`;
 
-    callout(
-        tooltip.attr('transform', `translate(${x(datum.month)},${pointer[1]})`),
-        value, paymentTypeIdx);
+    if (paymentTypeIdx !== -1) {
+      callout(
+          tooltip.attr(
+              'transform', `translate(${x(datum.month)},${pointer[1]})`),
+          value, paymentTypeIdx);
+    }
   });
 
   svg.on('touchend mouseleave', () => void tooltip.style('display', 'none'));
