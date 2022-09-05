@@ -25,39 +25,6 @@ function valueOf(x: AnyNumber): Decimal {
   return new Decimal(x);
 }
 
-function assertLength<T>(n: number, ts: readonly T[]) {
-  if (ts.length !== n) {
-    throw new Error(`Expected length of ${n} but found ${ts.length}`);
-  }
-}
-
-function computeValue(op: Op, ns: readonly NumBase[]): Decimal {
-  switch (op) {
-    case Op.Plus:
-      return Decimal.sum(...ns.map(n => n.value()));
-    case Op.Minus:
-      assertLength(2, ns);
-      return ns[0]!.value().sub(ns[1]!.value());
-    case Op.Mult: {
-      let result = ns[0]!.value();
-      for (let i = 1; i < ns.length; ++i) {
-        result = result.mul(ns[i]!.value());
-      }
-      return result;
-    }
-    case Op.Div:
-      assertLength(2, ns);
-      return ns[0]!.value().div(ns[1]!.value());
-    case Op.Floor:
-      assertLength(1, ns);
-      return ns[0]!.value().floor();
-    case Op.Pow: {
-      assertLength(2, ns);
-      return ns[0]!.value().pow(ns[1]!.value());
-    }
-  }
-}
-
 function isConstantOrLiteral(n: NumBase): boolean {
   return n instanceof Literal || n instanceof NamedConstant;
 }
@@ -386,12 +353,13 @@ const simplifications = [
 
 /**
  * Given subtrees `a` and `b` and an operation `op`, returns a new tree with
- * top-level operation `op`, with `a` and `b` merged as needed. I.e., if `op` is
- * associative, and one or more of `a` and `b` uses the same op, then those
- * operands will be merged into the same level of the tree.
- *
- * This takes advantage of associativity to keep the tree flat. Operands are not
- * reordered (i.e. we don't care about commutativity).
+ * top-level operation `op`, with `a` and `b` merged as needed. I.e., if one or
+ * more of `a` and `b` uses the same op, then those operands will be merged into
+ * the same level of the tree.
+ * 
+ * This takes advantage of associativity to keep the tree flat (it assumes the
+ * given op is associative). Operands are not reordered (i.e. we don't care
+ * about commutativity).
  */
 function mergeSiblings(a: NumBase, b: NumBase, op: Op): NumBase {
   if (a instanceof DerivedNum && a.op === op && b instanceof DerivedNum &&
@@ -645,7 +613,7 @@ class DerivedNum extends NumBase {
     super();
     this.op = op;
     this.ns = ns;
-    this.v = computeValue(this.op, this.ns);
+    this.v = this.computeValue();
   }
 
   override value(): Decimal {
@@ -729,6 +697,39 @@ class DerivedNum extends NumBase {
       }
     }
     return true;
+  }
+
+  assertLength(n: number) {
+    if (this.ns.length !== n) {
+      throw new Error(`Expected length of ${n} but found ${this.ns.length}`);
+    }
+  }
+
+  computeValue(): Decimal {
+    switch (this.op) {
+      case Op.Plus:
+        return Decimal.sum(...this.ns.map(n => n.value()));
+      case Op.Minus:
+        this.assertLength(2);
+        return this.ns[0]!.value().sub(this.ns[1]!.value());
+      case Op.Mult: {
+        let result = this.ns[0]!.value();
+        for (let i = 1; i < this.ns.length; ++i) {
+          result = result.mul(this.ns[i]!.value());
+        }
+        return result;
+      }
+      case Op.Div:
+        this.assertLength(2);
+        return this.ns[0]!.value().div(this.ns[1]!.value());
+      case Op.Floor:
+        this.assertLength(1);
+        return this.ns[0]!.value().floor();
+      case Op.Pow: {
+        this.assertLength(2);
+        return this.ns[0]!.value().pow(this.ns[1]!.value());
+      }
+    }
   }
 }
 
