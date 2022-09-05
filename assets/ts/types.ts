@@ -6,9 +6,9 @@ export const paymentTypes = [
   'principal',
   'interest',
   'hoa',
-  'property_tax',
   'homeowners_insurance',
   'pmi',
+  'property_tax',
 ] as const;
 
 export const nonLoanPaymentTypes =
