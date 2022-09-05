@@ -95,6 +95,16 @@ function buildPaymentScheduleChart(
               .y0(d => y(d['0']))
               .y1(d => y(d['1'])));
 
+  if (ctx.paymentsAlreadyMade > 0) {
+    svg.append('line')
+        .attr('x1', x(ctx.paymentsAlreadyMade))
+        .attr('x2', x(ctx.paymentsAlreadyMade + 1))
+        .attr('y1', y(0))
+        .attr('y2', 0)
+        .style('stroke', '#ff0000');
+  }
+
+
   makeTooltip(ctx, svg, schedule, keys, x, fmt, (mouseY, datum) => {
     const yTarget = y.invert(mouseY);
     let cumulative: Num = Num.literal(0);
@@ -151,6 +161,15 @@ function buildCumulativeChart(
       .append('path')
       .attr('d', d => area(d.values))
       .style('fill', d => transparent(fieldColor(d.key)));
+
+  if (ctx.paymentsAlreadyMade > 0) {
+    svg.append('line')
+        .attr('x1', x(ctx.paymentsAlreadyMade))
+        .attr('x2', x(ctx.paymentsAlreadyMade + 1))
+        .attr('y1', y(0))
+        .attr('y2', 0)
+        .style('stroke', '#ff0000');
+  }
 
   makeTooltip(ctx, svg, data, keys, x, fmt, (mouseY, datum) => {
     const yTarget = y.invert(mouseY);
