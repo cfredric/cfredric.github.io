@@ -206,10 +206,7 @@ function makeAxes(
 } {
   // Add X axis
   const ext = d3.extent(data, d => d.month) as [number, number];
-  const x = d3.scaleLinear().domain(ext).range([
-    0,
-    width,
-  ]);
+  const x = d3.scaleLinear().domain(ext).range([0, width]);
   d3.axisBottom(x).tickValues(d3.range(0, data.length, 12))(
       svg.append('g').attr('transform', `translate(0, ${height})`));
 
@@ -267,16 +264,16 @@ function makeTooltip(
           .attr('x1', pointer[0])
           .attr('x2', pointer[0]);
 
-      const value = keys.map(
-                            k => `${utils.toCapitalized(k)}: ${
-                                     fmt.formatCurrency(datum.data[k])}` +
-                                '\n')
-                        .join('') +
+      const text = keys.map(
+                           k => `${utils.toCapitalized(k)}: ${
+                                    fmt.formatCurrency(datum.data[k])}` +
+                               '\n')
+                       .join('') +
           `Month: ${fmt.formatMonthNum(datum.month, ctx.closingDate)}`;
       showHoverCard(
           tooltip.attr(
               'transform', `translate(${x(datum.month)},${pointer[1]})`),
-          value, paymentTypeIdx);
+          text, paymentTypeIdx);
     }
   });
 
@@ -287,7 +284,7 @@ function makeTooltip(
 }
 
 function showHoverCard(
-    g: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>, value: string,
+    g: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>, text: string,
     paymentTypeIdx: number) {
   g.style('display', null)
       .style('pointer-events', 'none')
@@ -299,21 +296,19 @@ function showHoverCard(
                    .attr('fill', 'white')
                    .attr('stroke', 'black');
 
-  const text = g.selectAll('text').data([null]).join('text');
-  text.selectAll('tspan')
-      .data((value + '').split(/\n/))
+  const textSelection = g.selectAll('text').data([null]).join('text');
+  textSelection.selectAll('tspan')
+      .data(text.split(/\n/))
       .join('tspan')
       .attr('x', 0)
       .attr('y', (_, i) => `${i * 1.1}em`)
-      .style(
-          'font-weight',
-          (_, i) => i === paymentTypeIdx ? 'bold' : null,
-          )
+      .style('font-weight', (_, i) => i === paymentTypeIdx ? 'bold' : null)
       .text(d => d);
 
-  const {y, width: w, height: h} = (text.node() as SVGGElement).getBBox();
+  const {y, width: w, height: h} =
+      (textSelection.node() as SVGGElement).getBBox();
 
-  text.attr('transform', `translate(${- w / 2},${15 - y})`);
+  textSelection.attr('transform', `translate(${- w / 2},${15 - y})`);
   path.attr(
       'd',
       `M${- w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`,
