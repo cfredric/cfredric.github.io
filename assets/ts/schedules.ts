@@ -8,7 +8,7 @@ function pointwiseFromContext(ctx: Context): readonly PaymentRecordWithMonth[] {
   let equityOwned = ctx.downPayment;
   const pointwise: PaymentRecordWithMonth[] = new Array(ctx.n.toNumber());
 
-  const lastMonth = ctx.n.value().toNumber();
+  const lastMonth = ctx.n.toNumber();
   for (let month = 0; month < lastMonth; ++month) {
     const principalRemaining = ctx.price.sub(equityOwned);
     const interestPayment = ctx.interestRate.div(12).mul(principalRemaining);

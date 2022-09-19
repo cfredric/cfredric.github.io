@@ -154,9 +154,8 @@ export class Context {
              input.closingDate.valueOf() <= input.now.valueOf() :
              false);
 
-    this.paymentsAlreadyMade = clamp(
-                                   input.paymentsAlreadyMade,
-                                   {min: 0, max: this.n.value().toNumber()}) ||
+    this.paymentsAlreadyMade =
+        clamp(input.paymentsAlreadyMade, {min: 0, max: this.n.toNumber()}) ||
         (input.closingDate ?
              utils.computeMonthDiff(input.closingDate, input.now) :
              0);

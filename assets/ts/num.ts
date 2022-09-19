@@ -48,7 +48,7 @@ const additionIdentity =
     new SimplificationRule((root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Plus) return null;
       const nontrivials =
-          root.ns.filter(n => !n.value().eq(0) || !isConstantOrLiteral(n));
+          root.ns.filter(n => !n.eq(0) || !isConstantOrLiteral(n));
       if (nontrivials.length === root.ns.length) return null;
       return Num.sum(...nontrivials);
     });
@@ -91,9 +91,8 @@ const subtractionIdentity =
     new SimplificationRule((root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Minus) return null;
       const subtrahend = root.ns[1]!;
-      return subtrahend.value().eq(0) && isConstantOrLiteral(subtrahend) ?
-          root.ns[0]! :
-          null;
+      return subtrahend.eq(0) && isConstantOrLiteral(subtrahend) ? root.ns[0]! :
+                                                                   null;
     });
 
 /** Rewrites `0 - x` into `-1 * x`. */
@@ -101,7 +100,7 @@ const subtractionFromZero =
     new SimplificationRule((root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Minus) return null;
       const minuend = root.ns[0]!;
-      return minuend.value().eq(0) && isConstantOrLiteral(minuend) ?
+      return minuend.eq(0) && isConstantOrLiteral(minuend) ?
           Num.mul(-1, root.ns[1]!) :
           null;
     });
@@ -127,7 +126,7 @@ const multiplicationIdentity =
     new SimplificationRule((root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Mult) return null;
       const nontrivials =
-          root.ns.filter(n => !n.value().eq(1) || !isConstantOrLiteral(n));
+          root.ns.filter(n => !n.eq(1) || !isConstantOrLiteral(n));
       if (nontrivials.length === root.ns.length) return null;
       return Num.product(...nontrivials);
     });
@@ -136,7 +135,7 @@ const multiplicationIdentity =
 const multiplicationCollapse =
     new SimplificationRule((root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Mult ||
-          !root.ns.some(n => n.value().eq(0) && isConstantOrLiteral(n))) {
+          !root.ns.some(n => n.eq(0) && isConstantOrLiteral(n))) {
         return null;
       }
       return Num.literal(0);
@@ -205,9 +204,7 @@ const divisionIdentity =
     new SimplificationRule((root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Div) return null;
       const divisor = root.ns[1]!;
-      return divisor.value().eq(1) && isConstantOrLiteral(divisor) ?
-          root.ns[0]! :
-          null;
+      return divisor.eq(1) && isConstantOrLiteral(divisor) ? root.ns[0]! : null;
     });
 
 /** Rewrites `0 / x` into `0`. */
@@ -215,7 +212,7 @@ const divisionCollapse =
     new SimplificationRule((root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Div) return null;
       const numerator = root.ns[0]!;
-      return numerator.value().eq(0) && isConstantOrLiteral(numerator) ?
+      return numerator.eq(0) && isConstantOrLiteral(numerator) ?
           Num.literal(0) :
           null;
     });
@@ -310,7 +307,7 @@ const numeratorIsFraction =
 const powerIdentity = new SimplificationRule((root: NumBase): NumBase|null => {
   if (!(root instanceof DerivedNum) || root.op !== Op.Pow) return null;
   const power = root.ns[1]!;
-  return power.value().eq(1) && isConstantOrLiteral(power) ? root.ns[0]! : null;
+  return power.eq(1) && isConstantOrLiteral(power) ? root.ns[0]! : null;
 });
 
 /** Rewrites `x ^ 0` into `1`, `0 ^ x` to `0`, and `1 ^ x` to `1`. */
@@ -404,7 +401,7 @@ export abstract class Num {
 
   constructor() {}
 
-  abstract value(): Decimal;
+  abstract value(): ReturnType<typeof valueOf>;
 
   toNumber(): number {
     return this.value().toNumber();
@@ -468,7 +465,8 @@ export abstract class Num {
     return this.value().eq(toNumBase(b).value());
   }
   cmp(b: AnyNumber): number {
-    return this.value().cmp(toNumBase(b).value());
+    b = toNumBase(b);
+    return this.lt(b) ? -1 : this.gt(b) ? 1 : 0;
   }
 
   static add(a: AnyNumber, b: AnyNumber): NumBase {
@@ -581,22 +579,22 @@ abstract class NumBase extends Num {
 
 /** A numeric literal in a mathematical expression. */
 class Literal extends NumBase {
-  private readonly v: Decimal;
+  private readonly v: ReturnType<typeof valueOf>;
 
   constructor(value: number|Decimal) {
     super();
     this.v = valueOf(value);
   }
 
-  override value(): Decimal {
+  override value() {
     return this.v;
   }
 
-  override toString(): string {
+  override toString() {
     return this.v.toString();
   }
 
-  eqSubtree(other: NumBase): boolean {
+  override eqSubtree(other: NumBase) {
     // Literal instances are interned, so we can just test for equality.
     return other === this;
   }
@@ -604,7 +602,7 @@ class Literal extends NumBase {
 
 /** A numeric constant (with an associated name) in some expression. */
 export class NamedConstant extends NumBase {
-  private readonly v: Decimal;
+  private readonly v: ReturnType<typeof valueOf>;
   private readonly name: string;
 
   constructor(name: string, value: AnyNumber) {
@@ -613,15 +611,15 @@ export class NamedConstant extends NumBase {
     this.v = valueOf(value);
   }
 
-  override value(): Decimal {
+  override value() {
     return this.v;
   }
 
-  override toString(): string {
+  override toString() {
     return this.name;
   }
 
-  eqSubtree(other: NumBase): boolean {
+  override eqSubtree(other: NumBase): boolean {
     return other === this;
   }
 }
@@ -632,7 +630,7 @@ export class NamedConstant extends NumBase {
  */
 class DerivedNum extends NumBase {
   readonly op: Op;
-  private readonly v: Decimal;
+  private readonly v: ReturnType<typeof valueOf>;
   readonly ns: readonly NumBase[];
 
   constructor(op: Op, ...ns: readonly NumBase[]) {
@@ -642,17 +640,17 @@ class DerivedNum extends NumBase {
     this.v = this.computeValue();
   }
 
-  override value(): Decimal {
+  override value() {
     return this.v;
   }
 
-  override is_leq_precedence_than(parentOp: Op): boolean {
+  override is_leq_precedence_than(parentOp: Op) {
     // NB: LaTeX's syntax for a fraction is unambiguous, so we don't bother with
     // parens for fractions.
     return this.op !== Op.Div && precedence(parentOp) >= precedence(this.op);
   }
 
-  override toString(): string {
+  override toString() {
     switch (this.op) {
       case Op.Plus:
         return this.ns.map(n => n.parenOrUnparen(this.op)).join(' + ');
@@ -680,7 +678,7 @@ class DerivedNum extends NumBase {
     }
   }
 
-  override accept(rule: SimplificationRule): NumBase|null {
+  override accept(rule: SimplificationRule) {
     const s = rule.visit(this);
     if (s) {
       // If the subtree rooted here has a match, we apply the rule and return.
@@ -708,7 +706,7 @@ class DerivedNum extends NumBase {
     return new DerivedNum(this.op, ...operands);
   }
 
-  eqSubtree(other: NumBase): boolean {
+  override eqSubtree(other: NumBase) {
     if (other === this) return true;
     if (!(other instanceof DerivedNum)) {
       return false;
@@ -731,7 +729,7 @@ class DerivedNum extends NumBase {
     }
   }
 
-  computeValue(): Decimal {
+  computeValue(): ReturnType<typeof valueOf> {
     switch (this.op) {
       case Op.Plus:
         return Decimal.sum(...this.ns.map(n => n.value()));
@@ -750,10 +748,10 @@ class DerivedNum extends NumBase {
         return this.ns[0]!.value().div(this.ns[1]!.value());
       case Op.Floor:
         this.assertLength(1);
-        return this.ns[0]!.value().floor();
+        return Decimal.floor(this.ns[0]!.value());
       case Op.Pow: {
         this.assertLength(2);
-        return this.ns[0]!.value().pow(this.ns[1]!.value());
+        return Decimal.pow(this.ns[0]!.value(), this.ns[1]!.value());
       }
     }
   }
@@ -773,17 +771,17 @@ export class NamedOutput extends NumBase {
     this.num = toNumBase(num);
   }
 
-  override value(): Decimal {
+  override value() {
     return this.num.value();
   }
 
-  override prettyPrint(): string {
+  override prettyPrint() {
     // If this gets called at top level, we'll print the whole derivation.
     // Otherwise, we only use the name associated with this output.
     return this.num.prettyPrint();
   }
 
-  override accept(rule: SimplificationRule): NumBase|null {
+  override accept(rule: SimplificationRule) {
     // Simplify the underlying subtree via this rule, if it matches.
     const simp = this.num.accept(rule);
     if (simp) {
@@ -792,11 +790,11 @@ export class NamedOutput extends NumBase {
     return null;
   }
 
-  override toString(): string {
+  override toString() {
     return this.name;
   }
 
-  eqSubtree(other: NumBase): boolean {
+  override eqSubtree(other: NumBase) {
     return other === this;
   }
 }

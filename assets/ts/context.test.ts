@@ -464,7 +464,7 @@ test('monthlyNonLoanPayment', () => {
 
   // Unspecified:
   expect(new Context(input).propertyTaxQuarterly.toNumber()).toEqual(0);
-  expect(new Context(input).propertyTaxQuarterly.value().isNaN())
+  expect(Number.isNaN(new Context(input).propertyTaxQuarterly.toNumber()))
       .toEqual(false);
   expect(new Context(input).monthlyNonLoanPayment.toNumber()).toEqual(0);
 
