@@ -183,15 +183,12 @@ function transparent(color: string): string {
   return `${color}aa`;
 }
 
-type SVG = d3.Selection<SVGGElement, null, HTMLElement, unknown>;
-
 // Creates a figure.
-function makeSvg(
-    divId: string, width: number, height: number, margin: Margin): SVG {
-  return d3.select<HTMLElement, null>(`#${divId}`)
-      .selectAll('svg')
-      .data([null])
-      .join('svg')
+function makeSvg(divId: string, width: number, height: number, margin: Margin):
+    d3.Selection<SVGGElement, unknown, HTMLElement, unknown> {
+  d3.select(`#${divId}`).select('svg').remove();
+  return d3.select(`#${divId}`)
+      .append('svg')
       .attr('width', width + margin.left + margin.right)
       .attr('height', height + margin.top + margin.bottom)
       .append('g')
@@ -200,9 +197,10 @@ function makeSvg(
 
 // Creates axes for the given figure.
 function makeAxes(
-    svg: SVG, data: readonly PaymentRecordWithMonth[],
-    keys: readonly PaymentType[], width: number, height: number, margin: Margin,
-    yLabel: string, yDomainFn: (ys: readonly number[]) => number): {
+    svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
+    data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[],
+    width: number, height: number, margin: Margin, yLabel: string,
+    yDomainFn: (ys: readonly number[]) => number): {
   x: d3.ScaleLinear<number, number, never>,
   y: d3.ScaleLinear<number, number, never>,
 } {
@@ -245,8 +243,9 @@ function makeAxes(
 
 // Creates a tooltip for the given figure.
 function makeTooltip(
-    ctx: Context, svg: SVG, data: readonly PaymentRecordWithMonth[],
-    keys: readonly PaymentType[], x: d3.ScaleLinear<number, number, never>,
+    ctx: Context, svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
+    data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[],
+    x: d3.ScaleLinear<number, number, never>,
     y: d3.ScaleLinear<number, number, never>, fmt: Formatter,
     identifyPaymentType: (yCoord: number, d: PaymentRecord) =>
         number | undefined): void {
@@ -284,7 +283,9 @@ function makeTooltip(
   });
 }
 
-function showHoverCard(g: SVG, text: string, paymentTypeIdx: number) {
+function showHoverCard(
+    g: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>, text: string,
+    paymentTypeIdx: number) {
   g.style('display', null)
       .style('pointer-events', 'none')
       .style('font', '12px sans-serif');
@@ -317,7 +318,8 @@ function showHoverCard(g: SVG, text: string, paymentTypeIdx: number) {
 // Creates a legend for the given figure, with the given payment types and
 // corresponding colors.
 function makeLegend(
-    svg: SVG, width: number, color: (d: PaymentType) => string,
+    svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
+    width: number, color: (d: PaymentType) => string,
     keys: readonly PaymentType[]): void {
   const legend = svg.append('g')
                      .attr('class', 'legend')
