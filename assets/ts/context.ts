@@ -18,13 +18,15 @@ function output(name: ConstantName, value: Num):
       return new NamedOutput(name, value)
     }
 
+/**
+ * This class captures a snapshot of the input fields at construction, and
+ * computes all the interesting values to be used in the payment schedule
+ * calculation.
+ *
+ * This is an optimization detail, as a kind of memoization to avoid needless
+ * extra function calls when we've already computed a value.
+ */
 export class Context {
-  // This class captures a snapshot of the input fields at construction, and
-  // computes all the interesting values to be used in the payment schedule
-  // calculation.
-  //
-  // This is an optimization detail, as a kind of memoization to avoid needless
-  // extra function calls when we've already computed a value.
   readonly price: Num;
   readonly homeValue: Num;
   readonly hoa: Num;

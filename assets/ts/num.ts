@@ -29,12 +29,12 @@ function isConstantOrLiteral(n: NumBase): boolean {
   return n instanceof Literal || n instanceof NamedConstant;
 }
 
-// Simplifications are done by pattern-matching on the expression AST, and
-// potentially returning a mutated version of the expression. This is the
-// typical approach taken by computer algebra systems.
-//
-// This particular implementation is implemented using a simplified Visitor
-// pattern.
+/**
+ * Simplifications are done by pattern-matching on the expression AST, and
+ * potentially returning a mutated version of the expression. This is the
+ * typical approach taken by computer algebra systems.  This particular
+ * implementation is implemented using a simplified Visitor pattern.
+ */
 class SimplificationRule {
   constructor(readonly f: (root: NumBase) => NumBase | null) {}
 
@@ -519,12 +519,12 @@ export abstract class Num {
     return result;
   }
 
-  // `prettyPrint` is the top-level call to get the derivation.
+  /** `prettyPrint` is the top-level call to get the derivation. */
   prettyPrint(): string {
     return this.toString();
   }
 
-  // Returns a simplified version of the expression rooted at this node.
+  /** Returns a simplified version of the expression rooted at this node. */
   simplify(): NumBase {
     let current = toNumBase(this);
     // Run a fixed-point algorithm: loop over rules repeatedly until we go
@@ -556,20 +556,26 @@ abstract class NumBase extends Num {
     super();
   }
 
-  // Implementation detail used in simplifying the expression tree when
-  // stringifying.
+  /**
+   * Implementation detail used in simplifying the expression tree when
+   * stringifying.
+   */
   parenOrUnparen(parentOp: Op): string {
     return this.is_leq_precedence_than(parentOp) ? `{(${this})}` : `${this}`;
   }
 
-  // Subclasses that represent an expression subtree should compare the parent
-  // op to their own op.
+  /**
+   * Subclasses that represent an expression subtree should compare the parent
+   * op to their own op.
+   */
   is_leq_precedence_than(_parentOp: Op): boolean {
     return false;
   }
 
-  // Runs a single simplification rule on this subtree. Returns a new subtree if
-  // simplification was successful, or null if it was a no-op.
+  /**
+   * Runs a single simplification rule on this subtree. Returns a new subtree
+   * if simplification was successful, or null if it was a no-op.
+   */
   accept(rule: SimplificationRule): NumBase|null {
     return rule.visit(this);
   }

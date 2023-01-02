@@ -190,7 +190,7 @@ function contextFromInputs(inputs: Inputs): Context {
   });
 }
 
-// Attaches listeners to react to user input, URL changes.
+/** Attaches listeners to react to user input, URL changes. */
 function attachListeners(
     elts: Elements, urlParamMap: InputParamMap, privateValueMap: InputParamMap,
     existingCookies: Readonly<Set<string>>): void {
@@ -208,7 +208,7 @@ function attachListeners(
       void populateFields(elts, urlParamMap, privateValueMap);
 }
 
-// Set the contents of all the outputs based on the `ctx`.
+/** Set the contents of all the outputs based on the `ctx`. */
 function setContents(ctx: Context, elts: Elements): void {
   utils.setEltVisibility(
       utils.getHtmlEltWithId('simplify-derivations-span'), ctx.showDerivations);
@@ -238,8 +238,10 @@ function setContents(ctx: Context, elts: Elements): void {
   Num.prune();
 }
 
-// Reads fields from the URL and from cookies, and populates the UI
-// accordingly.
+/**
+ * Reads fields from the URL and from cookies, and populates the UI
+ * accordingly.
+ */
 function populateFields(
     elts: Elements, urlParamMap: InputParamMap,
     privateValueMap: InputParamMap): Readonly<Set<string>> {
@@ -334,7 +336,7 @@ function populateFieldsFromPrivateStorage(
   };
 }
 
-// Clears all parameters from the `url`, and clears all cookies.
+/** Clears all parameters from the `url`, and clears all cookies. */
 function clearInputs(
     elts: Elements, urlParamMap: InputParamMap, privateValueMap: InputParamMap,
     existingCookies: Readonly<Set<string>>): void {

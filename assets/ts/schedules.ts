@@ -2,8 +2,10 @@ import {Context} from './context';
 import {Num} from './num';
 import {PaymentRecordWithMonth} from './types';
 
-// Returns an array where the ith element is an object with the amount paid of
-// each type before (and excluding) the ith month.
+/**
+ * Returns an array where the ith element is an object with the amount paid of
+ * each type before (and excluding) the ith month.
+ */
 function pointwiseFromContext(ctx: Context): readonly PaymentRecordWithMonth[] {
   let equityOwned = ctx.downPayment;
   const pointwise: PaymentRecordWithMonth[] = new Array(ctx.n.toNumber());
@@ -38,8 +40,10 @@ function pointwiseFromContext(ctx: Context): readonly PaymentRecordWithMonth[] {
   return pointwise;
 }
 
-// Returns an array where the ith element is an object with the amount paid of
-// each type before (and excluding) the ith month.
+/**
+ * Returns an array where the ith element is an object with the amount paid of
+ * each type before (and excluding) the ith month.
+ */
 function cumulativeSum(points: readonly PaymentRecordWithMonth[]):
     PaymentRecordWithMonth[] {
   const results = new Array<PaymentRecordWithMonth>(points.length + 1);

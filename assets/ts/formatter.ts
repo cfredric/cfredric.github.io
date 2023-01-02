@@ -76,8 +76,10 @@ export class Formatter {
     return new FormatResult(value);
   }
 
-  // Formats a number of months into an integral number of years and integral
-  // number of months.
+  /**
+   * Formats a number of months into an integral number of years and integral
+   * number of months.
+   */
   formatMonthNum(m: number, baseDate?: Date): string {
     if (!Number.isFinite(m)) {
       if (Number.isNaN(m)) return 'NaN';

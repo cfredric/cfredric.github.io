@@ -9,32 +9,38 @@ import {Num} from './num';
 import {Schedules} from './schedules';
 import {HidableContainer, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType} from './types';
 
-// Returns the numeric value of the input element, or 0 if the input was empty.
+/**
+ * Returns the numeric value of the input element, or 0 if the input was empty.
+ */
 export function orZeroN(elt: HTMLInputElement): number {
   const num = Number.parseFloat(elt.value);
   return Number.isNaN(num) ? 0 : num;
 }
-// Decimal version of the above.
+/** Decimal version of the above. */
 export function orZero(elt: HTMLInputElement): Decimal {
   const str = elt.value;
   if (Number.isNaN(Number.parseFloat(str))) return new Decimal(0);
   return new Decimal(str);
 }
-// Returns the numberic value of the input element, or undefined.
+/** Returns the numberic value of the input element, or undefined. */
 export function orUndef(elt: HTMLInputElement): Decimal|undefined {
   const str = elt.value;
   if (Number.isNaN(Number.parseFloat(str))) return undefined;
   return new Decimal(str);
 }
-// Returns the HTMLInputElement with the given ID, or throws an informative
-// error.
+/**
+ * Returns the HTMLInputElement with the given ID, or throws an informative
+ * error.
+ */
 export function getInputElt(id: string): HTMLInputElement {
   const elt = document.getElementById(id);
   if (!(elt instanceof HTMLInputElement))
     throw new Error(`${id} element is not an HTMLInputElement`);
   return elt;
 }
-// Returns the HTMLElement with the given ID, or throws an informative error.
+/**
+ * Returns the HTMLElement with the given ID, or throws an informative error.
+ */
 export function getHtmlEltWithId(id: string): HTMLElement {
   const elt = document.getElementById(id);
   if (!(elt instanceof HTMLElement))
@@ -69,7 +75,7 @@ export function setEltContent(e: HTMLElement, v: string|FormatResult) {
   }
 }
 
-// Counts the number of elements of `data` which satisfy `predicate`.
+/** Counts the number of elements of `data` which satisfy `predicate`. */
 export function countSatisfying<T>(
     data: readonly T[], predicate: (t: T) => boolean): number {
   let count = 0;
@@ -78,8 +84,10 @@ export function countSatisfying<T>(
   return count;
 }
 
-// Counts the number of months between `from` and `to`. I.e., how many times the
-// "month" part of the date has changed.
+/**
+ * Counts the number of months between `from` and `to`. I.e., how many times
+ * the "month" part of the date has changed.
+ */
 export function computeMonthDiff(from: Date, to: Date) {
   // Computations are kept in local time, since that's what the user provided.
   // (Importantly, the user might have specified the first of a month, which
@@ -88,22 +96,26 @@ export function computeMonthDiff(from: Date, to: Date) {
   return Math.max(0, d3.timeMonth.count(from, to));
 }
 
-// Converts a Date that represents a particular time (in UTC timezone) to a Date
-// that represents that same time (but in the local timezone).
+/**
+ * Converts a Date that represents a particular time (in UTC timezone) to a
+ * Date that represents that same time (but in the local timezone).
+ */
 export function utcDateToLocalDate(d: Date): Date {
   return new Date(
       d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(),
       d.getUTCMinutes(), d.getUTCSeconds(), d.getUTCMilliseconds());
 }
 
-// Sums the given keys in a record.
+/** Sums the given keys in a record. */
 export function sumOfKeys<T extends string>(
     data: Record<T, Num>, keys: readonly T[]) {
   return Num.sum(...keys.map(key => data[key]));
 }
 
-// Returns the number of payments that can be made with the given total assets,
-// taking previously-made payments into account.
+/**
+ * Returns the number of payments that can be made with the given total assets,
+ * taking previously-made payments into account.
+ */
 export function countBurndownMonths(
     startingAssets: Num, schedule: readonly PaymentRecordWithMonth[],
     monthlyDebt: Num, paymentsAlreadyMade: number): number {
@@ -126,15 +138,17 @@ export function maxNonEmptyDate(...ds: (Date|undefined)[]): Date|undefined {
   return d3.greatest(ds, d => d === undefined ? NaN : d.valueOf());
 }
 
-// Deletes the given parameter in `url`, if it exists. Returns true if `url` was
-// modified.
+/**
+ * Deletes the given parameter in `url`, if it exists. Returns true if `url`
+ * was modified.
+ */
 export function deleteParam(url: URL, name: string): boolean {
   const hadValue = url.searchParams.has(name);
   url.searchParams.delete(name);
   return hadValue;
 }
 
-// Updates the value of the given URL parameter in `url`.
+/** Updates the value of the given URL parameter in `url`. */
 export function updateURLParam(
     url: URL, elt: HTMLInputElement, entry: InputEntry): boolean {
   if (entry.deprecated) return false;
@@ -163,8 +177,10 @@ export function updateURLParam(
   return deleteParam(url, entry.name);
 }
 
-// Returns the first non-zero, non-NaN argument, or zero if all arguments are
-// zero (or none are provided).
+/**
+ * Returns the first non-zero, non-NaN argument, or zero if all arguments are
+ * zero (or none are provided).
+ */
 export function chooseNonzero(...xs: readonly Num[]): Num {
   for (const x of xs) {
     if (!x.eq(0) && !Number.isNaN(x.toNumber()) &&
@@ -174,8 +190,10 @@ export function chooseNonzero(...xs: readonly Num[]): Num {
   return Num.literal(0);
 }
 
-// Computes the total stock assets at the end of `schedule`, assuming a given
-// annual rate of return and monthly compounding.
+/**
+ * Computes the total stock assets at the end of `schedule`, assuming a given
+ * annual rate of return and monthly compounding.
+ */
 export function computeStockAssets(
     schedule: readonly Num[], annualReturnRate: Num): Num {
   // Let Y = annual rate of return, M = monthly rate of return. Then:
@@ -206,7 +224,9 @@ export function fillTemplateElts(className: TemplateType, value: string) {
   }
 }
 
-// Computes the sum of principal + interest to be paid each month of the loan.
+/**
+ * Computes the sum of principal + interest to be paid each month of the loan.
+ */
 export function computeAmortizedPaymentAmount(P: Num, r: Num, n: Num): Num {
   // Let P = the loan amount (principal),
   //     r = the annual interest rate / 12,
@@ -219,7 +239,7 @@ export function computeAmortizedPaymentAmount(P: Num, r: Num, n: Num): Num {
   return P.mul(r).mul(onePlusRToTheN).div(onePlusRToTheN.sub(1));
 }
 
-// Updates the value of the given entry in private storage.
+/** Updates the value of the given entry in private storage. */
 function updatePrivateStorage(elt: HTMLInputElement, entry: InputEntry) {
   if (entry.deprecated) return;
   let value;
@@ -246,14 +266,16 @@ function cookieSuffixDelete(): string {
   ].join(';');
 }
 
-// "Deletes" the cookie with the given name. This doesn't seem to really delete
-// the cookie; it just makes it a session cookie, so that it won't be present in
-// the next session of the browser.
+/**
+ * "Deletes" the cookie with the given name. This doesn't seem to really delete
+ * the cookie; it just makes it a session cookie, so that it won't be present in
+ * the next session of the browser.
+ */
 export function deleteCookie(name: string) {
   document.cookie = `${name}=0;${cookieSuffixDelete()}`;
 }
 
-// Saves fields to the URL and cookies.
+/** Saves fields to the URL and cookies. */
 export function saveFields(
     urlParams: Readonly<Map<HTMLInputElement, InputEntry>>,
     privateValues: Readonly<Map<HTMLInputElement, InputEntry>>,
@@ -280,7 +302,7 @@ export function saveFields(
   if (urlChanged) history.pushState({}, '', url.toString());
 }
 
-// Clears out deprecated URL params and private storage.
+/** Clears out deprecated URL params and private storage. */
 export function clearDeprecatedStorage(
     urlParams: Readonly<Map<HTMLInputElement, InputEntry>>,
     privateValues: Readonly<Map<HTMLInputElement, InputEntry>>,
@@ -387,7 +409,7 @@ export function toCapitalized(paymentType: PaymentType): string {
   }
 }
 
-// Compute hint strings and set output strings.
+/** Compute hint strings and set output strings. */
 export function computeContents(
     ctx: Context, fmt: Formatter,
     schedules: Schedules|undefined): Record<OutputType, FormatResult|string> {
@@ -569,7 +591,7 @@ export function computeTemplates(
   };
 }
 
-// Updates the "hints"/previews displayed alongside the input fields.
+/** Updates the "hints"/previews displayed alongside the input fields. */
 export function computeAmountHints(
     ctx: Context, fmt: Formatter): Record<HintType, FormatResult|string> {
   return {

@@ -27,8 +27,10 @@ function fieldColor(pt: PaymentType): string {
   }
 }
 
-// Given the X axis and an X mouse coordinate, finds the month that is being
-// hovered over.
+/**
+ * Given the X axis and an X mouse coordinate, finds the month that is being
+ * hovered over.
+ */
 function bisectMonth(
     data: readonly PaymentRecordWithMonth[], x: d3.ScaleLinear<number, number>,
     mouseX: number): PaymentRecordWithMonth {
@@ -55,7 +57,7 @@ function clearTables() {
   utils.removeChildren(utils.getHtmlEltWithId('tax_year_tab'));
 }
 
-// Builds the chart of monthly payments over time.
+/** Builds the chart of monthly payments over time. */
 function buildPaymentScheduleChart(
     ctx: Context,
     schedule: readonly PaymentRecordWithMonth[],
@@ -116,7 +118,7 @@ function buildPaymentScheduleChart(
   makeLegend(svg, width, fieldColor, keys);
 }
 
-// Builds the chart of cumulative payments over time.
+/** Builds the chart of cumulative payments over time. */
 function buildCumulativeChart(
     ctx: Context, data: readonly PaymentRecordWithMonth[], fmt: Formatter,
     keys: readonly PaymentType[]): void {
@@ -178,12 +180,12 @@ function buildCumulativeChart(
   makeLegend(svg, width, d => transparent(fieldColor(d)), keys);
 }
 
-// Adds an alpha channel to a hex color string to make it translucent.
+/** Adds an alpha channel to a hex color string to make it translucent. */
 function transparent(color: string): string {
   return `${color}aa`;
 }
 
-// Creates a figure.
+/** Creates a figure. */
 function makeSvg(divId: string, width: number, height: number, margin: Margin):
     d3.Selection<SVGGElement, unknown, HTMLElement, unknown> {
   d3.select(`#${divId}`).select('svg').remove();
@@ -195,7 +197,7 @@ function makeSvg(divId: string, width: number, height: number, margin: Margin):
       .attr('transform', `translate(${margin.left}, ${margin.top})`);
 }
 
-// Creates axes for the given figure.
+/** Creates axes for the given figure. */
 function makeAxes(
     svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
     data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[],
@@ -241,7 +243,7 @@ function makeAxes(
   return {x, y};
 }
 
-// Creates a tooltip for the given figure.
+/** Creates a tooltip for the given figure. */
 function makeTooltip(
     ctx: Context, svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
     data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[],
@@ -315,8 +317,10 @@ function showHoverCard(
   );
 }
 
-// Creates a legend for the given figure, with the given payment types and
-// corresponding colors.
+/**
+ * Creates a legend for the given figure, with the given payment types and
+ * corresponding colors.
+ */
 function makeLegend(
     svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
     width: number, color: (d: PaymentType) => string,
