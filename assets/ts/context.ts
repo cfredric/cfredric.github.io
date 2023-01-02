@@ -164,8 +164,7 @@ export class Context {
         'prepayment', input.prepayment.clamp(0, this.price.value()));
     this.stocksReturnRate =
         new NamedConstant(
-            'stocksReturnRate',
-            input.stocksReturnRate ? input.stocksReturnRate : new Decimal(7))
+            'stocksReturnRate', input.stocksReturnRate ?? new Decimal(7))
             .div(100);
 
     this.showMonthlySchedule = !this.interestRate.eq(0) ||
