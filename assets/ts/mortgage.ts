@@ -53,6 +53,7 @@ function getInputs(): Inputs {
     alreadyClosed: utils.getInputElt('already-closed-input'),
     paymentsAlreadyMade: utils.getInputElt('payments-already-made-input'),
     closingDate: utils.getInputElt('closing-date-input'),
+    nowDate: utils.getInputElt('now-input'),
     prepayment: utils.getInputElt('prepayment-input'),
     stocksReturnRate: utils.getInputElt('stocks-return-rate-input'),
     showDerivations: utils.getInputElt('show-derivations-input'),
@@ -131,6 +132,7 @@ function getUrlParamMap(inputs: Inputs): InputParamMap {
     [inputs.alreadyClosed, {name: 'closed'}],
     [inputs.paymentsAlreadyMade, {name: 'paid'}],
     [inputs.closingDate, {name: 'closing-date'}],
+    [inputs.nowDate, {name: 'now'}],
     [inputs.prepayment, {name: 'prepay'}],
     [inputs.stocksReturnRate, {name: 'stock_rate'}],
     [inputs.showDerivations, {name: 'show_derivations'}],
@@ -177,7 +179,12 @@ function contextFromInputs(inputs: Inputs): Context {
                                             undefined,
     prepayment: utils.orZero(inputs.prepayment),
     stocksReturnRate: utils.orUndef(inputs.stocksReturnRate),
-    now: d3.timeDay(),
+    // Note: valueAsDate interprets the input element in UTC timezone, which is
+    // not necessarily the same as the user's timezone, so we have to convert
+    // back to the user's local time by going through the Date ctor explicitly.
+    now: inputs.nowDate.value ?
+        utils.utcDateToLocalDate(inputs.nowDate.valueAsDate!) :
+        d3.timeDay(),
     showDerivations: inputs.showDerivations.checked,
     simplifyDerivations: inputs.simplifyDerivations.checked,
   });

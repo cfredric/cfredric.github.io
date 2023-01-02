@@ -87,6 +87,7 @@ export interface Inputs {
   alreadyClosed: HTMLInputElement;
   paymentsAlreadyMade: HTMLInputElement;
   closingDate: HTMLInputElement;
+  nowDate: HTMLInputElement;
   prepayment: HTMLInputElement;
   stocksReturnRate: HTMLInputElement;
   showDerivations: HTMLInputElement;

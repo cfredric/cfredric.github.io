@@ -88,6 +88,14 @@ export function computeMonthDiff(from: Date, to: Date) {
   return Math.max(0, d3.timeMonth.count(from, to));
 }
 
+// Converts a Date that represents a particular time (in UTC timezone) to a Date
+// that represents that same time (but in the local timezone).
+export function utcDateToLocalDate(d: Date): Date {
+  return new Date(
+      d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(),
+      d.getUTCMinutes(), d.getUTCSeconds(), d.getUTCMilliseconds());
+}
+
 // Sums the given keys in a record.
 export function sumOfKeys<T extends string>(
     data: Record<T, Num>, keys: readonly T[]) {
