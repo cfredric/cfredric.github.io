@@ -180,3 +180,33 @@ export interface Margin {
   left: number;
   right: number;
 }
+
+export const constantNames = [
+  'annualIncome',
+  'closingCost',
+  'downPayment',
+  'downPaymentPercent',
+  'downPaymentAbsolute',
+  'homeownersInsurance',
+  'homeValue',
+  'HOA',
+  'interestRate',
+  'loanAmount',
+  'monthlyDebt',
+  'mortgageTerm',
+  'PMI',
+  'pmiEquityCutoff',
+  'pointsPurchased',
+  'pointsValue',
+  'prepayment',
+  'price',
+  'principalAndInterest',
+  'propertyTaxAbsolute',
+  'propertyTaxPercent',
+  'residentialExemptionAnnualSavings',
+  'residentialExemptionDeduction',
+  'stocksReturnRate',
+  'totalAssets',
+] as const;
+
+export type ConstantName = typeof constantNames[number];
