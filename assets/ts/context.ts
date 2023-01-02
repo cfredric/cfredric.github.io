@@ -150,9 +150,8 @@ export class Context {
         new NamedConstant('totalAssets', Decimal.max(0, input.totalAssets));
 
     this.alreadyClosed = input.alreadyClosed ||
-        (input.closingDate ?
-             input.closingDate.valueOf() <= input.now.valueOf() :
-             false);
+        (!!input.closingDate &&
+         input.closingDate.valueOf() <= input.now.valueOf());
 
     this.paymentsAlreadyMade =
         clamp(input.paymentsAlreadyMade, {min: 0, max: this.n.toNumber()}) ||
