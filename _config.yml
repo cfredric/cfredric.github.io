@@ -42,6 +42,8 @@ google_analytics: "G-Z3YB17JL2C"
 # Used for Sitemap.xml and your RSS feed
 url: https://cfredric.github.io
 
+repository: "cfredric/cfredric.github.io"
+
 github:
   repository_url: https://github.com/cfredric/cfredric.github.io
 
