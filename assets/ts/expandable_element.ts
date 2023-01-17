@@ -17,6 +17,7 @@ export class ExpandableElement {
     this.titleElt.addEventListener('click', () => void this.toggle())
   }
 
+  /** Toggles whether this element is displayed or hidden. */
   toggle() {
     if (this.showing) {
       this.hide();
@@ -25,6 +26,7 @@ export class ExpandableElement {
     }
   }
 
+  /** Shows this element. */
   show() {
     if (typeof this.elt === 'function') {
       this.elt = this.elt();
@@ -35,6 +37,7 @@ export class ExpandableElement {
     this.titleElt.innerText = this.makeTitle();
   }
 
+  /** Hides this element. */
   hide() {
     if (typeof this.elt === 'function') return;
     this.elt.style.display = 'none';
@@ -42,6 +45,10 @@ export class ExpandableElement {
     this.titleElt.innerText = this.makeTitle();
   }
 
+  /**
+   * Generates the appropriate title for this element given its
+   * displayed/hidden state.
+   */
   makeTitle(): string {
     return (this.showing ? '-' : '+') + ` ${this.title}`;
   }

@@ -48,6 +48,10 @@ export function getHtmlEltWithId(id: string): HTMLElement {
   return elt;
 }
 
+/**
+ * Sets the visibilities of the elements with the given class name to the given
+ * visible/hidden state.
+ */
 export function setClassVisibility(className: string, visible: boolean) {
   const value = visible ? '' : 'none';
   for (const elt of Array.from(document.getElementsByClassName(className))) {
@@ -56,11 +60,18 @@ export function setClassVisibility(className: string, visible: boolean) {
   }
 }
 
+/**
+ * Sets the visibility of the given element to the given visibility/hidden
+ * state.
+ */
 export function setEltVisibility(elt: HTMLElement, visible: boolean) {
   const value = visible ? '' : 'none';
   elt.style.display = value;
 }
 
+/**
+ * Sets the content of the given element.
+ */
 export function setEltContent(e: HTMLElement, v: string|FormatResult) {
   if (typeof v === 'string') {
     e.innerText = v;
@@ -134,6 +145,9 @@ export function countBurndownMonths(
       Num.floor(assets.div(totalMonthlyExpenses)).toNumber();
 }
 
+/**
+ * Finds the maximum non-undefined Date of the input.
+ */
 export function maxNonEmptyDate(...ds: (Date|undefined)[]): Date|undefined {
   return d3.greatest(ds, d => d === undefined ? NaN : d.valueOf());
 }
@@ -217,6 +231,9 @@ export function computeStockAssets(
   return assets;
 }
 
+/**
+ * Sets the contents of all the template elements with the given class name.
+ */
 export function fillTemplateElts(className: TemplateType, value: string) {
   for (const elt of Array.from(document.getElementsByClassName(className))) {
     if (!(elt instanceof HTMLElement)) continue;
@@ -256,6 +273,9 @@ function updatePrivateStorage(elt: HTMLInputElement, entry: InputEntry) {
   window.localStorage.setItem(entry.name, value);
 }
 
+/**
+ * Generates the appropriate suffix to delete a cookie.
+ */
 function cookieSuffixDelete(): string {
   return [
     'Secure',
@@ -321,6 +341,9 @@ export function clearDeprecatedStorage(
   }
 }
 
+/**
+ * Removes all children of the given node.
+ */
 export function removeChildren(node: Node) {
   while (node.firstChild) {
     node.removeChild(node.firstChild);

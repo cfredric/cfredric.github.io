@@ -256,6 +256,9 @@ function populateFields(
   return cookies;
 }
 
+/**
+ * Reads the given URL and sets the values of the corresponding HTML elements.
+ */
 function populateFieldsFromURLParams(
     url: URL, urlParamMap: InputParamMap): boolean {
   let hasValue = false;
@@ -280,6 +283,10 @@ function populateFieldsFromURLParams(
   return hasValue;
 }
 
+/**
+ * Reads the cookieString and localStorage for any private entries, and writes
+ * the values into the corresponding HTML elements.
+ */
 function populateFieldsFromPrivateStorage(
     cookieString: string, privateValueMap: InputParamMap):
     {cookies: Readonly<Set<string>>, hasValue: boolean} {
@@ -355,6 +362,7 @@ function clearInputs(
   setContents(contextFromInputs(elts.inputs), elts);
 }
 
+/** Helper to time a given function and log the duration to the console. */
 export function timeIt(action: () => void) {
   const start = Date.now();
   action();
