@@ -36,7 +36,8 @@ function isConstantOrLiteral(n: NumBase): boolean {
  * implementation is implemented using a simplified Visitor pattern.
  */
 class SimplificationRule {
-  constructor(readonly f: (root: NumBase) => NumBase | null) {}
+  constructor(
+      readonly name: string, readonly f: (root: NumBase) => NumBase | null) {}
 
   visit(num: NumBase): NumBase|null {
     return (this.f)(num);
@@ -44,8 +45,8 @@ class SimplificationRule {
 }
 
 /** Rewrites `x + 0` or `0 + x` into `0`. */
-const additionIdentity =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const additionIdentity = new SimplificationRule(
+    'addition identity', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Plus) return null;
       const nontrivials =
           root.ns.filter(n => !n.eq(0) || !isConstantOrLiteral(n));
@@ -54,8 +55,8 @@ const additionIdentity =
     });
 
 /** Rewrite `a + b` into `c`, where a, b, and c are all literals. */
-const literalAddition =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const literalAddition = new SimplificationRule(
+    'literal addition', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Plus) return null;
 
       const firstLiteralIndex = root.ns.findIndex(n => n instanceof Literal);
@@ -72,23 +73,24 @@ const literalAddition =
     });
 
 /** Rewrite terms so that they end with a literal (if any). */
-const reorderTerms = new SimplificationRule((root: NumBase): NumBase|null => {
-  if (!(root instanceof DerivedNum) || root.op !== Op.Plus) return null;
+const reorderTerms =
+    new SimplificationRule('reorder terms', (root: NumBase): NumBase|null => {
+      if (!(root instanceof DerivedNum) || root.op !== Op.Plus) return null;
 
-  const lastLiteralIdx = findIndexRight(root.ns, n => n instanceof Literal);
-  if (lastLiteralIdx === -1 || lastLiteralIdx === root.ns.length - 1)
-    return null;
+      const lastLiteralIdx = findIndexRight(root.ns, n => n instanceof Literal);
+      if (lastLiteralIdx === -1 || lastLiteralIdx === root.ns.length - 1)
+        return null;
 
-  const lit = root.ns[lastLiteralIdx]!;
-  const terms = root.ns.slice();
-  terms.splice(lastLiteralIdx, 1);
-  terms.push(lit);
-  return new DerivedNum(Op.Plus, ...terms);
-});
+      const lit = root.ns[lastLiteralIdx]!;
+      const terms = root.ns.slice();
+      terms.splice(lastLiteralIdx, 1);
+      terms.push(lit);
+      return new DerivedNum(Op.Plus, ...terms);
+    });
 
 /** Rewrites `x - 0` into `x`. */
-const subtractionIdentity =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const subtractionIdentity = new SimplificationRule(
+    'subtraction identity', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Minus) return null;
       const subtrahend = root.ns[1]!;
       return subtrahend.eq(0) && isConstantOrLiteral(subtrahend) ? root.ns[0]! :
@@ -96,8 +98,8 @@ const subtractionIdentity =
     });
 
 /** Rewrites `0 - x` into `-1 * x`. */
-const subtractionFromZero =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const subtractionFromZero = new SimplificationRule(
+    'subtraction from zero', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Minus) return null;
       const minuend = root.ns[0]!;
       return minuend.eq(0) && isConstantOrLiteral(minuend) ?
@@ -106,15 +108,15 @@ const subtractionFromZero =
     });
 
 /** Rewrites `x - x` into `0`. */
-const subtractionFromSelf =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const subtractionFromSelf = new SimplificationRule(
+    'subtraction from self', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Minus) return null;
       return root.ns[0]!.eqSubtree(root.ns[1]!) ? Num.literal(0) : null;
     });
 
 /** Rewrite `a - b` into `c`, where a, b, and c are all literals. */
-const literalSubtraction =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const literalSubtraction = new SimplificationRule(
+    'literal subtraction', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Minus) return null;
       if (!(root.ns[0] instanceof Literal) || !(root.ns[1] instanceof Literal))
         return null;
@@ -122,8 +124,8 @@ const literalSubtraction =
     });
 
 /** Rewrites `1 * x` or `x * 1` into `x`. */
-const multiplicationIdentity =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const multiplicationIdentity = new SimplificationRule(
+    'multiplication identity', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Mult) return null;
       const nontrivials =
           root.ns.filter(n => !n.eq(1) || !isConstantOrLiteral(n));
@@ -132,8 +134,8 @@ const multiplicationIdentity =
     });
 
 /** Rewrites `0 * x` or `x * 0` into `0`. */
-const multiplicationCollapse =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const multiplicationCollapse = new SimplificationRule(
+    'multiplication by zero', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Mult ||
           !root.ns.some(n => n.eq(0) && isConstantOrLiteral(n))) {
         return null;
@@ -146,8 +148,8 @@ const multiplicationCollapse =
  * `w/x * y/z` into `(w*y) / (x*z)`.
  * `x * y/z` or `y/z * x` into `(x * y)/z`.
  */
-const multiplicationByFraction =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const multiplicationByFraction = new SimplificationRule(
+    'combine products of fractions', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Mult) return null;
       const firstFractionIndex =
           root.ns.findIndex(n => n instanceof DerivedNum && n.op === Op.Div);
@@ -168,8 +170,8 @@ const multiplicationByFraction =
     });
 
 /** Rewrite `a * b` into `c`, where a, b, and c are all literals. */
-const literalMultiplication =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const literalMultiplication = new SimplificationRule(
+    'multiplication of literals', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Mult) return null;
 
       const firstLiteralIndex = root.ns.findIndex(n => n instanceof Literal);
@@ -186,40 +188,46 @@ const literalMultiplication =
     });
 
 /** Rewrite factors so that they start with a literal (if any). */
-const reorderFactors = new SimplificationRule((root: NumBase): NumBase|null => {
-  if (!(root instanceof DerivedNum) || root.op !== Op.Mult) return null;
+const reorderFactors =
+    new SimplificationRule('reorder factors', (root: NumBase): NumBase|null => {
+      if (!(root instanceof DerivedNum) || root.op !== Op.Mult) return null;
 
-  const firstLiteralIdx = root.ns.findIndex(n => n instanceof Literal);
-  if (firstLiteralIdx < 1) return null;
+      const firstLiteralIdx = root.ns.findIndex(n => n instanceof Literal);
+      if (firstLiteralIdx < 1) return null;
 
-  const lit = root.ns[firstLiteralIdx]!;
-  const factors = root.ns.slice();
-  factors.splice(firstLiteralIdx, 1);
-  factors.unshift(lit);
-  return new DerivedNum(Op.Mult, ...factors);
-});
+      const lit = root.ns[firstLiteralIdx]!;
+      const factors = root.ns.slice();
+      factors.splice(firstLiteralIdx, 1);
+      factors.unshift(lit);
+      return new DerivedNum(Op.Mult, ...factors);
+    });
 
 /** Rewrites `x / 1` into `x`. */
-const divisionIdentity =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const divisionIdentity = new SimplificationRule(
+    'division identity', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Div) return null;
       const divisor = root.ns[1]!;
       return divisor.eq(1) && isConstantOrLiteral(divisor) ? root.ns[0]! : null;
     });
 
 /** Rewrites `0 / x` into `0`. */
-const divisionCollapse =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const divisionCollapse = new SimplificationRule(
+    'division of zero', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Div) return null;
       const numerator = root.ns[0]!;
-      return numerator.eq(0) && isConstantOrLiteral(numerator) ?
-          Num.literal(0) :
-          null;
+      const denominator = root.ns[1]!;
+
+      if (!numerator.eq(0) || !isConstantOrLiteral(numerator)) return null;
+
+      if (denominator.eq(0) && isConstantOrLiteral(denominator)) {
+        return Num.literal(NaN);
+      }
+      return Num.literal(0);
     });
 
 /** Rewrites `x / (y/z)` into `(x*z) / y`. */
-const denominatorIsFraction =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const denominatorIsFraction = new SimplificationRule(
+    'division by fraction', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Div) return null;
       const denominator = root.ns[1]!;
       return denominator instanceof DerivedNum && denominator.op === Op.Div ?
@@ -231,48 +239,52 @@ const denominatorIsFraction =
     });
 
 /** Reduces fractions. */
-const reduceFraction = new SimplificationRule((root: NumBase): NumBase|null => {
-  if (!(root instanceof DerivedNum) || root.op !== Op.Div) {
-    return null;
-  }
-  const numerator = root.ns[0]!;
-  const denominator = root.ns[1]!;
-  const nFactors = numerator instanceof DerivedNum && numerator.op === Op.Mult ?
-      numerator.ns.slice() :
-      [numerator];
-  const dFactors =
-      denominator instanceof DerivedNum && denominator.op === Op.Mult ?
-      denominator.ns.slice() :
-      [denominator];
-  for (const [i, nf] of nFactors.entries()) {
-    if (nf.eqSubtree(Num.literal(1))) continue;
-    for (const [j, df] of dFactors.entries()) {
-      if (df.eqSubtree(Num.literal(1))) continue;
-      if (nf.eqSubtree(df)) {
-        nFactors.splice(i, 1);
-        dFactors.splice(j, 1);
-        return Num.div(
-            Num.product(...nFactors),
-            Num.product(...dFactors),
-        );
-      } else if (
-          nf instanceof Literal && Number.isInteger(nf.toNumber()) &&
-          df instanceof Literal && Number.isInteger(df.toNumber())) {
-        const gcf = gcd(nf.toNumber(), df.toNumber());
-        if (gcf !== 1) {
-          nFactors[i] = Num.literal(nf.toNumber() / gcf);
-          dFactors[j] = Num.literal(df.toNumber() / gcf);
-          return Num.div(
-              Num.product(...nFactors),
-              Num.product(...dFactors),
-          );
+const reduceFraction = new SimplificationRule(
+    'fraction reduction', (root: NumBase): NumBase|null => {
+      if (!(root instanceof DerivedNum) || root.op !== Op.Div) {
+        return null;
+      }
+      const numerator = root.ns[0]!;
+      const denominator = root.ns[1]!;
+      const nFactors =
+          numerator instanceof DerivedNum && numerator.op === Op.Mult ?
+          numerator.ns.slice() :
+          [numerator];
+      const dFactors =
+          denominator instanceof DerivedNum && denominator.op === Op.Mult ?
+          denominator.ns.slice() :
+          [denominator];
+      for (const [i, nf] of nFactors.entries()) {
+        if (nf.eqSubtree(Num.literal(1)) || nf.eqSubtree(Num.literal(0)))
+          continue;
+        for (const [j, df] of dFactors.entries()) {
+          if (df.eqSubtree(Num.literal(1)) || df.eqSubtree(Num.literal(0)))
+            continue;
+          if (nf.eqSubtree(df)) {
+            nFactors.splice(i, 1);
+            dFactors.splice(j, 1);
+            return Num.div(
+                Num.product(...nFactors),
+                Num.product(...dFactors),
+            );
+          } else if (
+              nf instanceof Literal && Number.isInteger(nf.toNumber()) &&
+              df instanceof Literal && Number.isInteger(df.toNumber())) {
+            const gcf = gcd(nf.toNumber(), df.toNumber());
+            if (gcf !== 1) {
+              nFactors[i] = Num.literal(nf.toNumber() / gcf);
+              dFactors[j] = Num.literal(df.toNumber() / gcf);
+              return Num.div(
+                  Num.product(...nFactors),
+                  Num.product(...dFactors),
+              );
+            }
+          }
         }
       }
-    }
-  }
 
-  return null;
-});
+      return null;
+    });
 
 function gcd(a: number, b: number): number {
   a = Math.abs(a);
@@ -291,8 +303,8 @@ function gcd(a: number, b: number): number {
 }
 
 /** Rewrites `(x / y) / z` into `x / (y * z)`. */
-const numeratorIsFraction =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const numeratorIsFraction = new SimplificationRule(
+    'fractional numerator', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Div) return null;
       const numerator = root.ns[0]!;
       return numerator instanceof DerivedNum && numerator.op === Op.Div ?
@@ -304,55 +316,59 @@ const numeratorIsFraction =
     });
 
 /** Rewrites `x ^ 1` into `x`. */
-const powerIdentity = new SimplificationRule((root: NumBase): NumBase|null => {
-  if (!(root instanceof DerivedNum) || root.op !== Op.Pow) return null;
-  const power = root.ns[1]!;
-  return power.eq(1) && isConstantOrLiteral(power) ? root.ns[0]! : null;
-});
+const powerIdentity =
+    new SimplificationRule('power identity', (root: NumBase): NumBase|null => {
+      if (!(root instanceof DerivedNum) || root.op !== Op.Pow) return null;
+      const power = root.ns[1]!;
+      return power.eq(1) && isConstantOrLiteral(power) ? root.ns[0]! : null;
+    });
 
 /** Rewrites `x ^ 0` into `1`, `0 ^ x` to `0`, and `1 ^ x` to `1`. */
-const powerCollapse = new SimplificationRule((root: NumBase): NumBase|null => {
-  if (!(root instanceof DerivedNum) || root.op !== Op.Pow) return null;
-  const base = root.ns[0]!;
-  const power = root.ns[1]!;
-  if (power.eq(0) && isConstantOrLiteral(power)) {
-    // X ^ 0 == 1
-    return Num.literal(1);
-  } else if (base.eq(0) && isConstantOrLiteral(base)) {
-    // 0 ^ X == 0
-    return Num.literal(0);
-  } else if (base.eq(1) && isConstantOrLiteral(base)) {
-    // 1 ^ X == 1
-    return Num.literal(1);
-  }
-  return null;
-});
+const powerCollapse =
+    new SimplificationRule('power collapse', (root: NumBase): NumBase|null => {
+      if (!(root instanceof DerivedNum) || root.op !== Op.Pow) return null;
+      const base = root.ns[0]!;
+      const power = root.ns[1]!;
+      if (power.eq(0) && isConstantOrLiteral(power)) {
+        // X ^ 0 == 1
+        return Num.literal(1);
+      } else if (base.eq(0) && isConstantOrLiteral(base)) {
+        // 0 ^ X == 0
+        return Num.literal(0);
+      } else if (base.eq(1) && isConstantOrLiteral(base)) {
+        // 1 ^ X == 1
+        return Num.literal(1);
+      }
+      return null;
+    });
 
 /** Rewrites `x ^ y * x ^ z` into `x ^ {y + z}`. */
-const powerCondense = new SimplificationRule((root: NumBase): NumBase|null => {
-  if (!(root instanceof DerivedNum) || root.op !== Op.Mult) {
-    return null;
-  }
-
-  for (const [i, be1] of root.ns.entries()) {
-    if (!(be1 instanceof DerivedNum) || be1.op !== Op.Pow) continue;
-    for (const [j, be2] of root.ns.entries()) {
-      if (i >= j || !(be2 instanceof DerivedNum) || be2.op != Op.Pow) continue;
-      if (be1.ns[0]!.eqSubtree(be2.ns[0]!)) {
-        const factors = root.ns.slice();
-        factors[i] = be1.ns[0]!.pow(be1.ns[1]!.add(be2.ns[1]!));
-        factors.splice(j, 1);
-        return Num.product(...factors);
+const powerCondense = new SimplificationRule(
+    'exponent addition', (root: NumBase): NumBase|null => {
+      if (!(root instanceof DerivedNum) || root.op !== Op.Mult) {
+        return null;
       }
-    }
-  }
 
-  return null;
-});
+      for (const [i, be1] of root.ns.entries()) {
+        if (!(be1 instanceof DerivedNum) || be1.op !== Op.Pow) continue;
+        for (const [j, be2] of root.ns.entries()) {
+          if (i >= j || !(be2 instanceof DerivedNum) || be2.op != Op.Pow)
+            continue;
+          if (be1.ns[0]!.eqSubtree(be2.ns[0]!)) {
+            const factors = root.ns.slice();
+            factors[i] = be1.ns[0]!.pow(be1.ns[1]!.add(be2.ns[1]!));
+            factors.splice(j, 1);
+            return Num.product(...factors);
+          }
+        }
+      }
+
+      return null;
+    });
 
 /** Rewrite `a ^ b` into `c`, where a, b, and c are all literals. */
-const literalExponentiation =
-    new SimplificationRule((root: NumBase): NumBase|null => {
+const literalExponentiation = new SimplificationRule(
+    'literal exponentiation', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Pow) return null;
       if (!(root.ns[0] instanceof Literal) || !(root.ns[1] instanceof Literal))
         return null;
@@ -361,17 +377,31 @@ const literalExponentiation =
     });
 
 const simplifications = [
-  additionIdentity,       literalAddition,
-  reorderTerms,           subtractionIdentity,
-  subtractionFromZero,    subtractionFromSelf,
-  literalSubtraction,     multiplicationIdentity,
-  multiplicationCollapse, multiplicationByFraction,
-  literalMultiplication,  reorderFactors,
-  divisionIdentity,       divisionCollapse,
-  denominatorIsFraction,  numeratorIsFraction,
-  reduceFraction,         powerIdentity,
-  powerCollapse,          powerCondense,
+  additionIdentity,
+  literalAddition,
+  reorderTerms,
+  subtractionIdentity,
+  subtractionFromZero,
+  subtractionFromSelf,
+  literalSubtraction,
+  multiplicationIdentity,
+  multiplicationCollapse,
+  multiplicationByFraction,
+  literalMultiplication,
+  reorderFactors,
+  divisionIdentity,
+  denominatorIsFraction,
+  numeratorIsFraction,
+  reduceFraction,
+  powerIdentity,
+  powerCollapse,
+  powerCondense,
   literalExponentiation,
+
+  // Simplifications that rely on numerators and denominators of fractions to
+  // *eliminate* the fraction must be last, since they rely on the numerator and
+  // denominator having been fully simplified already.
+  divisionCollapse,
 ];
 
 /**
@@ -527,26 +557,19 @@ export abstract class Num {
   /** Returns a simplified version of the expression rooted at this node. */
   simplify(): NumBase {
     let current = toNumBase(this);
-    // Run a fixed-point algorithm: loop over rules repeatedly until we go
-    // through all the rules and don't find anything to simplify.
-    let appliedSomeRule = false;
-    do {
-      appliedSomeRule = false;
+    // We repeatedly loop over the list, starting over each time we've found a
+    // matching rule, since the order of the rules matters.
+    let loopAgain = true;
+    while (loopAgain) {
+      loopAgain = false;
       for (const rule of simplifications) {
-        // Another fixed-point algorithm: simplify using this rule
-        // repeatedly, until it doesn't match anything anymore.
-        let appliedThisRule = false;
-        do {
-          appliedThisRule = false;
-          const applied = current.accept(rule);
-          if (applied) {
-            current = applied;
-            appliedThisRule = true;
-            appliedSomeRule = true;
-          }
-        } while (appliedThisRule);
+        const applied = current.accept(rule);
+        if (!applied) continue;
+        current = applied;
+        loopAgain = true;
+        break;
       }
-    } while (appliedSomeRule);
+    }
     return current;
   }
 }
@@ -805,7 +828,7 @@ export class NamedOutput extends NumBase {
   }
 }
 
-export enum Op {
+enum Op {
   Plus,
   Minus,
   Mult,
