@@ -805,7 +805,7 @@ export class NamedOutput extends NumBase {
   }
 }
 
-enum Op {
+export enum Op {
   Plus,
   Minus,
   Mult,

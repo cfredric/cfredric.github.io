@@ -1,4 +1,6 @@
-import {NamedConstant, NamedOutput, Num} from './num';
+import * as fc from 'fast-check';
+
+import {NamedConstant, NamedOutput, Num, Op} from './num';
 
 function expectExpression(
     n: Num, v: number, unsimplified: string, simplified: string) {
@@ -212,4 +214,45 @@ test('simplifyWithNamedConstants', () => {
 
 test('Sum', () => {
   expect(Num.sum(1, 2, 4).toNumber()).toEqual(7);
+});
+
+const boundedInt = fc.integer({min: -20, max: 20});
+
+const {expr} = fc.letrec(
+    (tie) => ({
+      expr: fc.oneof(
+                  {depthSize: 'small'}, tie('namedConstant'), tie('literal'),
+                  tie('derivedNum'))
+                .map((e) => e as Num),
+      namedConstant:
+          fc.record({name: fc.lorem(), value: boundedInt})
+              .map(({value}) => new NamedConstant(`name: ${value}`, value)),
+      literal: boundedInt.map((l) => Num.literal(l)),
+      derivedNum: fc.record({
+                      op: fc.constantFrom(Op.Plus, Op.Minus, Op.Mult, Op.Div),
+                      left: tie('expr') as fc.Arbitrary<Num>,
+                      right: tie('expr') as fc.Arbitrary<Num>,
+                    })
+                      .map(({op, left, right}) => {
+                        switch (op) {
+                          case Op.Plus:
+                            return Num.add(left, right);
+                          case Op.Minus:
+                            return Num.sub(left, right);
+                          case Op.Mult:
+                            return Num.mul(left, right);
+                          case Op.Div:
+                            return Num.div(left, right);
+                          default:
+                            throw new Error('unreachable');
+                        }
+                      })
+                      .filter((n) => !Number.isFinite(n.value())),
+    }));
+
+test('simplify doesn\'t change value', () => {
+  fc.assert(fc.property(expr, fc.context(), (e, ctx) => {
+    ctx.log(`${e} ==> ${e.simplify()}`);
+    expect(e.simplify().toNumber() == e.toNumber()).toBe(true);
+  }));
 });
