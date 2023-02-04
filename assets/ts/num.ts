@@ -25,10 +25,6 @@ function valueOf(x: AnyNumber): Decimal {
   return new Decimal(x);
 }
 
-function isConstantOrLiteral(n: NumBase): boolean {
-  return n instanceof Literal || n instanceof NamedConstant;
-}
-
 /**
  * Simplifications are done by pattern-matching on the expression AST, and
  * potentially returning a mutated version of the expression. This is the
@@ -49,7 +45,7 @@ const additionIdentity = new SimplificationRule(
     'addition identity', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Plus) return null;
       const nontrivials =
-          root.ns.filter(n => !n.eq(0) || !isConstantOrLiteral(n));
+          root.ns.filter(n => !n.eq(0) || !(n instanceof Literal));
       if (nontrivials.length === root.ns.length) return null;
       return Num.sum(...nontrivials);
     });
@@ -93,7 +89,7 @@ const subtractionIdentity = new SimplificationRule(
     'subtraction identity', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Minus) return null;
       const subtrahend = root.ns[1]!;
-      return subtrahend.eq(0) && isConstantOrLiteral(subtrahend) ? root.ns[0]! :
+      return subtrahend.eq(0) && (subtrahend instanceof Literal) ? root.ns[0]! :
                                                                    null;
     });
 
@@ -102,7 +98,7 @@ const subtractionFromZero = new SimplificationRule(
     'subtraction from zero', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Minus) return null;
       const minuend = root.ns[0]!;
-      return minuend.eq(0) && isConstantOrLiteral(minuend) ?
+      return minuend.eq(0) && (minuend instanceof Literal) ?
           Num.mul(-1, root.ns[1]!) :
           null;
     });
@@ -128,7 +124,7 @@ const multiplicationIdentity = new SimplificationRule(
     'multiplication identity', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Mult) return null;
       const nontrivials =
-          root.ns.filter(n => !n.eq(1) || !isConstantOrLiteral(n));
+          root.ns.filter(n => !n.eq(1) || !(n instanceof Literal));
       if (nontrivials.length === root.ns.length) return null;
       return Num.product(...nontrivials);
     });
@@ -137,7 +133,7 @@ const multiplicationIdentity = new SimplificationRule(
 const multiplicationCollapse = new SimplificationRule(
     'multiplication by zero', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Mult ||
-          !root.ns.some(n => n.eq(0) && isConstantOrLiteral(n))) {
+          !root.ns.some(n => n.eq(0) && (n instanceof Literal))) {
         return null;
       }
       return Num.literal(0);
@@ -207,7 +203,7 @@ const divisionIdentity = new SimplificationRule(
     'division identity', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Div) return null;
       const divisor = root.ns[1]!;
-      return divisor.eq(1) && isConstantOrLiteral(divisor) ? root.ns[0]! : null;
+      return divisor.eq(1) && (divisor instanceof Literal) ? root.ns[0]! : null;
     });
 
 /** Rewrites `0 / x` into `0`, where x is nonzero. */
@@ -340,7 +336,7 @@ const powerIdentity =
     new SimplificationRule('power identity', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Pow) return null;
       const power = root.ns[1]!;
-      return power.eq(1) && isConstantOrLiteral(power) ? root.ns[0]! : null;
+      return power.eq(1) && (power instanceof Literal) ? root.ns[0]! : null;
     });
 
 /** Rewrites `x ^ 0` into `1`, `0 ^ x` to `0`, and `1 ^ x` to `1`. */
@@ -349,13 +345,13 @@ const powerCollapse =
       if (!(root instanceof DerivedNum) || root.op !== Op.Pow) return null;
       const base = root.ns[0]!;
       const power = root.ns[1]!;
-      if (power.eq(0) && isConstantOrLiteral(power)) {
+      if (power.eq(0) && (power instanceof Literal)) {
         // X ^ 0 == 1
         return Num.literal(1);
-      } else if (base.eq(0) && isConstantOrLiteral(base)) {
+      } else if (base.eq(0) && (base instanceof Literal)) {
         // 0 ^ X == 0
         return Num.literal(0);
-      } else if (base.eq(1) && isConstantOrLiteral(base)) {
+      } else if (base.eq(1) && (base instanceof Literal)) {
         // 1 ^ X == 1
         return Num.literal(1);
       }

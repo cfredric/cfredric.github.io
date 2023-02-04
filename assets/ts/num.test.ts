@@ -54,10 +54,10 @@ test('toString()', () => {
   expectExpression(Num.add(1, Num.mul(2, 1)), 3, '1 + 2 * 1', '3');
 
   const zero = new NamedConstant('zero', 0);
-  expectExpression(zero.add(1), 1, 'zero + 1', '1');
+  expectExpression(zero.add(1), 1, 'zero + 1', 'zero + 1');
 
   const one = new NamedConstant('one', 1);
-  expectExpression(one.mul(2), 2, 'one * 2', '2');
+  expectExpression(one.mul(2), 2, 'one * 2', '2 * one');
 
   expectExpression(Num.add(0, 0), 0, '0 + 0', '0');
   expectExpression(Num.mul(1, 1), 1, '1 * 1', '1');
@@ -88,12 +88,13 @@ test('toString()', () => {
 
 
   // Elide useless subtrees.
-  expectExpression(Num.add(1, zero), 1, '1 + zero', '1');
+  expectExpression(Num.add(1, zero), 1, '1 + zero', 'zero + 1');
   expectExpression(Num.add(1, Num.mul(1, 1)), 2, '1 + 1 * 1', '2');
   expectExpression(Num.add(1, Num.div(1, 1)), 2, '1 + \\frac{1}{1}', '2');
-  expectExpression(Num.sum(zero, 0, 1), 1, 'zero + 0 + 1', '1');
+  expectExpression(Num.sum(zero, 0, 1), 1, 'zero + 0 + 1', 'zero + 1');
   expectExpression(
-      Num.mul(3, Num.sum(zero, 0, 1)), 3, '3 * {(zero + 0 + 1)}', '3');
+      Num.mul(3, Num.sum(zero, 0, 1)), 3, '3 * {(zero + 0 + 1)}',
+      '3 * {(zero + 1)}');
 
   expectExpression(
       Num.div(1, Num.div(2, 3)), 3 / 2, '\\frac{1}{\\frac{2}{3}}',
