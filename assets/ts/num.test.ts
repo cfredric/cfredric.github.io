@@ -224,9 +224,10 @@ const {expr} = fc.letrec(
                   {depthSize: 'small'}, tie('namedConstant'), tie('literal'),
                   tie('derivedNum'))
                 .map((e) => e as Num),
-      namedConstant:
-          fc.record({name: fc.lorem(), value: boundedInt})
-              .map(({value}) => new NamedConstant(`name: ${value}`, value)),
+      namedConstant: fc.record({name: fc.lorem(), value: boundedInt})
+                         .map(
+                             ({name, value}) =>
+                                 new NamedConstant(`${name}: ${value}`, value)),
       literal: boundedInt.map((l) => Num.literal(l)),
       derivedNum: fc.record({
                       op: fc.constantFrom(Op.Plus, Op.Minus, Op.Mult, Op.Div),
