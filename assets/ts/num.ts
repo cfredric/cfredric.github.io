@@ -577,8 +577,6 @@ export abstract class Num {
     // We repeatedly loop over the list, starting over each time we've found a
     // matching rule, since the order of the rules matters.
     let loopAgain = true;
-    const steps =
-        [{e: current.toString(), v: current.toNumber(), r: 'original'}];
     while (loopAgain) {
       loopAgain = false;
       for (const rule of simplifications) {
@@ -586,12 +584,9 @@ export abstract class Num {
         if (!applied) continue;
         current = applied;
         loopAgain = true;
-        steps.push(
-            {e: current.toString(), v: current.toNumber(), r: rule.name});
         break;
       }
     }
-    console.log(steps);
     return current;
   }
 }
