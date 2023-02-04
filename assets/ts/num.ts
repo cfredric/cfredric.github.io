@@ -398,10 +398,8 @@ const simplifications = [
   reorderTerms,
   subtractionIdentity,
   subtractionFromZero,
-  subtractionFromSelf,
   literalSubtraction,
   multiplicationIdentity,
-  multiplicationCollapse,
   multiplicationByFraction,
   literalMultiplication,
   reorderFactors,
@@ -419,6 +417,8 @@ const simplifications = [
   divisionCollapse,
   divisionByZero,
   denominatorIsFraction,
+  subtractionFromSelf,
+  multiplicationCollapse,
 ];
 
 /**

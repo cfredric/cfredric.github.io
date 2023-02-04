@@ -169,6 +169,19 @@ test('simplify literals', () => {
   expectExpression(
       Num.pow(2, 3).mul(Num.pow(2, 2)), 32, '2 ^ {3} * 2 ^ {2}',
       '32');  // ^ condensing
+
+  // 0 * (0 / 0) is weird because it should be NaN, but the simplifications
+  // might choose to evaluate the `0 * x` perspective first, which would lead to
+  // `0`. The same problem exists with other operators that can "collapse" an
+  // expression and eliminate things that ought to introduce NaN.
+  expectExpression(Num.mul(0, Num.div(0, 0)), NaN, '0 * \\frac{0}{0}', 'NaN');
+  expectExpression(
+      Num.sub(Num.div(0, 0), Num.div(0, 0)), NaN, '\\frac{0}{0} - \\frac{0}{0}',
+      'NaN');
+  expectExpression(
+      Num.div(Num.mul(3, Num.div(0, 0)), Num.div(0, 0)), NaN,
+      '\\frac{3 * \\frac{0}{0}}{\\frac{0}{0}}', 'NaN');
+  expectExpression(Num.pow(3, Num.div(0, 0)), NaN, '3 ^ {\\frac{0}{0}}', 'NaN');
 });
 
 test('simplifyWithNamedConstants', () => {
