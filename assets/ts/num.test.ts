@@ -318,10 +318,12 @@ test('simplify doesn\'t change value', () => {
     const simplifiedValue = e.simplify().toNumber();
     expect(e.toNumber()).toEqual(originalValue);
 
-    if (Number.isNaN(originalValue)) {
-      expect(simplifiedValue).toBeNaN();
-    } else {
+    if (originalValue == 0) {
+      // Have to assert this separately, since 0 and -0 are considered
+      // distinct by jest, even though they are == to each other.
       expect(simplifiedValue == originalValue).toBe(true);
+    } else {
+      expect(simplifiedValue).toEqual(originalValue);
     }
   }), {verbose: true});
 });
