@@ -597,7 +597,8 @@ export abstract class Num {
     // We repeatedly loop over the list, starting over each time we've found a
     // matching rule, since the order of the rules matters.
     let loopAgain = true;
-    const steps = [] if (debug) {
+    const steps = [];
+    if (debug) {
       steps.push({r: 'original', e: current.toString()});
     }
     while (loopAgain) {
