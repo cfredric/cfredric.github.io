@@ -181,7 +181,19 @@ test('simplify literals', () => {
   expectExpression(
       Num.div(Num.mul(3, Num.div(0, 0)), Num.div(0, 0)), NaN,
       '\\frac{3 * \\frac{0}{0}}{\\frac{0}{0}}', 'NaN');
+  expectExpression(
+      Num.mul(3, Num.div(Num.div(0, 0), Num.div(0, 0))), NaN,
+      '3 * \\frac{\\frac{0}{0}}{\\frac{0}{0}}', 'NaN');
   expectExpression(Num.pow(3, Num.div(0, 0)), NaN, '3 ^ {\\frac{0}{0}}', 'NaN');
+
+  expectExpression(Num.sum(3, NaN, 4), NaN, '3 + NaN + 4', 'NaN');
+  expectExpression(Num.sub(3, NaN), NaN, '3 - NaN', 'NaN');
+  expectExpression(Num.sub(NaN, 3), NaN, 'NaN - 3', 'NaN');
+  expectExpression(Num.mul(3, NaN), NaN, '3 * NaN', 'NaN');
+  expectExpression(Num.div(NaN, 3), NaN, '\\frac{NaN}{3}', 'NaN');
+  expectExpression(Num.div(3, NaN), NaN, '\\frac{3}{NaN}', 'NaN');
+  expectExpression(Num.pow(3, NaN), NaN, '3 ^ {NaN}', 'NaN');
+  expectExpression(Num.pow(NaN, 3), NaN, 'NaN ^ {3}', 'NaN');
 });
 
 test('simplifyWithNamedConstants', () => {

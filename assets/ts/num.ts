@@ -25,6 +25,10 @@ function valueOf(x: AnyNumber): Decimal {
   return new Decimal(x);
 }
 
+function isCollapsibleNaN(x: Num): boolean {
+  return x instanceof Literal && Number.isNaN(x.toNumber());
+}
+
 /**
  * Simplifications are done by pattern-matching on the expression AST, and
  * potentially returning a mutated version of the expression. This is the
@@ -207,15 +211,16 @@ const divisionIdentity = new SimplificationRule(
     });
 
 /** Rewrites `0 / x` into `0`, where x is nonzero. */
-const divisionCollapse = new SimplificationRule(
+const divisionOfZero = new SimplificationRule(
     'division of zero', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Div) return null;
       const numerator = root.ns[0]!;
       const denominator = root.ns[1]!;
 
       if (!numerator.eq(0) || !(numerator instanceof Literal) ||
-          denominator.eq(0))
+          denominator.eq(0) || !Number.isFinite(denominator.toNumber())) {
         return null;
+      }
 
       return Num.literal(0);
     });
@@ -239,6 +244,19 @@ const divisionByZero = new SimplificationRule(
       } else {
         return Num.literal(-Infinity);
       }
+    });
+
+const divisionWithNaN = new SimplificationRule(
+    'division with NaN', (root: NumBase): NumBase|null => {
+      if (!(root instanceof DerivedNum) || root.op !== Op.Div) return null;
+      const numerator = root.ns[0]!;
+      const denominator = root.ns[1]!;
+
+      if (!isCollapsibleNaN(denominator) && !isCollapsibleNaN(numerator)) {
+        return null;
+      }
+
+      return Num.literal(NaN);
     });
 
 /** Rewrites `x / (y/z)` into `(x*z) / y`. */
@@ -404,8 +422,8 @@ const simplifications = [
   literalMultiplication,
   reorderFactors,
   divisionIdentity,
+  divisionWithNaN,
   numeratorIsFraction,
-  reduceFraction,
   powerIdentity,
   powerCollapse,
   powerCondense,
@@ -414,11 +432,12 @@ const simplifications = [
   // Simplifications that rely on numerators and denominators of fractions to
   // *eliminate* the fraction must be last, since they rely on the numerator and
   // denominator having been fully simplified already.
-  divisionCollapse,
   divisionByZero,
+  divisionOfZero,
   denominatorIsFraction,
   subtractionFromSelf,
   multiplicationCollapse,
+  reduceFraction,
 ];
 
 /**
@@ -573,10 +592,14 @@ export abstract class Num {
 
   /** Returns a simplified version of the expression rooted at this node. */
   simplify(): NumBase {
+    const debug = false;
     let current = toNumBase(this);
     // We repeatedly loop over the list, starting over each time we've found a
     // matching rule, since the order of the rules matters.
     let loopAgain = true;
+    const steps = [] if (debug) {
+      steps.push({r: 'original', e: current.toString()});
+    }
     while (loopAgain) {
       loopAgain = false;
       for (const rule of simplifications) {
@@ -584,8 +607,14 @@ export abstract class Num {
         if (!applied) continue;
         current = applied;
         loopAgain = true;
+        if (debug) {
+          steps.push({r: rule.name, e: current.toString()});
+        }
         break;
       }
+    }
+    if (debug) {
+      console.log(steps);
     }
     return current;
   }
