@@ -142,10 +142,14 @@ test('simplify literals', () => {
   expectExpression(Num.div(0, 0), NaN, '\\frac{0}{0}', 'NaN');  // / collapse
   expectExpression(
       Num.div(-1, 0), -Infinity, '\\frac{-1}{0}',
-      '\\frac{-1}{0}');  // / collapse
+      '-Infinity');  // / by zero
   expectExpression(
       Num.div(Num.div(0, 0), 0), NaN, '\\frac{\\frac{0}{0}}{0}',
-      'NaN');  // / collapse
+      'NaN');  // / by zero
+  expectExpression(
+      Num.div(3, Num.div(Num.mul(1, 0), 2)), Infinity,
+      '\\frac{3}{\\frac{1 * 0}{2}}',
+      'Infinity');  // / by zero
 
   // division by fraction
   expectExpression(
@@ -171,6 +175,8 @@ test('simplifyWithNamedConstants', () => {
   const b = new NamedConstant('b', 4);
   const c = new NamedConstant('c', 8);
   const d = new NamedConstant('d', 16);
+  const x = new NamedConstant('x', 0);
+  const y = new NamedConstant('y', -2);
   expectExpression(a.add(0), 2, 'a + 0', 'a');           // + identity
   expectExpression(Num.add(0, a), 2, '0 + a', 'a');      // + identity
   expectExpression(Num.sum(2, a), 4, '2 + a', 'a + 2');  // * ordering
@@ -201,6 +207,16 @@ test('simplifyWithNamedConstants', () => {
   expectExpression(
       a.mul(b).div(c.mul(a)), 1 / 2, '\\frac{a * b}{c * a}',
       '\\frac{b}{c}');  // some of both numerator and denominator remain.
+  expectExpression(
+      Num.div(y, 0), -Infinity, '\\frac{y}{0}',
+      '\\frac{y}{0}');  // / by zero
+  expectExpression(
+      Num.div(Num.div(x, 0), 0), NaN, '\\frac{\\frac{x}{0}}{0}',
+      '\\frac{x}{0}');  // / by zero
+  expectExpression(
+      Num.div(3, Num.div(Num.mul(1, x), 2)), Infinity,
+      '\\frac{3}{\\frac{1 * x}{2}}',
+      '\\frac{6}{x}');  // / by zero
 
   // division by fraction
   expectExpression(
@@ -252,35 +268,34 @@ const {expr} = fc.letrec(
                   BinaryOp.Plus, BinaryOp.Minus, BinaryOp.Mult, BinaryOp.Div),
               left: tie('expr') as fc.Arbitrary<Num>,
               right: tie('expr') as fc.Arbitrary<Num>,
-            })
-              .map(({op, left, right}) => {
-                switch (op) {
-                  case BinaryOp.Plus:
-                    return Num.add(left, right);
-                  case BinaryOp.Minus:
-                    return Num.sub(left, right);
-                  case BinaryOp.Mult:
-                    return Num.mul(left, right);
-                  case BinaryOp.Div:
-                    return Num.div(left, right);
-                  case BinaryOp.Pow:
-                    return Num.pow(left, right);
-                }
-              })
-              .filter((n) => !Number.isFinite(n.value())),
+            }).map(({op, left, right}) => {
+            switch (op) {
+              case BinaryOp.Plus:
+                return Num.add(left, right);
+              case BinaryOp.Minus:
+                return Num.sub(left, right);
+              case BinaryOp.Mult:
+                return Num.mul(left, right);
+              case BinaryOp.Div:
+                return Num.div(left, right);
+              case BinaryOp.Pow:
+                return Num.pow(left, right);
+            }
+          }),
     }));
 
 test('simplify doesn\'t change value', () => {
   fc.assert(fc.property(expr, fc.context(), (e, ctx) => {
     ctx.log(`${e} ==> ${e.simplify()}`);
 
-    const simplifiedValue = e.simplify().toNumber();
     const originalValue = e.toNumber();
+    const simplifiedValue = e.simplify().toNumber();
+    expect(e.toNumber()).toEqual(originalValue);
 
     if (Number.isNaN(originalValue)) {
       expect(simplifiedValue).toBeNaN();
     } else {
       expect(simplifiedValue == originalValue).toBe(true);
     }
-  }));
+  }), {verbose: true});
 });

@@ -210,19 +210,39 @@ const divisionIdentity = new SimplificationRule(
       return divisor.eq(1) && isConstantOrLiteral(divisor) ? root.ns[0]! : null;
     });
 
-/** Rewrites `0 / x` into `0`. */
+/** Rewrites `0 / x` into `0`, where x is nonzero. */
 const divisionCollapse = new SimplificationRule(
     'division of zero', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Div) return null;
       const numerator = root.ns[0]!;
       const denominator = root.ns[1]!;
 
-      if (!numerator.eq(0) || !isConstantOrLiteral(numerator)) return null;
+      if (!numerator.eq(0) || !(numerator instanceof Literal) ||
+          denominator.eq(0))
+        return null;
 
-      if (denominator.eq(0) && isConstantOrLiteral(denominator)) {
-        return Num.literal(NaN);
-      }
       return Num.literal(0);
+    });
+
+/** Rewrites `a / 0` into `NaN`, `Infinity`, or `-Infinity`. */
+const divisionByZero = new SimplificationRule(
+    'division by zero', (root: NumBase): NumBase|null => {
+      if (!(root instanceof DerivedNum) || root.op !== Op.Div) return null;
+      const numerator = root.ns[0]!;
+      const denominator = root.ns[1]!;
+
+      if (!denominator.eq(0) || !(denominator instanceof Literal) ||
+          !(numerator instanceof Literal)) {
+        return null;
+      }
+
+      if (numerator.gt(0)) {
+        return Num.literal(Infinity);
+      } else if (numerator.eq(0)) {
+        return Num.literal(NaN);
+      } else {
+        return Num.literal(-Infinity);
+      }
     });
 
 /** Rewrites `x / (y/z)` into `(x*z) / y`. */
@@ -390,7 +410,6 @@ const simplifications = [
   literalMultiplication,
   reorderFactors,
   divisionIdentity,
-  denominatorIsFraction,
   numeratorIsFraction,
   reduceFraction,
   powerIdentity,
@@ -402,6 +421,8 @@ const simplifications = [
   // *eliminate* the fraction must be last, since they rely on the numerator and
   // denominator having been fully simplified already.
   divisionCollapse,
+  divisionByZero,
+  denominatorIsFraction,
 ];
 
 /**
@@ -560,6 +581,8 @@ export abstract class Num {
     // We repeatedly loop over the list, starting over each time we've found a
     // matching rule, since the order of the rules matters.
     let loopAgain = true;
+    const steps =
+        [{e: current.toString(), v: current.toNumber(), r: 'original'}];
     while (loopAgain) {
       loopAgain = false;
       for (const rule of simplifications) {
@@ -567,9 +590,12 @@ export abstract class Num {
         if (!applied) continue;
         current = applied;
         loopAgain = true;
+        steps.push(
+            {e: current.toString(), v: current.toNumber(), r: rule.name});
         break;
       }
     }
+    console.log(steps);
     return current;
   }
 }
