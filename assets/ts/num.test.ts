@@ -90,7 +90,7 @@ test('toString()', () => {
       a.mul(c.div(d)), 10 / 7, 'a * \\frac{c}{d}', '\\frac{a * c}{d}');
   expectExpression(
       a.div(b).mul(e).mul(c.div(d)), 110 / 21,
-      '\\frac{a}{b} * e * \\frac{c}{d}', '\\frac{a * e * c}{b * d}');
+      '\\frac{a}{b} * e * \\frac{c}{d}', '\\frac{a * c * e}{b * d}');
 
 
   // Elide useless subtrees.
@@ -113,10 +113,10 @@ test('toString()', () => {
 
   expectExpression(
       Num.product(a.add(b), c.add(d)), 60, '{(a + b)} * {(c + d)}',
-      'c * a + d * a + c * b + d * b');
+      'a * c + a * d + b * c + b * d');
   expectExpression(
       Num.product(a.sub(b), c.sub(d)), 2, '{(a - b)} * {(c - d)}',
-      'c * a - d * a - {(c * b - d * b)}');
+      'a * c - a * d - {(b * c - b * d)}');
 });
 
 test('simplify literals', () => {

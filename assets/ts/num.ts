@@ -1,3 +1,4 @@
+import * as d3 from 'd3';
 import Decimal from 'decimal.js';
 
 export type AnyNumber = number|Num|Decimal;
@@ -27,6 +28,19 @@ function valueOf(x: AnyNumber): Decimal {
 
 function isCollapsibleNaN(x: Num): boolean {
   return x instanceof Literal && Number.isNaN(x.toNumber());
+}
+
+enum ExprType {
+  Literal,
+  Named,
+  Composite,
+}
+
+function exprType(n: Num): ExprType {
+  if (n instanceof DerivedNum) return ExprType.Composite;
+  if (n instanceof NamedConstant) return ExprType.Named;
+  if (n instanceof NamedOutput) return ExprType.Named;
+  return ExprType.Literal;
 }
 
 /**
@@ -221,19 +235,35 @@ const productOfProduct = new SimplificationRule(
       return Num.product(...prevs, ...inner_product.ns, ...posts);
     });
 
-/** Rewrite factors so that they start with a literal (if any). */
+/**
+ * Rewrite factors so that they start with a literal (if any), then have all
+ * NamedConstants and NamedOutputs (sorted alphabetically by name).
+ */
 const reorderFactors =
     new SimplificationRule('reorder factors', (root: NumBase): NumBase|null => {
       if (!(root instanceof DerivedNum) || root.op !== Op.Mult) return null;
 
-      const firstLiteralIdx = root.ns.findIndex(n => n instanceof Literal);
-      if (firstLiteralIdx < 1) return null;
-
-      const lit = root.ns[firstLiteralIdx]!;
       const factors = root.ns.slice();
-      factors.splice(firstLiteralIdx, 1);
-      factors.unshift(lit);
-      return new DerivedNum(Op.Mult, ...factors);
+      const factorsByExprType = d3.group(factors, (f) => exprType(f));
+      const reorderedFactors = [
+        ...factorsByExprType.get(ExprType.Literal) || [],
+        ...d3.sort(
+            (factorsByExprType.get(ExprType.Named) || []),
+            (f) => {
+              if (f instanceof NamedConstant) return f.name;
+              if (f instanceof NamedOutput) return f.name;
+              throw new Error('unreachable');
+            }),
+        ...factorsByExprType.get(ExprType.Composite) || [],
+      ];
+
+      for (const [f, fr] of d3.zip(factors, reorderedFactors)) {
+        if (f != fr) {
+          return new DerivedNum(Op.Mult, ...reorderedFactors);
+        }
+      }
+
+      return null;
     });
 
 /**
@@ -757,7 +787,7 @@ class Literal extends NumBase {
 /** A numeric constant (with an associated name) in some expression. */
 export class NamedConstant extends NumBase {
   private readonly v: ReturnType<typeof valueOf>;
-  private readonly name: string;
+  readonly name: string;
 
   constructor(name: string, value: AnyNumber) {
     super();
@@ -916,7 +946,7 @@ class DerivedNum extends NumBase {
  * enough to give a name.
  */
 export class NamedOutput extends NumBase {
-  private readonly name: string;
+  readonly name: string;
   private readonly num: NumBase;
 
   constructor(name: string, num: Num) {
