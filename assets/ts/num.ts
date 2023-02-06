@@ -72,6 +72,23 @@ const literalAddition = new SimplificationRule(
       return Num.sum(...terms);
     });
 
+const sumOfSum =
+    new SimplificationRule('sum of sum', (root: NumBase): NumBase|null => {
+      if (!(root instanceof DerivedNum) || root.op !== Op.Plus) return null;
+
+      const s_idx =
+          root.ns.findIndex((f) => f instanceof DerivedNum && f.op === Op.Plus);
+      if (s_idx === -1) {
+        return null;
+      }
+      const inner_subtree = root.ns[s_idx]! as DerivedNum;
+
+      const prevs = root.ns.slice(0, s_idx);
+      const posts = root.ns.slice(s_idx + 1);
+
+      return Num.sum(...prevs, ...inner_subtree.ns, ...posts);
+    });
+
 /** Rewrite terms so that they end with a literal (if any). */
 const reorderTerms =
     new SimplificationRule('reorder terms', (root: NumBase): NumBase|null => {
@@ -187,6 +204,23 @@ const literalMultiplication = new SimplificationRule(
       return Num.product(...factors);
     });
 
+const productOfProduct = new SimplificationRule(
+    'product of product', (root: NumBase): NumBase|null => {
+      if (!(root instanceof DerivedNum) || root.op !== Op.Mult) return null;
+
+      const p_idx =
+          root.ns.findIndex((f) => f instanceof DerivedNum && f.op === Op.Mult);
+      if (p_idx === -1) {
+        return null;
+      }
+      const inner_product = root.ns[p_idx]! as DerivedNum;
+
+      const prevs = root.ns.slice(0, p_idx);
+      const posts = root.ns.slice(p_idx + 1);
+
+      return Num.product(...prevs, ...inner_product.ns, ...posts);
+    });
+
 /** Rewrite factors so that they start with a literal (if any). */
 const reorderFactors =
     new SimplificationRule('reorder factors', (root: NumBase): NumBase|null => {
@@ -200,6 +234,46 @@ const reorderFactors =
       factors.splice(firstLiteralIdx, 1);
       factors.unshift(lit);
       return new DerivedNum(Op.Mult, ...factors);
+    });
+
+/**
+ * Products of sums get simplified into sums of products.
+ * `(a + b) * (c + d)` => `a*c + a*d + b*c + b*d`.
+ */
+const productsDistributeOverSums = new SimplificationRule(
+    'products distribute over sums', (root: NumBase): NumBase|null => {
+      if (!(root instanceof DerivedNum) || root.op !== Op.Mult) {
+        return null;
+      }
+      const s_idx =
+          root.ns.findIndex((f) => f instanceof DerivedNum && f.op === Op.Plus);
+      if (s_idx === -1) {
+        return null;
+      }
+      const sum = root.ns[s_idx]! as DerivedNum;
+
+      const others = root.ns.filter((_factor, i) => i !== s_idx);
+
+      return Num.sum(...sum.ns.map((term) => Num.product(term, ...others)));
+    });
+
+const productsDistributeOverDifferences = new SimplificationRule(
+    'products distribute over differences', (root: NumBase): NumBase|null => {
+      if (!(root instanceof DerivedNum) || root.op !== Op.Mult) {
+        return null;
+      }
+      const s_idx = root.ns.findIndex(
+          (f) => f instanceof DerivedNum && f.op === Op.Minus);
+      if (s_idx === -1) {
+        return null;
+      }
+      const difference = root.ns[s_idx]! as DerivedNum;
+
+      const others = root.ns.filter((_factor, i) => i !== s_idx);
+
+      return Num.sub(
+          Num.product(difference.ns[0]!, ...others),
+          Num.product(difference.ns[1]!, ...others));
     });
 
 /** Rewrites `x / 1` into `x`. */
@@ -414,11 +488,15 @@ const simplifications = [
   additionIdentity,
   literalAddition,
   reorderTerms,
+  sumOfSum,
   subtractionIdentity,
   subtractionFromZero,
   literalSubtraction,
   multiplicationIdentity,
   multiplicationByFraction,
+  productOfProduct,
+  productsDistributeOverSums,
+  productsDistributeOverDifferences,
   literalMultiplication,
   reorderFactors,
   divisionIdentity,

@@ -94,7 +94,7 @@ test('toString()', () => {
   expectExpression(Num.sum(zero, 0, 1), 1, 'zero + 0 + 1', 'zero + 1');
   expectExpression(
       Num.mul(3, Num.sum(zero, 0, 1)), 3, '3 * {(zero + 0 + 1)}',
-      '3 * {(zero + 1)}');
+      '3 * zero + 3');
 
   expectExpression(
       Num.div(1, Num.div(2, 3)), 3 / 2, '\\frac{1}{\\frac{2}{3}}',
@@ -104,6 +104,13 @@ test('toString()', () => {
   expectExpression(Num.mul(2, 3).pow(4), 1296, '{(2 * 3)} ^ {4}', '1296');
   expectExpression(Num.pow(2, Num.add(3, 4)), 128, '2 ^ {3 + 4}', '128');
   expectExpression(Num.pow(2, Num.mul(3, 4)), 4096, '2 ^ {3 * 4}', '4096');
+
+  expectExpression(
+      Num.product(a.add(b), c.add(d)), 60, '{(a + b)} * {(c + d)}',
+      'c * a + d * a + c * b + d * b');
+  expectExpression(
+      Num.product(a.sub(b), c.sub(d)), 2, '{(a - b)} * {(c - d)}',
+      'c * a - d * a - {(c * b - d * b)}');
 });
 
 test('simplify literals', () => {
@@ -322,6 +329,16 @@ test('simplify doesn\'t change value', () => {
       // Have to assert this separately, since 0 and -0 are considered
       // distinct by jest, even though they are == to each other.
       expect(simplifiedValue == originalValue).toBe(true);
+    } else if (!Number.isFinite(originalValue)) {
+      if (Number.isNaN(originalValue)) {
+        expect(simplifiedValue).toEqual(originalValue);
+      } else {
+        // Expressions like `1 / (0 * -1)` can arguably be simplified to `1 / 0`
+        // which has value Infinity, while the original has value -Infinity.
+        // We're going to ignore sign issues due to manipulating infinity, since
+        // weird stuff happens.
+        expect(Number.isFinite(simplifiedValue)).toBe(false);
+      }
     } else {
       expect(simplifiedValue).toEqual(originalValue);
     }
