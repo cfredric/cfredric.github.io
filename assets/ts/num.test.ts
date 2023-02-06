@@ -4,9 +4,15 @@ import {NamedConstant, NamedOutput, Num} from './num';
 
 function expectExpression(
     n: Num, v: number, unsimplified: string, simplified: string) {
-  expect(n.toNumber()).toEqual(v);
-  expect(n.toString()).toEqual(unsimplified);
-  expect(n.simplify().toString()).toEqual(simplified);
+  expect({
+    value: n.toNumber(),
+    str: n.toString(),
+    simplified: n.simplify().toString(),
+  }).toEqual({
+    value: v,
+    str: unsimplified,
+    simplified,
+  });
 }
 
 test('toString()', () => {
