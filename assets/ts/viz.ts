@@ -120,26 +120,7 @@ function buildCumulativeLoanChart(
       d3.max,
   );
 
-  const area = d3.area<{month: number, value: Num}>()
-                   .curve(d3.curveMonotoneX)
-                   .x(d => x(d.month))
-                   .y0(y(0))
-                   .y1(d => y(d.value.toNumber()));
-
-  svg.selectAll('.area')
-      .data(keys.map(key => ({
-                       key,
-                       values: data.map(datum => ({
-                                          month: datum.month,
-                                          value: datum.data[key],
-                                        })),
-                     })))
-      .enter()
-      .append('g')
-      .attr('class', d => `area ${d.key}`)
-      .append('path')
-      .attr('d', d => area(d.values))
-      .style('fill', d => transparent(fieldColor(d.key)));
+  addAreaChart(svg, data, keys, x, y);
 
   if (ctx.paymentsAlreadyMade > 0) {
     addCurrentMonthLine(ctx, svg, x, y);
@@ -251,6 +232,33 @@ function makeAxes<KeyType extends string>(
       .attr('fill', textColor);
 
   return {x, y};
+}
+
+function addAreaChart<KeyType extends PaymentTypeWithInitial>(
+    svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
+    data: readonly NumericRecordWithMonth<KeyType>[], keys: readonly KeyType[],
+    x: d3.ScaleLinear<number, number, never>,
+    y: d3.ScaleLinear<number, number, never>) {
+  const area = d3.area<{month: number, value: Num}>()
+                   .curve(d3.curveMonotoneX)
+                   .x(d => x(d.month))
+                   .y0(y(0))
+                   .y1(d => y(d.value.toNumber()));
+
+  svg.selectAll('.area')
+      .data(keys.map(key => ({
+                       key,
+                       values: data.map(datum => ({
+                                          month: datum.month,
+                                          value: datum.data[key],
+                                        })),
+                     })))
+      .enter()
+      .append('g')
+      .attr('class', d => `area ${d.key}`)
+      .append('path')
+      .attr('d', d => area(d.values))
+      .style('fill', d => transparent(fieldColor(d.key)));
 }
 
 function addStackChart<KeyType extends PaymentTypeWithInitial>(
