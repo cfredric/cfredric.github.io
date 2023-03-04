@@ -5,7 +5,7 @@ import {ExpandableElement} from './expandable_element';
 import {Formatter} from './formatter';
 import {Num} from './num';
 import {Schedules} from './schedules';
-import {DimensionsAndMargin, loanPaymentTypes, NumericRecord, NumericRecordWithMonth, PaymentRecordWithMonth, PaymentType, paymentTypes, paymentTypesWithInitial, PaymentTypeWithInitial, SVGName} from './types';
+import {DimensionsAndMargin, loanPaymentTypes, NumericRecord, NumericRecordWithMonth, paymentTypes, paymentTypesWithInitial, PaymentTypeWithInitial, SVGName} from './types';
 import * as utils from './utils';
 
 enum ChartType {
@@ -68,37 +68,6 @@ function clearTables() {
   utils.removeChildren(utils.getHtmlEltWithId('schedule_tab'));
   utils.removeChildren(utils.getHtmlEltWithId('cumulative_tab'));
   utils.removeChildren(utils.getHtmlEltWithId('tax_year_tab'));
-}
-
-/** Builds the chart of monthly payments over time. */
-function buildPaymentScheduleChart(
-    ctx: Context, data: readonly PaymentRecordWithMonth[], fmt: Formatter,
-    keys: readonly PaymentType[]): void {
-  buildChart(
-      ctx, 'Monthly Payment', 'schedule_viz', ChartType.Stacked, data, keys,
-      fmt);
-}
-
-/** Builds the chart of cumulative loan payments over time. */
-function buildCumulativeLoanChart(
-    ctx: Context, data: readonly PaymentRecordWithMonth[], fmt: Formatter,
-    keys: readonly PaymentType[]): void {
-  buildChart(
-      ctx, 'Cumulative Loan Payments', 'cumulative_loan_viz', ChartType.Area,
-      data, keys, fmt);
-}
-
-/** Builds the chart of cumulative loan payments over time. */
-function buildCumulativeChart(
-    ctx: Context, cumulatives: readonly PaymentRecordWithMonth[],
-    fmt: Formatter): void {
-  buildChart(
-      ctx, 'Cumulative Moneys Paid', 'cumulative_viz', ChartType.Stacked,
-      cumulatives.map((rec) => ({
-                        month: rec.month,
-                        data: {'initial': ctx.purchasePayment, ...rec.data},
-                      })),
-      paymentTypesWithInitial, fmt);
 }
 
 function buildChart<KeyType extends PaymentTypeWithInitial>(
@@ -417,15 +386,26 @@ export function setChartsAndButtonsContent(
     return;
   }
 
-  buildPaymentScheduleChart(ctx, schedules.pointwise(), fmt, paymentTypes);
+  buildChart(
+      ctx, 'Monthly Payment', 'schedule_viz', ChartType.Stacked,
+      schedules.pointwise(), paymentTypes, fmt);
   if (ctx.m.eq(0)) {
     clearCumulativeCharts();
     return;
   }
 
-  buildCumulativeLoanChart(ctx, schedules.cumulative(), fmt, loanPaymentTypes);
+  buildChart(
+      ctx, 'Cumulative Loan Payments', 'cumulative_loan_viz', ChartType.Area,
+      schedules.cumulative(), loanPaymentTypes, fmt);
 
-  buildCumulativeChart(ctx, schedules.cumulative(), fmt);
+  buildChart(
+      ctx, 'Cumulative Moneys Paid', 'cumulative_viz', ChartType.Stacked,
+      schedules.cumulative().map(
+          (rec) => ({
+            month: rec.month,
+            data: {'initial': ctx.purchasePayment, ...rec.data},
+          })),
+      paymentTypesWithInitial, fmt);
 
   new ExpandableElement(
       utils.getHtmlEltWithId('schedule_tab'), 'Monthly payment table',
