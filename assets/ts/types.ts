@@ -233,3 +233,9 @@ export enum SVGName {
   CumulativeLoan = 'cumulative_loan_viz',
   Cumulative = 'cumulative_viz',
 }
+
+export enum TableName {
+  Schedule = 'schedule_tab',
+  Cumulative = 'cumulative_tab',
+  TaxYear = 'tax_year_tab',
+}

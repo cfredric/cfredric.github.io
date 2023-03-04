@@ -5,7 +5,7 @@ import {ExpandableElement} from './expandable_element';
 import {Formatter} from './formatter';
 import {Num} from './num';
 import {Schedules} from './schedules';
-import {DimensionsAndMargin, loanPaymentTypes, NumericRecord, NumericRecordWithMonth, paymentTypes, paymentTypesWithInitial, PaymentTypeWithInitial, SVGName} from './types';
+import {DimensionsAndMargin, loanPaymentTypes, NumericRecord, NumericRecordWithMonth, paymentTypes, paymentTypesWithInitial, PaymentTypeWithInitial, SVGName, TableName} from './types';
 import * as utils from './utils';
 
 enum ChartType {
@@ -65,9 +65,13 @@ function clearChart(name: SVGName) {
 }
 
 function clearTables() {
-  utils.removeChildren(utils.getHtmlEltWithId('schedule_tab'));
-  utils.removeChildren(utils.getHtmlEltWithId('cumulative_tab'));
-  utils.removeChildren(utils.getHtmlEltWithId('tax_year_tab'));
+  for (const name
+           of [TableName.Schedule,
+               TableName.Cumulative,
+               TableName.TaxYear,
+  ]) {
+    utils.removeChildren(utils.getHtmlEltWithId(name));
+  }
 }
 
 function buildChart<KeyType extends PaymentTypeWithInitial>(
@@ -408,18 +412,18 @@ export function setChartsAndButtonsContent(
       paymentTypesWithInitial, fmt);
 
   new ExpandableElement(
-      utils.getHtmlEltWithId('schedule_tab'), 'Monthly payment table',
+      utils.getHtmlEltWithId(TableName.Schedule), 'Monthly payment table',
       () => utils.makeMonthlyTable(
           ctx, fmt, paymentTypes, schedules.pointwise()));
   new ExpandableElement(
-      utils.getHtmlEltWithId('cumulative_tab'), 'Cumulative payments table',
+      utils.getHtmlEltWithId(TableName.Cumulative), 'Cumulative payments table',
       () => utils.makeMonthlyTable(
           ctx, fmt, loanPaymentTypes, schedules.cumulative()));
 
   if (ctx.closingDate) {
     const closingDate = ctx.closingDate;
     new ExpandableElement(
-        utils.getHtmlEltWithId('tax_year_tab'), 'Moneys Paid by Tax Year',
+        utils.getHtmlEltWithId(TableName.TaxYear), 'Moneys Paid by Tax Year',
         () => {
           const columnValueTypes = ['interest', 'property_tax'] as const;
           return utils.makeYearlyTable(
