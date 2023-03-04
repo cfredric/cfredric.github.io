@@ -327,12 +327,13 @@ function makeTooltip<KeyType extends PaymentTypeWithInitial>(
           .attr('x1', pointer[0])
           .attr('x2', pointer[0]);
 
-      const text = keys.map(
-                           k => `${utils.toCapitalized(k)}: ${
-                                    fmt.formatCurrency(datum.data[k])}` +
-                               '\n')
-                       .join('') +
-          `Month: ${fmt.formatMonthNum(datum.month, ctx.closingDate)}`;
+      const text = [
+        ...keys.map(
+            k => `${utils.toCapitalized(k)}: ${
+                fmt.formatCurrency(datum.data[k])}`),
+        `Total: ${fmt.formatCurrency(utils.sumOfKeys(datum.data, keys))}`,
+        `Month: ${fmt.formatMonthNum(datum.month, ctx.closingDate)}`,
+      ].join('\n');
       showHoverCard(
           tooltip.attr(
               'transform', `translate(${x(datum.month)},${pointer[1]})`),
