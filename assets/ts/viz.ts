@@ -63,34 +63,29 @@ function clearTables() {
 
 /** Builds the chart of monthly payments over time. */
 function buildPaymentScheduleChart(
-    ctx: Context,
-    schedule: readonly PaymentRecordWithMonth[],
-    fmt: Formatter,
-    keys: readonly PaymentType[],
-    ): void {
-  // set the dimensions and margins of the graph
+    ctx: Context, data: readonly PaymentRecordWithMonth[], fmt: Formatter,
+    keys: readonly PaymentType[]): void {
   const dims = standardDims();
 
   const svg = makeSvg('schedule_viz', dims);
 
   const {x, y} = makeAxes(
       svg,
-      schedule,
+      data,
       keys,
       dims,
       'Monthly Payment',
       d3.sum,
   );
 
-  // Add the area
-  addStackChart(svg, schedule, keys, x, y);
+  addStackChart(svg, data, keys, x, y);
 
   if (ctx.paymentsAlreadyMade > 0) {
     addCurrentMonthLine(ctx, svg, x, y);
   }
 
   makeTooltip(
-      ctx, svg, schedule, keys, x, y, fmt, makeStackTooltipIdentifier(keys));
+      ctx, svg, data, keys, x, y, fmt, makeStackTooltipIdentifier(keys));
 
   makeLegend(svg, dims.width, fieldColor, keys);
 }
