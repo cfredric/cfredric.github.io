@@ -5,7 +5,7 @@ import {ExpandableElement} from './expandable_element';
 import {Formatter} from './formatter';
 import {Num} from './num';
 import {Schedules} from './schedules';
-import {loanPaymentTypes, Margin, NumericRecord, NumericRecordWithMonth, PaymentRecordWithMonth, PaymentType, paymentTypes, paymentTypesWithInitial, PaymentTypeWithInitial} from './types';
+import {DimensionsAndMargin, loanPaymentTypes, NumericRecord, NumericRecordWithMonth, PaymentRecordWithMonth, PaymentType, paymentTypes, paymentTypesWithInitial, PaymentTypeWithInitial} from './types';
 import * as utils from './utils';
 
 const textColor = '#f0e7d5';
@@ -69,19 +69,15 @@ function buildPaymentScheduleChart(
     keys: readonly PaymentType[],
     ): void {
   // set the dimensions and margins of the graph
-  const margin = {top: 50, right: 100, bottom: 120, left: 100};
-  const width = 900 - margin.left - margin.right;
-  const height = 450 - margin.top - margin.bottom;
+  const dims = standardDims();
 
-  const svg = makeSvg('schedule_viz', width, height, margin);
+  const svg = makeSvg('schedule_viz', dims);
 
   const {x, y} = makeAxes(
       svg,
       schedule,
       keys,
-      width,
-      height,
-      margin,
+      dims,
       'Monthly Payment',
       d3.sum,
   );
@@ -96,26 +92,22 @@ function buildPaymentScheduleChart(
   makeTooltip(
       ctx, svg, schedule, keys, x, y, fmt, makeStackTooltipIdentifier(keys));
 
-  makeLegend(svg, width, fieldColor, keys);
+  makeLegend(svg, dims.width, fieldColor, keys);
 }
 
 /** Builds the chart of cumulative loan payments over time. */
 function buildCumulativeLoanChart(
     ctx: Context, data: readonly PaymentRecordWithMonth[], fmt: Formatter,
     keys: readonly PaymentType[]): void {
-  const margin = {top: 50, right: 100, bottom: 120, left: 100};
-  const width = 900 - margin.left - margin.right;
-  const height = 450 - margin.top - margin.bottom;
+  const dims = standardDims();
 
-  const svg = makeSvg('cumulative_loan_viz', width, height, margin);
+  const svg = makeSvg('cumulative_loan_viz', dims);
 
   const {x, y} = makeAxes(
       svg,
       data,
       keys,
-      width,
-      height,
-      margin,
+      dims,
       'Cumulative Loan Payments',
       d3.max,
   );
@@ -128,18 +120,16 @@ function buildCumulativeLoanChart(
 
   makeTooltip(ctx, svg, data, keys, x, y, fmt, makeAreaTooltipIdentifier(keys));
 
-  makeLegend(svg, width, d => transparent(fieldColor(d)), keys);
+  makeLegend(svg, dims.width, d => transparent(fieldColor(d)), keys);
 }
 
 /** Builds the chart of cumulative loan payments over time. */
 function buildCumulativeChart(
     ctx: Context, cumulatives: readonly PaymentRecordWithMonth[],
     fmt: Formatter): void {
-  const margin = {top: 50, right: 100, bottom: 120, left: 100};
-  const width = 900 - margin.left - margin.right;
-  const height = 450 - margin.top - margin.bottom;
+  const dims = standardDims();
 
-  const svg = makeSvg('cumulative_viz', width, height, margin);
+  const svg = makeSvg('cumulative_viz', dims);
 
   const data =
       cumulatives.map((rec) => ({
@@ -152,9 +142,7 @@ function buildCumulativeChart(
       svg,
       data,
       keys,
-      width,
-      height,
-      margin,
+      dims,
       'Cumulative Moneys Paid',
       d3.sum,
   );
@@ -168,7 +156,7 @@ function buildCumulativeChart(
   makeTooltip(
       ctx, svg, data, keys, x, y, fmt, makeStackTooltipIdentifier(keys));
 
-  makeLegend(svg, width, d => transparent(fieldColor(d)), keys);
+  makeLegend(svg, dims.width, d => transparent(fieldColor(d)), keys);
 }
 
 /** Adds an alpha channel to a hex color string to make it translucent. */
@@ -176,36 +164,47 @@ function transparent(color: string): string {
   return `${color}aa`;
 }
 
+function standardDims(): DimensionsAndMargin {
+  const margin = {top: 50, right: 100, bottom: 120, left: 100};
+  const width = 900 - margin.left - margin.right;
+  const height = 450 - margin.top - margin.bottom;
+  return {
+    height, width, margin
+  }
+}
+
 /** Creates a figure. */
-function makeSvg(divId: string, width: number, height: number, margin: Margin):
+function makeSvg(divId: string, dims: DimensionsAndMargin):
     d3.Selection<SVGGElement, unknown, HTMLElement, unknown> {
   d3.select(`#${divId}`).select('svg').remove();
   return d3.select(`#${divId}`)
       .append('svg')
-      .attr('width', width + margin.left + margin.right)
-      .attr('height', height + margin.top + margin.bottom)
+      .attr('width', dims.width + dims.margin.left + dims.margin.right)
+      .attr('height', dims.height + dims.margin.top + dims.margin.bottom)
       .append('g')
-      .attr('transform', `translate(${margin.left}, ${margin.top})`);
+      .attr('transform', `translate(${dims.margin.left}, ${dims.margin.top})`);
 }
 
 /** Creates axes for the given figure. */
 function makeAxes<KeyType extends string>(
     svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
     data: readonly NumericRecordWithMonth<KeyType>[], keys: readonly KeyType[],
-    width: number, height: number, margin: Margin, yLabel: string,
+    dims: DimensionsAndMargin, yLabel: string,
     yDomainFn: (ys: readonly number[]) => number): {
   x: d3.ScaleLinear<number, number, never>,
   y: d3.ScaleLinear<number, number, never>,
 } {
   // Add X axis
   const ext = d3.extent(data, d => d.month) as [number, number];
-  const x = d3.scaleLinear().domain(ext).range([0, width]);
+  const x = d3.scaleLinear().domain(ext).range([0, dims.width]);
   d3.axisBottom(x).tickValues(d3.range(0, data.length, 12))(
-      svg.append('g').attr('transform', `translate(0, ${height})`));
+      svg.append('g').attr('transform', `translate(0, ${dims.height})`));
 
   // text label for the x axis
   svg.append('text')
-      .attr('transform', `translate(${width / 2}, ${height + margin.top})`)
+      .attr(
+          'transform',
+          `translate(${dims.width / 2}, ${dims.height + dims.margin.top})`)
       .style('text-anchor', 'middle')
       .text('Month')
       .attr('fill', textColor);
@@ -218,14 +217,14 @@ function makeAxes<KeyType extends string>(
                 data,
                 d => yDomainFn(keys.map(k => d.data[k].toNumber())) * 1.25)!,
           ])
-          .range([height, 0]);
+          .range([dims.height, 0]);
   d3.axisLeft(y)(svg.append('g'));
 
   // text label for the y axis
   svg.append('text')
       .attr('transform', 'rotate(-90)')
-      .attr('y', 0 - margin.left)
-      .attr('x', 0 - height / 2)
+      .attr('y', 0 - dims.margin.left)
+      .attr('x', 0 - dims.height / 2)
       .attr('dy', '1em')
       .style('text-anchor', 'middle')
       .text(yLabel)

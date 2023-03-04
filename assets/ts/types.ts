@@ -192,6 +192,12 @@ export interface Margin {
   right: number;
 }
 
+export interface DimensionsAndMargin {
+  height: number;
+  width: number;
+  margin: Margin;
+}
+
 export const constantNames = [
   'annualIncome',
   'closingCost',
