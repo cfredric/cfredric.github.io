@@ -52,6 +52,7 @@ export class Context {
   readonly closingDate?: Date;
   readonly prepayment: Num;
   readonly stocksReturnRate: Num;
+  readonly purchasePayment: Num;
 
   readonly n: Num;
 
@@ -188,6 +189,12 @@ export class Context {
     this.monthlyLoanPayment = this.m.add(this.prepayment);
     this.monthlyNonLoanPayment = Num.sum(
         this.hoa, this.propertyTaxQuarterly.div(3), this.homeownersInsurance);
+
+    this.purchasePayment = Num.sum(
+        this.downPayment,
+        this.closingCost,
+        this.loanAmount.div(100).mul(this.pointsPurchased),
+    );
 
     this.showDerivations = input.showDerivations;
     this.simplifyDerivations =

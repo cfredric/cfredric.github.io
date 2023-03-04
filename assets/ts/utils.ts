@@ -7,7 +7,7 @@ import {FormatResult, Formatter} from './formatter';
 import {HidableOutput} from './hidable_output';
 import {Num} from './num';
 import {Schedules} from './schedules';
-import {HidableContainer, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecordWithMonth, PaymentType, paymentTypes, TemplateType} from './types';
+import {HidableContainer, HintType, InputEntry, loanPaymentTypes, nonLoanPaymentTypes, OutputType, PaymentRecordWithMonth, PaymentType, paymentTypes, PaymentTypeWithInitial, TemplateType} from './types';
 
 /**
  * Returns the numeric value of the input element, or 0 if the input was empty.
@@ -415,8 +415,8 @@ function makeTable(
   return table;
 }
 
-export function toCapitalized(paymentType: PaymentType): string {
-  switch (paymentType) {
+export function toCapitalized(input: PaymentTypeWithInitial): string {
+  switch (input) {
     case 'principal':
       return 'Principal';
     case 'interest':
@@ -429,6 +429,8 @@ export function toCapitalized(paymentType: PaymentType): string {
       return 'Homeowners\' Insurance';
     case 'pmi':
       return 'PMI';
+    case 'initial':
+      return 'Initial cost';
   }
 }
 
@@ -441,11 +443,7 @@ export function computeContents(
 
   const loanAmount = fmt.formatCurrencyWithDerivation(ctx.loanAmount);
 
-  const purchasePayment = fmt.formatCurrencyWithDerivation(Num.sum(
-      ctx.downPayment,
-      ctx.closingCost,
-      ctx.loanAmount.div(100).mul(ctx.pointsPurchased),
-      ));
+  const purchasePayment = fmt.formatCurrencyWithDerivation(ctx.purchasePayment);
 
   if (!schedules) {
     return {

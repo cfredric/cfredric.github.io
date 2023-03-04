@@ -11,19 +11,29 @@ export const paymentTypes = [
   'property_tax',
 ] as const;
 
+export const initialPaymentType = 'initial';
+
+export const paymentTypesWithInitial =
+    [initialPaymentType, ...paymentTypes] as const;
+
 export const nonLoanPaymentTypes =
     ['hoa', 'property_tax', 'homeowners_insurance'] as const;
 
 export const loanPaymentTypes = ['principal', 'interest'] as const;
 
 export type PaymentType = typeof paymentTypes[number];
+export type PaymentTypeWithInitial = typeof paymentTypesWithInitial[number];
 
-export type PaymentRecord = Record<PaymentType, Num>;
+export type NumericRecord<KeyType extends string> = Record<KeyType, Num>;
 
-export interface PaymentRecordWithMonth {
+export interface NumericRecordWithMonth<KeyType extends string> {
   month: number;
-  data: PaymentRecord;
+  data: NumericRecord<KeyType>;
 }
+
+export type PaymentRecord = NumericRecord<PaymentType>;
+
+export type PaymentRecordWithMonth = NumericRecordWithMonth<PaymentType>;
 
 export interface InputEntry {
   name: string;

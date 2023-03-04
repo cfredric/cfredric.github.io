@@ -5,13 +5,13 @@ import {ExpandableElement} from './expandable_element';
 import {Formatter} from './formatter';
 import {Num} from './num';
 import {Schedules} from './schedules';
-import {loanPaymentTypes, Margin, PaymentRecord, PaymentRecordWithMonth, PaymentType, paymentTypes} from './types';
+import {loanPaymentTypes, Margin, NumericRecord, NumericRecordWithMonth, PaymentRecordWithMonth, PaymentType, paymentTypes, paymentTypesWithInitial, PaymentTypeWithInitial} from './types';
 import * as utils from './utils';
 
 const textColor = '#f0e7d5';
 
-function fieldColor(pt: PaymentType): string {
-  switch (pt) {
+function fieldColor(input: PaymentTypeWithInitial): string {
+  switch (input) {
     case 'principal':
       return '#1f77b4';
     case 'interest':
@@ -24,6 +24,8 @@ function fieldColor(pt: PaymentType): string {
       return '#9467bd';
     case 'pmi':
       return '#7f7f7f';
+    case 'initial':
+      return '#17c3b2';
   }
 }
 
@@ -31,12 +33,13 @@ function fieldColor(pt: PaymentType): string {
  * Given the X axis and an X mouse coordinate, finds the month that is being
  * hovered over.
  */
-function bisectMonth(
-    data: readonly PaymentRecordWithMonth[], x: d3.ScaleLinear<number, number>,
-    mouseX: number): PaymentRecordWithMonth {
+function bisectMonth<KeyType extends string>(
+    data: readonly NumericRecordWithMonth<KeyType>[],
+    x: d3.ScaleLinear<number, number>,
+    mouseX: number): NumericRecordWithMonth<KeyType> {
   const month = x.invert(mouseX);
-  const index =
-      d3.bisector((d: PaymentRecordWithMonth) => d.month).left(data, month, 1);
+  const index = d3.bisector((d: NumericRecordWithMonth<KeyType>) => d.month)
+                    .left(data, month, 1);
   const a = data[index - 1]!;
   const b = data[index];
   return b && month - a.month > b.month - month ? b : a;
@@ -44,10 +47,11 @@ function bisectMonth(
 
 function clearCharts() {
   document.querySelector('#schedule_viz > svg:first-of-type')?.remove();
-  clearCumulativeChart();
+  clearCumulativeCharts();
 }
 
-function clearCumulativeChart() {
+function clearCumulativeCharts() {
+  document.querySelector('#cumulative_loan_viz > svg:first-of-type')?.remove();
   document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
 }
 
@@ -83,50 +87,27 @@ function buildPaymentScheduleChart(
   );
 
   // Add the area
-  svg.append('g')
-      .selectAll('path')
-      .data(d3.stack<unknown, PaymentRecordWithMonth, PaymentType>()
-                .keys(keys)
-                .value((d, key) => d.data[key].toNumber())(schedule))
-      .join('path')
-      .style('fill', d => fieldColor(d.key))
-      .attr(
-          'd',
-          d3.area<d3.SeriesPoint<PaymentRecordWithMonth>>()
-              .x(d => x(d.data.month))
-              .y0(d => y(d['0']))
-              .y1(d => y(d['1'])));
+  addStackChart(svg, schedule, keys, x, y);
 
   if (ctx.paymentsAlreadyMade > 0) {
-    svg.append('line')
-        .attr('x1', x(ctx.paymentsAlreadyMade))
-        .attr('x2', x(ctx.paymentsAlreadyMade))
-        .attr('y1', y(0))
-        .attr('y2', 0)
-        .style('stroke', '#ff0000');
+    addCurrentMonthLine(ctx, svg, x, y);
   }
 
-  makeTooltip(ctx, svg, schedule, keys, x, y, fmt, (yTarget, datum) => {
-    let sum: Num = Num.literal(0);
-    for (const [idx, key] of keys.entries()) {
-      if (sum.add(datum[key]).gte(yTarget)) return idx;
-      sum = sum.add(datum[key]);
-    }
-    return undefined;
-  });
+  makeTooltip(
+      ctx, svg, schedule, keys, x, y, fmt, makeStackTooltipIndentifier(keys));
 
   makeLegend(svg, width, fieldColor, keys);
 }
 
-/** Builds the chart of cumulative payments over time. */
-function buildCumulativeChart(
+/** Builds the chart of cumulative loan payments over time. */
+function buildCumulativeLoanChart(
     ctx: Context, data: readonly PaymentRecordWithMonth[], fmt: Formatter,
     keys: readonly PaymentType[]): void {
   const margin = {top: 50, right: 100, bottom: 120, left: 100};
   const width = 900 - margin.left - margin.right;
   const height = 450 - margin.top - margin.bottom;
 
-  const svg = makeSvg('cumulative_viz', width, height, margin);
+  const svg = makeSvg('cumulative_loan_viz', width, height, margin);
 
   const {x, y} = makeAxes(
       svg,
@@ -135,7 +116,7 @@ function buildCumulativeChart(
       width,
       height,
       margin,
-      'Cumulative Payment',
+      'Cumulative Loan Payments',
       d3.max,
   );
 
@@ -161,12 +142,7 @@ function buildCumulativeChart(
       .style('fill', d => transparent(fieldColor(d.key)));
 
   if (ctx.paymentsAlreadyMade > 0) {
-    svg.append('line')
-        .attr('x1', x(ctx.paymentsAlreadyMade))
-        .attr('x2', x(ctx.paymentsAlreadyMade))
-        .attr('y1', y(0))
-        .attr('y2', 0)
-        .style('stroke', '#ff0000');
+    addCurrentMonthLine(ctx, svg, x, y);
   }
 
   makeTooltip(ctx, svg, data, keys, x, y, fmt, (yTarget, datum) => {
@@ -176,6 +152,46 @@ function buildCumulativeChart(
 
     return elt !== undefined ? keys.indexOf(elt.key) : undefined;
   });
+
+  makeLegend(svg, width, d => transparent(fieldColor(d)), keys);
+}
+
+/** Builds the chart of cumulative loan payments over time. */
+function buildCumulativeChart(
+    ctx: Context, cumulatives: readonly PaymentRecordWithMonth[],
+    fmt: Formatter): void {
+  const margin = {top: 50, right: 100, bottom: 120, left: 100};
+  const width = 900 - margin.left - margin.right;
+  const height = 450 - margin.top - margin.bottom;
+
+  const svg = makeSvg('cumulative_viz', width, height, margin);
+
+  const data =
+      cumulatives.map((rec) => ({
+                        month: rec.month,
+                        data: {'initial': ctx.purchasePayment, ...rec.data},
+                      }));
+  const keys = paymentTypesWithInitial;
+
+  const {x, y} = makeAxes(
+      svg,
+      data,
+      keys,
+      width,
+      height,
+      margin,
+      'Cumulative Moneys Paid',
+      d3.sum,
+  );
+
+  addStackChart(svg, data, keys, x, y);
+
+  if (ctx.paymentsAlreadyMade > 0) {
+    addCurrentMonthLine(ctx, svg, x, y);
+  }
+
+  makeTooltip(
+      ctx, svg, data, keys, x, y, fmt, makeStackTooltipIndentifier(keys));
 
   makeLegend(svg, width, d => transparent(fieldColor(d)), keys);
 }
@@ -198,9 +214,9 @@ function makeSvg(divId: string, width: number, height: number, margin: Margin):
 }
 
 /** Creates axes for the given figure. */
-function makeAxes(
+function makeAxes<KeyType extends string>(
     svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
-    data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[],
+    data: readonly NumericRecordWithMonth<KeyType>[], keys: readonly KeyType[],
     width: number, height: number, margin: Margin, yLabel: string,
     yDomainFn: (ys: readonly number[]) => number): {
   x: d3.ScaleLinear<number, number, never>,
@@ -243,13 +259,58 @@ function makeAxes(
   return {x, y};
 }
 
-/** Creates a tooltip for the given figure. */
-function makeTooltip(
+function addStackChart<KeyType extends PaymentTypeWithInitial>(
+    svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
+    data: readonly NumericRecordWithMonth<KeyType>[], keys: readonly KeyType[],
+    x: d3.ScaleLinear<number, number, never>,
+    y: d3.ScaleLinear<number, number, never>) {
+  svg.append('g')
+      .selectAll('path')
+      .data(d3.stack<unknown, NumericRecordWithMonth<KeyType>, KeyType>()
+                .keys(keys)
+                .value((d, key) => d.data[key].toNumber())(data))
+      .join('path')
+      .style('fill', d => fieldColor(d.key))
+      .attr(
+          'd',
+          d3.area<d3.SeriesPoint<NumericRecordWithMonth<KeyType>>>()
+              .x(d => x(d.data.month))
+              .y0(d => y(d['0']))
+              .y1(d => y(d['1'])));
+}
+
+function addCurrentMonthLine(
     ctx: Context, svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
-    data: readonly PaymentRecordWithMonth[], keys: readonly PaymentType[],
+    x: d3.ScaleLinear<number, number, never>,
+    y: d3.ScaleLinear<number, number, never>) {
+  svg.append('line')
+      .attr('x1', x(ctx.paymentsAlreadyMade))
+      .attr('x2', x(ctx.paymentsAlreadyMade))
+      .attr('y1', y(0))
+      .attr('y2', 0)
+      .style('stroke', '#ff0000');
+}
+
+function makeStackTooltipIndentifier<KeyType extends PaymentTypeWithInitial>(
+    keys: readonly KeyType[]):
+    (yCoord: number, datum: NumericRecord<KeyType>) => number | undefined {
+  return (yTarget, datum) => {
+    let sum: Num = Num.literal(0);
+    for (const [idx, key] of keys.entries()) {
+      if (sum.add(datum[key]).gte(yTarget)) return idx;
+      sum = sum.add(datum[key]);
+    }
+    return undefined;
+  };
+}
+
+/** Creates a tooltip for the given figure. */
+function makeTooltip<KeyType extends PaymentTypeWithInitial>(
+    ctx: Context, svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
+    data: readonly NumericRecordWithMonth<KeyType>[], keys: readonly KeyType[],
     x: d3.ScaleLinear<number, number, never>,
     y: d3.ScaleLinear<number, number, never>, fmt: Formatter,
-    identifyPaymentType: (yCoord: number, d: PaymentRecord) =>
+    identifyPaymentType: (yCoord: number, d: NumericRecord<KeyType>) =>
         number | undefined): void {
   const hoverLine =
       svg.append('line').style('stroke', '#fff').attr('y1', 0).attr('y2', y(0));
@@ -321,10 +382,10 @@ function showHoverCard(
  * Creates a legend for the given figure, with the given payment types and
  * corresponding colors.
  */
-function makeLegend(
+function makeLegend<KeyType extends PaymentTypeWithInitial>(
     svg: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>,
-    width: number, color: (d: PaymentType) => string,
-    keys: readonly PaymentType[]): void {
+    width: number, color: (d: KeyType) => string,
+    keys: readonly KeyType[]): void {
   const legend = svg.append('g')
                      .attr('class', 'legend')
                      .attr('transform', `translate(${width - 200}, -50)`);
@@ -361,11 +422,13 @@ export function setChartsAndButtonsContent(
 
   buildPaymentScheduleChart(ctx, schedules.pointwise(), fmt, paymentTypes);
   if (ctx.m.eq(0)) {
-    clearCumulativeChart();
+    clearCumulativeCharts();
     return;
   }
 
-  buildCumulativeChart(ctx, schedules.cumulative(), fmt, loanPaymentTypes);
+  buildCumulativeLoanChart(ctx, schedules.cumulative(), fmt, loanPaymentTypes);
+
+  buildCumulativeChart(ctx, schedules.cumulative(), fmt);
 
   new ExpandableElement(
       utils.getHtmlEltWithId('schedule_tab'), 'Monthly payment table',
