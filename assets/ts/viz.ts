@@ -94,7 +94,7 @@ function buildPaymentScheduleChart(
   }
 
   makeTooltip(
-      ctx, svg, schedule, keys, x, y, fmt, makeStackTooltipIndentifier(keys));
+      ctx, svg, schedule, keys, x, y, fmt, makeStackTooltipIdentifier(keys));
 
   makeLegend(svg, width, fieldColor, keys);
 }
@@ -145,13 +145,7 @@ function buildCumulativeLoanChart(
     addCurrentMonthLine(ctx, svg, x, y);
   }
 
-  makeTooltip(ctx, svg, data, keys, x, y, fmt, (yTarget, datum) => {
-    const elt = keys.map(key => ({key, value: datum[key]}))
-                    .sort((a, b) => a.value.cmp(b.value))
-                    .find((elt) => elt.value.gte(yTarget));
-
-    return elt !== undefined ? keys.indexOf(elt.key) : undefined;
-  });
+  makeTooltip(ctx, svg, data, keys, x, y, fmt, makeAreaTooltipIdentifier(keys));
 
   makeLegend(svg, width, d => transparent(fieldColor(d)), keys);
 }
@@ -191,7 +185,7 @@ function buildCumulativeChart(
   }
 
   makeTooltip(
-      ctx, svg, data, keys, x, y, fmt, makeStackTooltipIndentifier(keys));
+      ctx, svg, data, keys, x, y, fmt, makeStackTooltipIdentifier(keys));
 
   makeLegend(svg, width, d => transparent(fieldColor(d)), keys);
 }
@@ -291,7 +285,7 @@ function addCurrentMonthLine(
       .style('stroke', '#ff0000');
 }
 
-function makeStackTooltipIndentifier<KeyType extends PaymentTypeWithInitial>(
+function makeStackTooltipIdentifier<KeyType extends PaymentTypeWithInitial>(
     keys: readonly KeyType[]):
     (yCoord: number, datum: NumericRecord<KeyType>) => number | undefined {
   return (yTarget, datum) => {
@@ -301,6 +295,18 @@ function makeStackTooltipIndentifier<KeyType extends PaymentTypeWithInitial>(
       sum = sum.add(datum[key]);
     }
     return undefined;
+  };
+}
+
+function makeAreaTooltipIdentifier<KeyType extends PaymentTypeWithInitial>(
+    keys: readonly KeyType[]):
+    (yCoord: number, datum: NumericRecord<KeyType>) => number | undefined {
+  return (yTarget, datum) => {
+    const elt = keys.map(key => ({key, value: datum[key]}))
+                    .sort((a, b) => a.value.cmp(b.value))
+                    .find((elt) => elt.value.gte(yTarget));
+
+    return elt !== undefined ? keys.indexOf(elt.key) : undefined;
   };
 }
 
