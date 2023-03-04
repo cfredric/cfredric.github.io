@@ -8,6 +8,11 @@ import {Schedules} from './schedules';
 import {DimensionsAndMargin, loanPaymentTypes, NumericRecord, NumericRecordWithMonth, PaymentRecordWithMonth, PaymentType, paymentTypes, paymentTypesWithInitial, PaymentTypeWithInitial} from './types';
 import * as utils from './utils';
 
+enum ChartType {
+  Area,
+  Stacked,
+}
+
 const textColor = '#f0e7d5';
 
 function fieldColor(input: PaymentTypeWithInitial): string {
@@ -65,91 +70,70 @@ function clearTables() {
 function buildPaymentScheduleChart(
     ctx: Context, data: readonly PaymentRecordWithMonth[], fmt: Formatter,
     keys: readonly PaymentType[]): void {
-  const dims = standardDims();
-
-  const svg = makeSvg('schedule_viz', dims);
-
-  const {x, y} = makeAxes(
-      svg,
-      data,
-      keys,
-      dims,
-      'Monthly Payment',
-      d3.sum,
-  );
-
-  addStackChart(svg, data, keys, x, y);
-
-  if (ctx.paymentsAlreadyMade > 0) {
-    addCurrentMonthLine(ctx, svg, x, y);
-  }
-
-  makeTooltip(
-      ctx, svg, data, keys, x, y, fmt, makeStackTooltipIdentifier(keys));
-
-  makeLegend(svg, dims.width, fieldColor, keys);
+  buildChart(
+      ctx, 'Monthly Payment', 'schedule_viz', ChartType.Stacked, data, keys,
+      fmt);
 }
 
 /** Builds the chart of cumulative loan payments over time. */
 function buildCumulativeLoanChart(
     ctx: Context, data: readonly PaymentRecordWithMonth[], fmt: Formatter,
     keys: readonly PaymentType[]): void {
-  const dims = standardDims();
-
-  const svg = makeSvg('cumulative_loan_viz', dims);
-
-  const {x, y} = makeAxes(
-      svg,
-      data,
-      keys,
-      dims,
-      'Cumulative Loan Payments',
-      d3.max,
-  );
-
-  addAreaChart(svg, data, keys, x, y);
-
-  if (ctx.paymentsAlreadyMade > 0) {
-    addCurrentMonthLine(ctx, svg, x, y);
-  }
-
-  makeTooltip(ctx, svg, data, keys, x, y, fmt, makeAreaTooltipIdentifier(keys));
-
-  makeLegend(svg, dims.width, d => transparent(fieldColor(d)), keys);
+  buildChart(
+      ctx, 'Cumulative Loan Payments', 'cumulative_loan_viz', ChartType.Area,
+      data, keys, fmt);
 }
 
 /** Builds the chart of cumulative loan payments over time. */
 function buildCumulativeChart(
     ctx: Context, cumulatives: readonly PaymentRecordWithMonth[],
     fmt: Formatter): void {
-  const dims = standardDims();
-
-  const svg = makeSvg('cumulative_viz', dims);
-
-  const data =
+  buildChart(
+      ctx, 'Cumulative Moneys Paid', 'cumulative_viz', ChartType.Stacked,
       cumulatives.map((rec) => ({
                         month: rec.month,
                         data: {'initial': ctx.purchasePayment, ...rec.data},
-                      }));
-  const keys = paymentTypesWithInitial;
+                      })),
+      paymentTypesWithInitial, fmt);
+}
 
-  const {x, y} = makeAxes(
-      svg,
-      data,
-      keys,
-      dims,
-      'Cumulative Moneys Paid',
-      d3.sum,
-  );
+function buildChart<KeyType extends PaymentTypeWithInitial>(
+    ctx: Context, chartName: string, svgName: string, chartType: ChartType,
+    data: readonly NumericRecordWithMonth<KeyType>[], keys: readonly KeyType[],
+    fmt: Formatter): void {
+  const dims = standardDims();
 
-  addStackChart(svg, data, keys, x, y);
+  const svg = makeSvg(svgName, dims);
+
+  let yDomainFn;
+  switch (chartType) {
+    case ChartType.Area:
+      yDomainFn = d3.max;
+      break;
+    case ChartType.Stacked:
+      yDomainFn = d3.sum;
+      break;
+  }
+
+  const {x, y} = makeAxes(svg, data, keys, dims, chartName, yDomainFn);
+
+  let tooltipCallback;
+  switch (chartType) {
+    case ChartType.Area:
+      addAreaChart(svg, data, keys, x, y);
+      tooltipCallback = makeAreaTooltipIdentifier(keys);
+      break;
+    case ChartType.Stacked:
+      addStackChart(svg, data, keys, x, y);
+      tooltipCallback = makeStackTooltipIdentifier(keys);
+      break;
+  }
 
   if (ctx.paymentsAlreadyMade > 0) {
     addCurrentMonthLine(ctx, svg, x, y);
   }
 
-  makeTooltip(
-      ctx, svg, data, keys, x, y, fmt, makeStackTooltipIdentifier(keys));
+  makeTooltip(ctx, svg, data, keys, x, y, fmt, tooltipCallback);
 
   makeLegend(svg, dims.width, d => transparent(fieldColor(d)), keys);
 }
