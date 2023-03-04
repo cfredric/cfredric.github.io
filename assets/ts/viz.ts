@@ -5,7 +5,7 @@ import {ExpandableElement} from './expandable_element';
 import {Formatter} from './formatter';
 import {Num} from './num';
 import {Schedules} from './schedules';
-import {DimensionsAndMargin, loanPaymentTypes, NumericRecord, NumericRecordWithMonth, PaymentRecordWithMonth, PaymentType, paymentTypes, paymentTypesWithInitial, PaymentTypeWithInitial} from './types';
+import {DimensionsAndMargin, loanPaymentTypes, NumericRecord, NumericRecordWithMonth, PaymentRecordWithMonth, PaymentType, paymentTypes, paymentTypesWithInitial, PaymentTypeWithInitial, SVGName} from './types';
 import * as utils from './utils';
 
 enum ChartType {
@@ -51,13 +51,17 @@ function bisectMonth<KeyType extends string>(
 }
 
 function clearCharts() {
-  document.querySelector('#schedule_viz > svg:first-of-type')?.remove();
+  clearChart('schedule_viz');
   clearCumulativeCharts();
 }
 
 function clearCumulativeCharts() {
-  document.querySelector('#cumulative_loan_viz > svg:first-of-type')?.remove();
-  document.querySelector('#cumulative_viz > svg:first-of-type')?.remove();
+  clearChart('cumulative_loan_viz');
+  clearChart('cumulative_viz');
+}
+
+function clearChart(name: SVGName) {
+  document.querySelector(`#${name} > svg:first-of-type`)?.remove();
 }
 
 function clearTables() {
@@ -98,7 +102,7 @@ function buildCumulativeChart(
 }
 
 function buildChart<KeyType extends PaymentTypeWithInitial>(
-    ctx: Context, chartName: string, svgName: string, chartType: ChartType,
+    ctx: Context, chartName: string, svgName: SVGName, chartType: ChartType,
     data: readonly NumericRecordWithMonth<KeyType>[], keys: readonly KeyType[],
     fmt: Formatter): void {
   const dims = standardDims();
@@ -153,7 +157,7 @@ function standardDims(): DimensionsAndMargin {
 }
 
 /** Creates a figure. */
-function makeSvg(divId: string, dims: DimensionsAndMargin):
+function makeSvg(divId: SVGName, dims: DimensionsAndMargin):
     d3.Selection<SVGGElement, unknown, HTMLElement, unknown> {
   d3.select(`#${divId}`).select('svg').remove();
   return d3.select(`#${divId}`)

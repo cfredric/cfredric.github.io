@@ -227,3 +227,11 @@ export const constantNames = [
 ] as const;
 
 export type ConstantName = typeof constantNames[number];
+
+export const svgNames = [
+  'schedule_viz',
+  'cumulative_loan_viz',
+  'cumulative_viz',
+] as const;
+
+export type SVGName = typeof svgNames[number];
