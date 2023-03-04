@@ -51,13 +51,13 @@ function bisectMonth<KeyType extends string>(
 }
 
 function clearCharts() {
-  clearChart('schedule_viz');
+  clearChart(SVGName.Schedule);
   clearCumulativeCharts();
 }
 
 function clearCumulativeCharts() {
-  clearChart('cumulative_loan_viz');
-  clearChart('cumulative_viz');
+  clearChart(SVGName.CumulativeLoan);
+  clearChart(SVGName.Cumulative);
 }
 
 function clearChart(name: SVGName) {
@@ -387,7 +387,7 @@ export function setChartsAndButtonsContent(
   }
 
   buildChart(
-      ctx, 'Monthly Payment', 'schedule_viz', ChartType.Stacked,
+      ctx, 'Monthly Payment', SVGName.Schedule, ChartType.Stacked,
       schedules.pointwise(), paymentTypes, fmt);
   if (ctx.m.eq(0)) {
     clearCumulativeCharts();
@@ -395,11 +395,11 @@ export function setChartsAndButtonsContent(
   }
 
   buildChart(
-      ctx, 'Cumulative Loan Payments', 'cumulative_loan_viz', ChartType.Area,
+      ctx, 'Cumulative Loan Payments', SVGName.CumulativeLoan, ChartType.Area,
       schedules.cumulative(), loanPaymentTypes, fmt);
 
   buildChart(
-      ctx, 'Cumulative Moneys Paid', 'cumulative_viz', ChartType.Stacked,
+      ctx, 'Cumulative Moneys Paid', SVGName.Cumulative, ChartType.Stacked,
       schedules.cumulative().map(
           (rec) => ({
             month: rec.month,

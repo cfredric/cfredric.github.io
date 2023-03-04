@@ -228,10 +228,8 @@ export const constantNames = [
 
 export type ConstantName = typeof constantNames[number];
 
-export const svgNames = [
-  'schedule_viz',
-  'cumulative_loan_viz',
-  'cumulative_viz',
-] as const;
-
-export type SVGName = typeof svgNames[number];
+export enum SVGName {
+  Schedule = 'schedule_viz',
+  CumulativeLoan = 'cumulative_loan_viz',
+  Cumulative = 'cumulative_viz',
+}
