@@ -122,6 +122,7 @@ export type HintType = typeof hintTypes[number];
 export const outputTypes = [
   'loanAmount',
   'principalAndInterest',
+  'annualPropertyTax',
   'monthlyExpensesAmount',
   'lifetimeOfLoan',
   'lifetimePayment',
@@ -200,6 +201,7 @@ export interface DimensionsAndMargin {
 
 export const constantNames = [
   'annualIncome',
+  'annualPropertyTax',
   'closingCost',
   'downPayment',
   'downPaymentPercent',

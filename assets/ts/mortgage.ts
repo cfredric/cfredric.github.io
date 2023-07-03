@@ -82,6 +82,7 @@ function getOutputs(): Record<OutputType, HTMLElement> {
     loanAmount: utils.getHtmlEltWithId('loan-amount-output'),
     principalAndInterest:
         utils.getHtmlEltWithId('principal-and-interest-output'),
+    annualPropertyTax: utils.getHtmlEltWithId('annual-property-tax-output'),
     monthlyExpensesAmount: utils.getHtmlEltWithId('monthly-expenses-output'),
     lifetimeOfLoan: utils.getHtmlEltWithId('lifetime-of-loan-output'),
     lifetimePayment: utils.getHtmlEltWithId('lifetime-payment-output'),

@@ -449,6 +449,7 @@ export function computeContents(
     return {
       loanAmount,
       purchasePayment,
+      annualPropertyTax: '',
       lifetimeOfLoan: '',
       lifetimePayment: '',
       monthlyExpensesAmount: '',
@@ -488,6 +489,7 @@ export function computeContents(
     principalAndInterest: fmt.formatCurrencyWithDerivation(ctx.m),
     monthlyExpensesAmount: fmt.formatCurrencyWithDerivation(
         ctx.monthlyLoanPayment.add(ctx.monthlyNonLoanPayment)),
+    annualPropertyTax: fmt.formatCurrencyWithDerivation(ctx.propertyTaxAnnual),
   };
 }
 
