@@ -38,7 +38,8 @@ export class Context {
   readonly pointValue: Num;
   readonly pmi: Num;
   readonly pmiEquityPct: Num;
-  readonly propertyTaxQuarterly: Num;
+  readonly propertyTaxAnnual: Num;
+  // readonly propertyTaxQuarterly: Num;
   readonly residentialExemptionQuarterly: Num;
   readonly taxCollectionStartMonthOffset: number;
   readonly homeownersInsurance: Num;
@@ -117,16 +118,15 @@ export class Context {
           input.residentialExemptionDeduction.clamp(0, this.price.value()));
 
       if (!rawExemptionAnnualSavings.eq(0)) {
-        const quarterlyAbsolute = utils.chooseNonzero(
-            rawQuarterlyAbsolute, rawAnnualRate.mul(this.homeValue).div(4));
-        this.propertyTaxQuarterly =
-            quarterlyAbsolute.sub(rawExemptionAnnualSavings.div(4));
+        const annualAbsolute = utils.chooseNonzero(rawQuarterlyAbsolute.mul(4), rawAnnualRate.mul(this.homeValue));
+        this.propertyTaxAnnual = annualAbsolute.sub(rawExemptionAnnualSavings);
         this.residentialExemptionQuarterly = rawExemptionAnnualSavings.div(4);
       } else {
         const annualRate = utils.chooseNonzero(
             rawQuarterlyAbsolute.mul(4).div(this.homeValue), rawAnnualRate);
-        this.propertyTaxQuarterly =
-            annualRate.mul(this.homeValue.sub(rawAnnualDeduction)).div(4);
+        
+        this.propertyTaxAnnual =
+            annualRate.mul(this.homeValue.sub(rawAnnualDeduction));
         this.residentialExemptionQuarterly =
             annualRate.mul(rawAnnualDeduction).div(4);
       }
@@ -188,7 +188,7 @@ export class Context {
     this.prepayment = prepayment;
     this.monthlyLoanPayment = this.m.add(this.prepayment);
     this.monthlyNonLoanPayment = Num.sum(
-        this.hoa, this.propertyTaxQuarterly.div(3), this.homeownersInsurance);
+        this.hoa, this.propertyTaxAnnual.div(12), this.homeownersInsurance);
 
     this.purchasePayment = Num.sum(
         this.downPayment,

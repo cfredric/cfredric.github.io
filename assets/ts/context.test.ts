@@ -210,8 +210,8 @@ test('property taxes', () => {
   input = defaultInput();
   input.propertyTaxAbsolute = new Decimal(100);
   input.residentialExemptionAnnualSavings = new Decimal(36);
-  // tax = (4 * 100 - 36) / 4
-  expect(new Context(input).propertyTaxQuarterly.toNumber()).toEqual(91);
+  // tax = 4 * 100 - 36
+  expect(new Context(input).propertyTaxAnnual.toNumber()).toEqual(364);
   // quarterly exemption = 36 / 4
   expect(new Context(input).residentialExemptionQuarterly.toNumber())
       .toEqual(9);
@@ -221,8 +221,8 @@ test('property taxes', () => {
   input.price = new Decimal(4000);
   input.propertyTaxAbsolute = new Decimal(100);
   input.residentialExemptionDeduction = new Decimal(400);
-  // tax = (100 * 4 / 4000) * (4000 - 400) / 4
-  expect(new Context(input).propertyTaxQuarterly.toNumber()).toEqual(90);
+  // tax = (100 * 4 / 4000) * (4000 - 400)
+  expect(new Context(input).propertyTaxAnnual.toNumber()).toEqual(360);
   // quarterly exemption = (100 * 4 / 4000) * 400 / 4
   expect(new Context(input).residentialExemptionQuarterly.toNumber())
       .toEqual(10);
@@ -232,8 +232,8 @@ test('property taxes', () => {
   input.price = new Decimal(4000);
   input.propertyTaxPercent = new Decimal(15);
   input.residentialExemptionAnnualSavings = new Decimal(36);
-  // tax = (0.15 * 4000 / 4) - (36 / 4)
-  expect(new Context(input).propertyTaxQuarterly.toNumber()).toEqual(141);
+  // tax = (0.15 * 4000) - 36
+  expect(new Context(input).propertyTaxAnnual.toNumber()).toEqual(564);
   // quarterly exemption = 36 / 4
   expect(new Context(input).residentialExemptionQuarterly.toNumber())
       .toEqual(9);
@@ -243,8 +243,8 @@ test('property taxes', () => {
   input.price = new Decimal(4000);
   input.propertyTaxPercent = new Decimal(15);
   input.residentialExemptionDeduction = new Decimal(400);
-  // tax = 0.15 * (4000 - 400) / 4
-  expect(new Context(input).propertyTaxQuarterly.toNumber()).toEqual(135);
+  // tax = 0.15 * (4000 - 400)
+  expect(new Context(input).propertyTaxAnnual.toNumber()).toEqual(540);
   // quarterly exemption = 0.15 * 400 / 4
   expect(new Context(input).residentialExemptionQuarterly.toNumber())
       .toEqual(15);
@@ -463,8 +463,8 @@ test('monthlyNonLoanPayment', () => {
   const input = defaultInput();
 
   // Unspecified:
-  expect(new Context(input).propertyTaxQuarterly.toNumber()).toEqual(0);
-  expect(Number.isNaN(new Context(input).propertyTaxQuarterly.toNumber()))
+  expect(new Context(input).propertyTaxAnnual.toNumber()).toEqual(0);
+  expect(Number.isNaN(new Context(input).propertyTaxAnnual.toNumber()))
       .toEqual(false);
   expect(new Context(input).monthlyNonLoanPayment.toNumber()).toEqual(0);
 

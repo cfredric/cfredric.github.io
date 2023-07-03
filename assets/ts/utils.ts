@@ -625,10 +625,10 @@ export function computeAmountHints(
     pmiEquityPercentage:
         fmt.formatPercentWithDerivation(ctx.pmiEquityPct).map((v) => `(${v})`),
     propertyTax: `(${
-        fmt.formatCurrency(ctx.propertyTaxQuarterly.add(
+        fmt.formatCurrency(ctx.propertyTaxAnnual.div(4).add(
             ctx.residentialExemptionQuarterly))} - ${
         fmt.formatCurrency(ctx.residentialExemptionQuarterly)} = ${
-        fmt.formatCurrency(ctx.propertyTaxQuarterly)}/quarter)`,
+        fmt.formatCurrency(ctx.propertyTaxAnnual.div(4))}/quarter)`,
     residentialExemption:
         fmt.formatCurrencyWithDerivation(ctx.residentialExemptionQuarterly)
             .map((v) => `(${v}/quarter)`),
