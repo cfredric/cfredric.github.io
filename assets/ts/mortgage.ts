@@ -229,7 +229,7 @@ function setContents(ctx: Context, elts: Elements): void {
   for (const [h, v] of Object.entries(
            utils.computeHidables(ctx, fmt, schedules))) {
     const hc = h as HidableContainer;
-    v.display(hc, elts.hidables[hidableContainerMap[hc]]);
+    v.display(elts.hidables[hidableContainerMap[hc]]);
   }
   for (const [t, v] of Object.entries(utils.computeTemplates(ctx, fmt))) {
     utils.fillTemplateElts(t as TemplateType, v);
