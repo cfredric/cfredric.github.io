@@ -108,6 +108,10 @@ export class Context {
       const rawAnnualRate =
           constant('propertyTaxPercent', input.propertyTaxPercent.clamp(0, 100))
               .div(100);
+      const annualPropertyTaxAbsolute = utils.chooseNonzero(
+          rawQuarterlyAbsolute.mul(4), rawAnnualRate.mul(this.homeValue));
+      const annualPropertyTaxRate = utils.chooseNonzero(
+          rawQuarterlyAbsolute.mul(4).div(this.homeValue), rawAnnualRate);
 
       const rawExemptionAnnualSavings = constant(
           'residentialExemptionAnnualSavings',
@@ -117,20 +121,16 @@ export class Context {
           input.residentialExemptionDeduction.clamp(0, this.price.value()));
 
       if (!rawExemptionAnnualSavings.eq(0)) {
-        const annualAbsolute = utils.chooseNonzero(
-            rawQuarterlyAbsolute.mul(4), rawAnnualRate.mul(this.homeValue));
-        this.propertyTaxAnnual = output(
-            'annualPropertyTax', annualAbsolute.sub(rawExemptionAnnualSavings));
-        this.residentialExemptionQuarterly = rawExemptionAnnualSavings.div(4);
-      } else {
-        const annualRate = utils.chooseNonzero(
-            rawQuarterlyAbsolute.mul(4).div(this.homeValue), rawAnnualRate);
-
         this.propertyTaxAnnual = output(
             'annualPropertyTax',
-            annualRate.mul(this.homeValue.sub(rawAnnualDeduction)));
+            annualPropertyTaxAbsolute.sub(rawExemptionAnnualSavings));
+        this.residentialExemptionQuarterly = rawExemptionAnnualSavings.div(4);
+      } else {
+        this.propertyTaxAnnual = output(
+            'annualPropertyTax',
+            annualPropertyTaxRate.mul(this.homeValue.sub(rawAnnualDeduction)));
         this.residentialExemptionQuarterly =
-            annualRate.mul(rawAnnualDeduction).div(4);
+            annualPropertyTaxRate.mul(rawAnnualDeduction).div(4);
       }
     }
 
