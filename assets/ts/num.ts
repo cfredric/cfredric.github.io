@@ -1,6 +1,8 @@
 import * as d3 from 'd3';
 import Decimal from 'decimal.js';
 
+Decimal.set({rounding: Decimal.ROUND_HALF_EVEN, defaults: true});
+
 export type AnyNumber = number|Num|Decimal;
 
 function findIndexRight<T>(
