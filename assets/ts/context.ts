@@ -167,8 +167,6 @@ export class Context {
              0);
     this.closingDate =
         input.closingDate ? d3.timeMonth.floor(input.closingDate) : undefined;
-    let prepayment =
-        constant('prepayment', input.prepayment.clamp(0, this.price.value()));
     this.stocksReturnRate =
         constant('stocksReturnRate', input.stocksReturnRate ?? new Decimal(7))
             .div(100);
@@ -183,11 +181,12 @@ export class Context {
               this.interestRate.div(12),
               this.n,
               ));
+      this.prepayment =
+          constant('prepayment', input.prepayment.clamp(0, this.price.value()));
     } else {
       this.m = output('principalAndInterest', Num.literal(0));
-      prepayment = constant('prepayment', Num.literal(0));
+      this.prepayment = constant('prepayment', Num.literal(0));
     }
-    this.prepayment = prepayment;
     this.monthlyLoanPayment = this.m.add(this.prepayment);
     this.monthlyNonLoanPayment = Num.sum(
         this.hoa, this.propertyTaxAnnual.div(12), this.homeownersInsurance);
