@@ -278,7 +278,7 @@ function populateFieldsFromURLParams(
         elt.checked = checked;
         break;
       default:
-        throw new Error('unreachable');
+        utils.assert(false, 'unreachable');
     }
   }
   return hasValue;
@@ -312,7 +312,7 @@ function populateFieldsFromPrivateStorage(
           elt.checked = savedStorageValue === '1';
           break;
         default:
-          throw new Error('unreachable');
+          utils.assert(false, 'unreachable');
       }
     }
 
@@ -333,7 +333,7 @@ function populateFieldsFromPrivateStorage(
           elt.checked = checked;
           break;
         default:
-          throw new Error('unreachable');
+          utils.assert(false, 'unreachable');
       }
     }
   }

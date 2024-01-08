@@ -28,14 +28,27 @@ export function orUndef(elt: HTMLInputElement): Decimal|undefined {
   if (Number.isNaN(Number.parseFloat(str))) return undefined;
   return new Decimal(str);
 }
+
+/**
+ * Asserts `condition`. If `condition` is not satsified, throws an error.
+ * @param condition
+ * @param message
+ */
+export function assert(condition: boolean, message: string): asserts condition {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
+
 /**
  * Returns the HTMLInputElement with the given ID, or throws an informative
  * error.
  */
 export function getInputElt(id: string): HTMLInputElement {
   const elt = document.getElementById(id);
-  if (!(elt instanceof HTMLInputElement))
-    throw new Error(`${id} element is not an HTMLInputElement`);
+  assert(
+      elt instanceof HTMLInputElement,
+      `${id} element is not an HTMLInputElement`);
   return elt;
 }
 /**
@@ -43,8 +56,7 @@ export function getInputElt(id: string): HTMLInputElement {
  */
 export function getHtmlEltWithId(id: string): HTMLElement {
   const elt = document.getElementById(id);
-  if (!(elt instanceof HTMLElement))
-    throw new Error(`${id} element is not an HTMLElement`);
+  assert(elt instanceof HTMLElement, `${id} element is not an HTMLElement`);
   return elt;
 }
 
@@ -180,7 +192,7 @@ export function updateURLParam(
       hasValue = elt.checked;
       break;
     default:
-      throw new Error('unreachable');
+      assert(false, 'unreachable');
   }
   if (hasValue) {
     const result = !url.searchParams.has(entry.name) ||
@@ -268,7 +280,7 @@ function updatePrivateStorage(elt: HTMLInputElement, entry: InputEntry) {
       value = elt.checked ? '1' : '0';
       break;
     default:
-      throw new Error('unreachable');
+      assert(false, 'unreachable');
   }
   window.localStorage.setItem(entry.name, value);
 }
