@@ -69,16 +69,18 @@ export class Context {
     this.homeValue = utils.chooseNonzero(
         constant('homeValue', Num.max(0, input.homeValue)), this.price);
     this.hoa = constant('HOA', Num.max(0, input.hoa));
-    const rawDownPaymentPercent =
-        constant('downPaymentPercent', input.downPaymentPercent.clamp(0, 100));
-    this.downPayment = utils.chooseNonzero(
-        output('downPayment', rawDownPaymentPercent.div(100).mul(this.price)),
-        constant(
-            'downPaymentAbsolute',
-            input.downPaymentAbsolute.clamp(0, this.price.value())));
+    {
+      const rawDownPaymentPercent = constant(
+          'downPaymentPercent', input.downPaymentPercent.clamp(0, 100));
+      this.downPayment = utils.chooseNonzero(
+          output('downPayment', rawDownPaymentPercent.div(100).mul(this.price)),
+          constant(
+              'downPaymentAbsolute',
+              input.downPaymentAbsolute.clamp(0, this.price.value())));
+      this.downPaymentPct = utils.chooseNonzero(
+          rawDownPaymentPercent.div(100), this.downPayment.div(this.price));
+    }
     this.loanAmount = output('loanAmount', this.price.sub(this.downPayment));
-    this.downPaymentPct = utils.chooseNonzero(
-        rawDownPaymentPercent.div(100), this.downPayment.div(this.price));
     this.interestRate =
         constant('interestRate', input.interestRate.clamp(0, 100)).div(100);
     this.pointValue = constant(
